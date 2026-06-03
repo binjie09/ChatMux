@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import {
   Activity,
   Bot,
@@ -11,14 +12,9 @@ import {
   Smartphone,
   TerminalSquare,
 } from "lucide-react";
+import { createHost, listHosts, trustHost, type Host } from "./api";
+import { HostForm } from "./HostForm";
 import { NativeTerminal } from "./NativeTerminal";
-
-type Host = {
-  id: string;
-  name: string;
-  address: string;
-  status: "online" | "offline" | "error";
-};
 
 type Session = {
   id: string;
@@ -28,12 +24,6 @@ type Session = {
   updatedAt: string;
 };
 
-const hosts: Host[] = [
-  { id: "prod", name: "prod-api-01", address: "ubuntu@10.0.8.21", status: "online" },
-  { id: "gpu", name: "gpu-worker", address: "deploy@gpu.internal", status: "online" },
-  { id: "edge", name: "edge-cache", address: "root@edge-03", status: "offline" },
-];
-
 const sessions: Session[] = [
   { id: "deploy", name: "deploy-check", host: "prod-api-01", status: "waiting", updatedAt: "2 min ago" },
   { id: "train", name: "train-run-42", host: "gpu-worker", status: "running", updatedAt: "12 min ago" },
@@ -41,6 +31,43 @@ const sessions: Session[] = [
 ];
 
 export function App() {
+  const [hosts, setHosts] = useState<Host[]>([]);
+  const [selectedHostId, setSelectedHostId] = useState<string>("");
+  const [showHostForm, setShowHostForm] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    void refreshHosts();
+  }, []);
+
+  async function refreshHosts() {
+    try {
+      const nextHosts = await listHosts();
+      setHosts(nextHosts);
+      setSelectedHostId((current) => current || nextHosts[0]?.id || "");
+      setError("");
+    } catch (err) {
+      setError(errorMessage(err));
+    }
+  }
+
+  async function handleCreateHost(input: Parameters<typeof createHost>[0]) {
+    const host = await createHost(input);
+    setHosts((current) => [host, ...current]);
+    setSelectedHostId(host.id);
+    setShowHostForm(false);
+  }
+
+  async function handleTrustHost() {
+    if (!selectedHostId) {
+      return;
+    }
+    const trusted = await trustHost(selectedHostId);
+    setHosts((current) => current.map((host) => (host.id === trusted.id ? trusted : host)));
+  }
+
+  const selectedHost = hosts.find((host) => host.id === selectedHostId);
+
   return (
     <main className="app-shell">
       <aside className="sidebar">
@@ -52,25 +79,27 @@ export function App() {
           </div>
         </div>
 
-        <button className="primary-action" type="button">
+        <button className="primary-action" type="button" onClick={() => setShowHostForm(true)}>
           <Plus size={18} aria-hidden="true" />
           Add host
         </button>
+        {showHostForm ? <HostForm onCancel={() => setShowHostForm(false)} onSubmit={handleCreateHost} /> : null}
 
         <section className="nav-section">
           <h2>Hosts</h2>
           <div className="host-list">
             {hosts.map((host) => (
-              <button className="host-row" type="button" key={host.id}>
+              <button className="host-row" type="button" key={host.id} onClick={() => setSelectedHostId(host.id)}>
                 <Server size={18} aria-hidden="true" />
                 <span>
                   <strong>{host.name}</strong>
-                  <small>{host.address}</small>
+                  <small>{host.username}@{host.hostname}:{host.port}</small>
                 </span>
                 <i className={`status-dot ${host.status}`} />
               </button>
             ))}
           </div>
+          {error ? <p className="sidebar-error">{error}</p> : null}
         </section>
 
         <section className="platforms">
@@ -117,11 +146,11 @@ export function App() {
       <section className="conversation">
         <header className="conversation-header">
           <div>
-            <p>prod-api-01</p>
-            <h2>deploy-check</h2>
+            <p>{selectedHost?.name ?? "No host"}</p>
+            <h2>{sessions[0]?.name ?? "Terminal"}</h2>
           </div>
           <div className="header-actions">
-            <button className="utility-button" type="button">
+            <button className="utility-button" type="button" onClick={handleTrustHost}>
               <KeyRound size={17} aria-hidden="true" />
               Trust host
             </button>
@@ -144,4 +173,11 @@ export function App() {
       </section>
     </main>
   );
+}
+
+function errorMessage(error: unknown) {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return String(error);
 }

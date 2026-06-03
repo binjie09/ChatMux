@@ -16,8 +16,7 @@ body {
   min-height: 100vh;
 }
 
-button,
-input {
+button, input {
   font: inherit;
 }
 
@@ -64,8 +63,7 @@ button {
   font-size: 13px;
 }
 
-.primary-action,
-.composer button {
+.primary-action, .composer button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -78,8 +76,7 @@ button {
   font-weight: 700;
 }
 
-.nav-section h2,
-.platforms h2 {
+.nav-section h2, .platforms h2 {
   margin: 0 0 10px;
   color: #d9dedb;
   font-size: 12px;
@@ -134,14 +131,21 @@ button {
   font-size: 13px;
 }
 
+.sidebar-error {
+  margin: 10px 0 0;
+  color: #f2a397;
+  font-size: 12px;
+  line-height: 1.45;
+  word-break: break-word;
+}
+
 .session-list {
   border-right: 1px solid #ded8ca;
   padding: 24px 18px;
   background: #fffaf0;
 }
 
-.session-list header,
-.conversation-header {
+.session-list header, .conversation-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -149,15 +153,13 @@ button {
   margin-bottom: 18px;
 }
 
-.session-list p,
-.conversation-header p {
+.session-list p, .conversation-header p {
   margin: 0 0 4px;
   color: #69746e;
   font-size: 13px;
 }
 
-.session-list h1,
-.conversation-header h2 {
+.session-list h1, .conversation-header h2 {
   margin: 0;
   font-size: 25px;
 }

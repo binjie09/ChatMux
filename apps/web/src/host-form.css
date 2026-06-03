@@ -1,0 +1,42 @@
+.host-form {
+  display: grid;
+  gap: 8px;
+  border: 1px solid #2c3931;
+  border-radius: 8px;
+  padding: 10px;
+  background: #202b25;
+}
+
+.host-form input {
+  min-width: 0;
+  border: 1px solid #405146;
+  border-radius: 6px;
+  padding: 8px 9px;
+  color: #f7f2e8;
+  background: #17201b;
+}
+
+.host-form input::placeholder {
+  color: #8c9891;
+}
+
+.host-form-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.host-form-actions button {
+  display: grid;
+  place-items: center;
+  height: 34px;
+  border: 0;
+  border-radius: 6px;
+  color: #102018;
+  background: #8fd5b2;
+}
+
+.host-form-actions button[type="button"] {
+  color: #f3ebe1;
+  background: #3a463f;
+}
