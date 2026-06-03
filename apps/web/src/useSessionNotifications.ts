@@ -7,7 +7,7 @@ import {
 } from "./session-notifications";
 import { errorMessage } from "./view-utils";
 
-export type SessionNotificationStatus = "denied" | "enabling" | "off" | "watching";
+export type SessionNotificationStatus = "credential-error" | "credential-needed" | "denied" | "enabling" | "off" | "watching";
 
 type SessionNotificationsOptions = {
   hostId: string;
@@ -39,8 +39,12 @@ export function useSessionNotifications(options: SessionNotificationsOptions) {
     if (!enabled || !options.hostId || !options.sshReady) {
       return;
     }
-    return pollSessionStatuses(options);
+    return pollSessionStatuses(options, setStatus);
   }, [enabled, options.hostId, options.onError, options.onSessionsChange, options.refreshSessions, options.sshReady]);
+
+  useEffect(() => {
+    syncCredentialStatus(enabled, options.hostId, options.sshReady, setStatus);
+  }, [enabled, options.hostId, options.sshReady]);
 
   const setEnabled = useCallback(async (nextEnabled: boolean) => {
     await updateNotificationEnabled(nextEnabled, setEnabledState, setStatus, options.onError);
@@ -49,16 +53,21 @@ export function useSessionNotifications(options: SessionNotificationsOptions) {
   return { enabled, setEnabled, status };
 }
 
-function pollSessionStatuses(options: SessionNotificationsOptions) {
+function pollSessionStatuses(
+  options: SessionNotificationsOptions,
+  setStatus: (status: SessionNotificationStatus) => void,
+) {
   let active = true;
   const refresh = async () => {
     try {
       const nextSessions = await options.refreshSessions();
       if (active) {
         options.onSessionsChange(nextSessions);
+        setStatus("watching");
       }
     } catch (error) {
       if (active) {
+        setStatus("credential-error");
         options.onError(errorMessage(error));
       }
     }
@@ -69,6 +78,20 @@ function pollSessionStatuses(options: SessionNotificationsOptions) {
     active = false;
     window.clearInterval(timer);
   };
+}
+
+function syncCredentialStatus(
+  enabled: boolean,
+  hostId: string,
+  sshReady: boolean,
+  setStatus: (status: SessionNotificationStatus) => void,
+) {
+  if (!enabled || !hostId) {
+    return;
+  }
+  if (!sshReady) {
+    setStatus("credential-needed");
+  }
 }
 
 async function updateNotificationEnabled(

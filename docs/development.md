@@ -87,7 +87,9 @@ can use the session but cannot edit its metadata or grants. tmux sessions
 without MuxChat metadata are visible only to the host owner and admins.
 Session alerts use local notifications on iOS and Android, and browser
 notifications on the web. When enabled, the SPA polls the selected host's tmux
-sessions every 30 seconds and notifies on status changes.
+sessions every 30 seconds and notifies on status changes. If the in-memory SSH
+credential is missing or rejected during background polling, the session sidebar
+keeps alerts enabled and shows a recoverable password prompt.
 When the native terminal WebSocket reconnects from recovery, the SPA captures
 the selected tmux pane history again so the history/context panel reflects the
 current session state. The gateway records those successful recovery attaches as
@@ -196,5 +198,4 @@ cd services/gateway && go test ./... && go build ./cmd/muxchat-gateway
 
 ## Next Implementation Tasks
 
-1. Add recoverable credential prompts for background session notifications.
-2. Broaden automation tools only through explicit allowlisted capabilities.
+1. Broaden automation tools only through explicit allowlisted capabilities.

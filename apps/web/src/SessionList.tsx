@@ -50,6 +50,7 @@ export function SessionList(props: SessionListProps) {
         status={props.notificationStatus}
         onEnabledChange={props.onNotificationsEnabledChange}
       />
+      <SessionNotificationPrompt status={props.notificationStatus} onReconnect={props.onListSessions} />
       {props.sessions.map((session) => <SessionRow key={session.id} session={session} onOpenSession={props.onOpenSession} />)}
       {props.sessions.length === 0 ? <p className="session-empty">No sessions</p> : null}
     </section>
@@ -78,6 +79,8 @@ function SessionAuth(props: Pick<SessionListProps, "credentialStatus" | "sshPass
 }
 
 const notificationStatusLabels: Record<SessionNotificationStatus, string> = {
+  "credential-error": "Check password",
+  "credential-needed": "Password needed",
   denied: "Denied",
   enabling: "Enabling",
   off: "Off",
@@ -102,6 +105,28 @@ function SessionNotificationsToggle(props: {
       <small>{notificationStatusLabels[props.status]}</small>
     </label>
   );
+}
+
+function SessionNotificationPrompt(props: { status: SessionNotificationStatus; onReconnect: () => void }) {
+  if (props.status !== "credential-needed" && props.status !== "credential-error") {
+    return null;
+  }
+  return (
+    <div className="session-notification-prompt">
+      <span>{notificationPromptLabel(props.status)}</span>
+      <button type="button" onClick={props.onReconnect}>
+        <KeyRound size={14} aria-hidden="true" />
+        Connect
+      </button>
+    </div>
+  );
+}
+
+function notificationPromptLabel(status: SessionNotificationStatus) {
+  if (status === "credential-error") {
+    return "Session alerts need a valid SSH password.";
+  }
+  return "Session alerts need an SSH password.";
 }
 
 function SessionCreate(props: Pick<SessionListProps, "newSessionName" | "onCreateSession" | "onNewSessionNameChange">) {

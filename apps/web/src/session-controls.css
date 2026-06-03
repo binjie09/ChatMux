@@ -34,6 +34,31 @@
   font-size: 12px;
 }
 
+.session-notification-prompt {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 8px;
+  margin: -4px 0 12px;
+  border: 1px solid #e2c48a;
+  border-radius: 8px;
+  padding: 9px 10px;
+  color: #4d3813;
+  background: #fff6df;
+  font-size: 12px;
+}
+
+.session-notification-prompt button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #d9b66e;
+  border-radius: 8px;
+  padding: 6px 8px;
+  color: #3c2b0e;
+  background: #ffffff;
+}
+
 .session-create input {
   width: 100%;
   border: 1px solid #d6cebd;
