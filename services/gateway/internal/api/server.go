@@ -14,6 +14,7 @@ type Server struct {
 	commandPolicy  commandPolicy
 	hosts          *hoststore.Store
 	ssh            sshRunner
+	summarizer     TranscriptSummarizer
 	terminalTokens *terminalTokenStore
 }
 
@@ -37,6 +38,14 @@ func WithStaticUsers(users []StaticUser) ServerOption {
 func WithCommandPolicy(config CommandPolicyConfig) ServerOption {
 	return func(s *Server) {
 		s.commandPolicy = mustCommandPolicy(config)
+	}
+}
+
+func WithTranscriptSummarizer(summarizer TranscriptSummarizer) ServerOption {
+	return func(s *Server) {
+		if summarizer != nil {
+			s.summarizer = summarizer
+		}
 	}
 }
 
@@ -69,6 +78,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/hosts/{id}/tmux/sessions/{name}/terminal-token", s.handleCreateTerminalToken)
 	mux.HandleFunc("POST /api/hosts/{id}/tmux/sessions/{name}/history", s.handleCaptureTmuxHistory)
 	mux.HandleFunc("POST /api/hosts/{id}/tmux/sessions/{name}/metadata", s.handleSaveTmuxSessionMetadata)
+	mux.HandleFunc("POST /api/hosts/{id}/tmux/sessions/{name}/summary", s.handleSummarizeTmuxHistory)
 	mux.HandleFunc("GET /api/terminal", s.handleTerminalWebSocket)
 	return withCORS(s.withGatewayAuth(mux))
 }

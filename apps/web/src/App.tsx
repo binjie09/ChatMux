@@ -280,7 +280,7 @@ export function App() {
             }}
           />
           <div className="context-stack">
-            <HistoryPanel chunks={historyChunks} query={historyQuery} text={historyText} onQueryChange={setHistoryQuery} />
+            <HistoryPanel chunks={historyChunks} query={historyQuery} summaryTarget={{ hostId: selectedHostId, password: sshPassword, sessionName: selectedSessionName }} text={historyText} onQueryChange={setHistoryQuery} onSummarized={() => void refreshAuditEvents()} />
             <AuditPanel events={auditEvents} />
           </div>
         </div>

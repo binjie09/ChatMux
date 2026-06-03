@@ -27,9 +27,17 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	summarizer, err := transcriptSummarizerFromEnv()
+	if err != nil {
+		log.Fatal(err)
+	}
+	options := []api.ServerOption{api.WithStaticUsers(users), api.WithCommandPolicy(policy)}
+	if summarizer != nil {
+		options = append(options, api.WithTranscriptSummarizer(summarizer))
+	}
 	server := &http.Server{
 		Addr:              addr,
-		Handler:           api.NewServer(store, api.WithStaticUsers(users), api.WithCommandPolicy(policy)).Handler(),
+		Handler:           api.NewServer(store, options...).Handler(),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 
@@ -90,4 +98,16 @@ func commandPolicyFromEnv() (api.CommandPolicyConfig, error) {
 		return api.CommandPolicyConfig{}, err
 	}
 	return config, nil
+}
+
+func transcriptSummarizerFromEnv() (api.TranscriptSummarizer, error) {
+	apiKey := os.Getenv("OPENAI_API_KEY")
+	if apiKey == "" {
+		return nil, nil
+	}
+	return api.NewOpenAITranscriptSummarizer(api.OpenAITranscriptSummarizerConfig{
+		APIKey:  apiKey,
+		BaseURL: os.Getenv("OPENAI_BASE_URL"),
+		Model:   os.Getenv("OPENAI_MODEL"),
+	})
 }

@@ -62,3 +62,26 @@ func TestCommandPolicyFromEnvRejectsInvalidPattern(t *testing.T) {
 		t.Fatal("expected invalid command policy pattern")
 	}
 }
+
+func TestTranscriptSummarizerFromEnvDisabledWithoutKey(t *testing.T) {
+	summarizer, err := transcriptSummarizerFromEnv()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if summarizer != nil {
+		t.Fatal("expected nil summarizer without OPENAI_API_KEY")
+	}
+}
+
+func TestTranscriptSummarizerFromEnvCreatesOpenAIClient(t *testing.T) {
+	t.Setenv("OPENAI_API_KEY", "test-key")
+	t.Setenv("OPENAI_MODEL", "gpt-test")
+
+	summarizer, err := transcriptSummarizerFromEnv()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if summarizer == nil {
+		t.Fatal("expected configured summarizer")
+	}
+}

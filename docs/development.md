@@ -78,6 +78,12 @@ expressions, for example `["^rm\\s+-rf\\s+/"]`. Policy mode defaults to
 `enforce`; set `MUXCHAT_COMMAND_POLICY_MODE=audit` to log pattern matches while
 still allowing composer input.
 
+AI transcript summaries are disabled unless `OPENAI_API_KEY` is set on the
+gateway. The summary endpoint captures the selected tmux pane and sends that
+transcript to the configured OpenAI-compatible Responses API only when the user
+presses Summarize. `OPENAI_MODEL` defaults to `gpt-5.5`, and `OPENAI_BASE_URL`
+defaults to `https://api.openai.com/v1`.
+
 Android internal testing builds require signing material in environment
 variables: `ANDROID_KEYSTORE_PATH`, `ANDROID_KEYSTORE_PASSWORD`,
 `ANDROID_KEY_ALIAS`, and `ANDROID_KEY_PASSWORD`. The script writes the AAB to

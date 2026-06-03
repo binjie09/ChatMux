@@ -13,6 +13,8 @@ const listSessionFormat = "#{session_id}\t#{session_name}\t#{session_windows}\t#
 
 var sessionNamePattern = regexp.MustCompile(`^[A-Za-z0-9_.-]{1,64}$`)
 
+var ErrInvalidSessionName = errors.New("session name must be 1-64 chars using letters, numbers, underscore, dot, or dash")
+
 type Session struct {
 	ID        string    `json:"id"`
 	Name      string    `json:"name"`
@@ -62,7 +64,7 @@ func CapturePaneCommand(name string) (string, error) {
 
 func ValidateSessionName(name string) error {
 	if !sessionNamePattern.MatchString(name) {
-		return errors.New("session name must be 1-64 chars using letters, numbers, underscore, dot, or dash")
+		return ErrInvalidSessionName
 	}
 	return nil
 }
