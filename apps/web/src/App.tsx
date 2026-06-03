@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   captureTmuxHistory,
-  createSSHCredential,
   createTmuxSession,
   createTerminalToken,
   listAuditEvents,
@@ -25,6 +24,7 @@ import { Sidebar } from "./Sidebar";
 import { useGatewayAccessToken } from "./useGatewayAccessToken";
 import { useHostWorkspace } from "./useHostWorkspace";
 import { useSessionNotifications } from "./useSessionNotifications";
+import { useSSHCredentialToken } from "./useSSHCredentialToken";
 import { errorMessage } from "./view-utils";
 
 export function App() {
@@ -32,8 +32,6 @@ export function App() {
   const [sessions, setSessions] = useState<TmuxSession[]>([]);
   const [selectedSessionName, setSelectedSessionName] = useState("");
   const [newSessionName, setNewSessionName] = useState("");
-  const [sshCredentialToken, setSSHCredentialToken] = useState("");
-  const [sshPassword, setSSHPassword] = useState("");
   const [composerMode, setComposerMode] = useState<ComposerMode>("enter");
   const [composerValue, setComposerValue] = useState("");
   const [historyChunks, setHistoryChunks] = useState<TranscriptChunk[]>([]);
@@ -43,6 +41,7 @@ export function App() {
   const [queuedInput, setQueuedInput] = useState<QueuedTerminalInput | null>(null);
   const [error, setError] = useState("");
   const gatewayToken = useGatewayAccessToken(setError);
+  const sshCredential = useSSHCredentialToken();
   const {
     handleCreateHost,
     handleDeleteHost,
@@ -82,7 +81,7 @@ export function App() {
 
   function clearSelectedSession() {
     setSelectedSessionName("");
-    setSSHCredentialToken("");
+    sshCredential.resetCredential();
     setSessions([]);
     setHistoryChunks([]);
     setHistoryText("");
@@ -90,11 +89,11 @@ export function App() {
   }
 
   async function handleListSessions() {
-    if (!selectedHostId || !sshPassword) {
+    if (!selectedHostId || !sshCredential.ready) {
       return;
     }
     try {
-      const credentialToken = await issueSSHCredentialToken();
+      const credentialToken = await getSelectedHostCredentialToken();
       const nextSessions = await listTmuxSessions(selectedHostId, credentialToken);
       setSessions(nextSessions);
       setSelectedSessionName("");
@@ -114,7 +113,7 @@ export function App() {
     setSelectedSessionName(sessionName);
     setMobilePanel("terminal");
     try {
-      const credentialToken = tokenOverride || await ensureSSHCredentialToken();
+      const credentialToken = tokenOverride || await getSelectedHostCredentialToken();
       const history = await captureTmuxHistory(selectedHostId, sessionName, credentialToken);
       setHistoryChunks(history.chunks);
       setHistoryText(history.text);
@@ -130,7 +129,7 @@ export function App() {
       return;
     }
     try {
-      const credentialToken = await ensureSSHCredentialToken();
+      const credentialToken = await getSelectedHostCredentialToken();
       const session = await createTmuxSession(selectedHostId, credentialToken, newSessionName);
       setSessions((current) => [session, ...current.filter((item) => item.name !== session.name)]);
       setNewSessionName("");
@@ -168,31 +167,22 @@ export function App() {
     }
   }
 
-  async function ensureSSHCredentialToken() {
-    if (sshCredentialToken) {
-      return sshCredentialToken;
-    }
-    return issueSSHCredentialToken();
-  }
-
-  async function issueSSHCredentialToken() {
-    if (!selectedHostId || !sshPassword) {
-      throw new Error("Host and password are required");
-    }
-    const credential = await createSSHCredential(selectedHostId, sshPassword);
-    setSSHCredentialToken(credential.token);
-    return credential.token;
-  }
-
   const selectedSession = sessions.find((session) => session.name === selectedSessionName);
   const terminalSessionKey = selectedHostId && selectedSessionName ? `${selectedHostId}:${selectedSessionName}` : "";
+  const getSelectedHostCredentialToken = useCallback(async () => {
+    if (!selectedHostId) {
+      throw new Error("Host is required");
+    }
+    return sshCredential.ensureSSHCredentialToken(selectedHostId);
+  }, [selectedHostId, sshCredential.ensureSSHCredentialToken]);
+
   const refreshSelectedSessions = useCallback(async () => {
-    if (!selectedHostId || (!sshCredentialToken && !sshPassword)) {
+    if (!selectedHostId || !sshCredential.ready) {
       return [];
     }
-    const credentialToken = await ensureSSHCredentialToken();
+    const credentialToken = await getSelectedHostCredentialToken();
     return listTmuxSessions(selectedHostId, credentialToken);
-  }, [selectedHostId, sshCredentialToken, sshPassword]);
+  }, [getSelectedHostCredentialToken, selectedHostId, sshCredential.ready]);
 
   const sessionNotifications = useSessionNotifications({
     hostId: selectedHostId,
@@ -201,17 +191,17 @@ export function App() {
     onSessionsChange: setSessions,
     refreshSessions: refreshSelectedSessions,
     sessions,
-    sshReady: Boolean(selectedHostId && (sshCredentialToken || sshPassword)),
+    sshReady: Boolean(selectedHostId && sshCredential.ready),
   });
 
   const createTerminalWebSocketURL = useCallback(async () => {
     if (!selectedHostId || !selectedSessionName) {
       throw new Error("Host and session are required");
     }
-    const credentialToken = await ensureSSHCredentialToken();
+    const credentialToken = await getSelectedHostCredentialToken();
     const token = await createTerminalToken(selectedHostId, selectedSessionName, credentialToken);
     return terminalWebSocketURL(token);
-  }, [selectedHostId, selectedSessionName, sshCredentialToken, sshPassword]);
+  }, [getSelectedHostCredentialToken, selectedHostId, selectedSessionName]);
 
   return (
     <main className="app-shell">
@@ -235,16 +225,13 @@ export function App() {
         notificationsEnabled={sessionNotifications.enabled}
         notificationStatus={sessionNotifications.status}
         sessions={sessions}
-        sshPassword={sshPassword}
+        sshPassword={sshCredential.sshPassword}
         onCreateSession={() => void handleCreateSession()}
         onListSessions={() => void handleListSessions()}
         onNewSessionNameChange={setNewSessionName}
         onNotificationsEnabledChange={(enabled) => void sessionNotifications.setEnabled(enabled)}
         onOpenSession={(sessionName) => void handleOpenSession(sessionName)}
-        onSSHPasswordChange={(value) => {
-          setSSHPassword(value);
-          setSSHCredentialToken("");
-        }}
+        onSSHPasswordChange={sshCredential.setSSHPassword}
       />
 
       <section className="conversation">
@@ -269,13 +256,13 @@ export function App() {
             }}
           />
           <div className="context-stack">
-            <HistoryPanel chunks={historyChunks} query={historyQuery} summaryTarget={{ credentialToken: sshCredentialToken, hostId: selectedHostId, sessionName: selectedSessionName }} text={historyText} onQueryChange={setHistoryQuery} onSummarized={() => void refreshAuditEvents()} />
+            <HistoryPanel chunks={historyChunks} query={historyQuery} summaryTarget={{ getCredentialToken: getSelectedHostCredentialToken, hostId: selectedHostId, sessionName: selectedSessionName, sshReady: sshCredential.ready }} text={historyText} onQueryChange={setHistoryQuery} onSummarized={() => void refreshAuditEvents()} />
             <AuditPanel events={auditEvents} />
           </div>
         </div>
 
         <Composer
-          draftPanel={<CommandDraftPanel target={{ credentialToken: sshCredentialToken, hostId: selectedHostId, sessionName: selectedSessionName }} onDrafted={() => void refreshAuditEvents()} onInsert={(command) => { setComposerMode("enter"); setComposerValue(command); }} />}
+          draftPanel={<CommandDraftPanel target={{ getCredentialToken: getSelectedHostCredentialToken, hostId: selectedHostId, sessionName: selectedSessionName, sshReady: sshCredential.ready }} onDrafted={() => void refreshAuditEvents()} onInsert={(command) => { setComposerMode("enter"); setComposerValue(command); }} />}
           mode={composerMode}
           value={composerValue}
           onModeChange={setComposerMode}

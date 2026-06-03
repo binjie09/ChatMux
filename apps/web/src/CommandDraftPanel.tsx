@@ -5,9 +5,10 @@ import { errorMessage } from "./view-utils";
 import "./command-draft.css";
 
 type CommandDraftTarget = {
-  credentialToken: string;
+  getCredentialToken: () => Promise<string>;
   hostId: string;
   sessionName: string;
+  sshReady: boolean;
 };
 
 type CommandDraftPanelProps = {
@@ -21,7 +22,7 @@ export function CommandDraftPanel({ target, onDrafted, onInsert }: CommandDraftP
   const [drafting, setDrafting] = useState(false);
   const [error, setError] = useState("");
   const [prompt, setPrompt] = useState("");
-  const canDraft = Boolean(target.hostId && target.sessionName && target.credentialToken && prompt.trim());
+  const canDraft = Boolean(target.hostId && target.sessionName && target.sshReady && prompt.trim());
 
   async function handleDraft() {
     if (!canDraft) {
@@ -29,7 +30,8 @@ export function CommandDraftPanel({ target, onDrafted, onInsert }: CommandDraftP
     }
     try {
       setDrafting(true);
-      setDraft(await draftTmuxCommand(target.hostId, target.sessionName, target.credentialToken, prompt));
+      const credentialToken = await target.getCredentialToken();
+      setDraft(await draftTmuxCommand(target.hostId, target.sessionName, credentialToken, prompt));
       setError("");
       onDrafted();
     } catch (err) {

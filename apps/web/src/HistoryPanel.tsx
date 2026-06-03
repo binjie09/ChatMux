@@ -5,9 +5,10 @@ import { errorMessage } from "./view-utils";
 import "./history-panel.css";
 
 type SummaryTarget = {
-  credentialToken: string;
+  getCredentialToken: () => Promise<string>;
   hostId: string;
   sessionName: string;
+  sshReady: boolean;
 };
 
 type HistoryPanelProps = {
@@ -24,7 +25,7 @@ export function HistoryPanel({ chunks, query, summaryTarget, text, onQueryChange
   const [summary, setSummary] = useState<TranscriptSummary | null>(null);
   const [summaryError, setSummaryError] = useState("");
   const [summarizing, setSummarizing] = useState(false);
-  const canSummarize = Boolean(summaryTarget.hostId && summaryTarget.sessionName && summaryTarget.credentialToken && text.trim());
+  const canSummarize = Boolean(summaryTarget.hostId && summaryTarget.sessionName && summaryTarget.sshReady && text.trim());
 
   useEffect(() => {
     setSummary(null);
@@ -37,7 +38,8 @@ export function HistoryPanel({ chunks, query, summaryTarget, text, onQueryChange
     }
     try {
       setSummarizing(true);
-      setSummary(await summarizeTmuxHistory(summaryTarget.hostId, summaryTarget.sessionName, summaryTarget.credentialToken));
+      const credentialToken = await summaryTarget.getCredentialToken();
+      setSummary(await summarizeTmuxHistory(summaryTarget.hostId, summaryTarget.sessionName, credentialToken));
       setSummaryError("");
       onSummarized();
     } catch (err) {
