@@ -13,6 +13,7 @@ import {
   trustHost,
   type Host,
   type AuditEvent,
+  type TranscriptChunk,
   type TmuxSession,
 } from "./api";
 import { AuditPanel } from "./AuditPanel";
@@ -34,6 +35,7 @@ export function App() {
   const [sshPassword, setSSHPassword] = useState("");
   const [composerMode, setComposerMode] = useState<ComposerMode>("enter");
   const [composerValue, setComposerValue] = useState("");
+  const [historyChunks, setHistoryChunks] = useState<TranscriptChunk[]>([]);
   const [historyText, setHistoryText] = useState("");
   const [historyQuery, setHistoryQuery] = useState("");
   const [queuedInput, setQueuedInput] = useState<QueuedTerminalInput | null>(null);
@@ -76,6 +78,7 @@ export function App() {
     setSelectedHostId(hostId);
     setSelectedSessionName("");
     setSessions([]);
+    setHistoryChunks([]);
     setHistoryText("");
   }
 
@@ -110,6 +113,7 @@ export function App() {
       const nextSessions = await listTmuxSessions(selectedHostId, sshPassword);
       setSessions(nextSessions);
       setSelectedSessionName("");
+      setHistoryChunks([]);
       setHistoryText("");
       void refreshAuditEvents();
       setError("");
@@ -125,7 +129,8 @@ export function App() {
     setSelectedSessionName(sessionName);
     try {
       const history = await captureTmuxHistory(selectedHostId, sessionName, sshPassword);
-      setHistoryText(history);
+      setHistoryChunks(history.chunks);
+      setHistoryText(history.text);
       void refreshAuditEvents();
       setError("");
     } catch (err) {
@@ -248,7 +253,7 @@ export function App() {
             }}
           />
           <div className="context-stack">
-            <HistoryPanel query={historyQuery} text={historyText} onQueryChange={setHistoryQuery} />
+            <HistoryPanel chunks={historyChunks} query={historyQuery} text={historyText} onQueryChange={setHistoryQuery} />
             <AuditPanel events={auditEvents} />
           </div>
         </div>

@@ -24,7 +24,8 @@ type tmuxHistoryRequest struct {
 }
 
 type tmuxHistoryResponse struct {
-	Text string `json:"text"`
+	Chunks []tmux.TranscriptChunk `json:"chunks"`
+	Text   string                 `json:"text"`
 }
 
 func (s *Server) handleListTmuxSessions(w http.ResponseWriter, r *http.Request) {
@@ -141,7 +142,8 @@ func (s *Server) handleCaptureTmuxHistory(w http.ResponseWriter, r *http.Request
 		writeError(w, http.StatusInternalServerError, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, tmuxHistoryResponse{Text: string(output)})
+	text := string(output)
+	writeJSON(w, http.StatusOK, tmuxHistoryResponse{Chunks: tmux.NormalizeHistory(text), Text: text})
 }
 
 func (s *Server) runTmuxListCommand(r *http.Request, hostID string, password string, command string) ([]tmux.Session, error) {

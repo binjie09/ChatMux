@@ -36,13 +36,20 @@ export type AuditEvent = {
   createdAt: string;
 };
 
+export type TranscriptChunk = {
+  id: string;
+  kind: "command" | "output";
+  text: string;
+};
+
+export type TmuxHistory = {
+  chunks: TranscriptChunk[];
+  text: string;
+};
+
 type TerminalTokenResponse = {
   token: string;
   expiresIn: number;
-};
-
-type TmuxHistoryResponse = {
-  text: string;
 };
 
 export async function listHosts(): Promise<Host[]> {
@@ -96,12 +103,11 @@ export async function createTerminalToken(hostId: string, sessionName: string, p
   return response.token;
 }
 
-export async function captureTmuxHistory(hostId: string, sessionName: string, password: string): Promise<string> {
-  const response = await request<TmuxHistoryResponse>(`/api/hosts/${hostId}/tmux/sessions/${sessionName}/history`, {
+export async function captureTmuxHistory(hostId: string, sessionName: string, password: string): Promise<TmuxHistory> {
+  return request<TmuxHistory>(`/api/hosts/${hostId}/tmux/sessions/${sessionName}/history`, {
     method: "POST",
     body: JSON.stringify({ password }),
   });
-  return response.text;
 }
 
 export function terminalWebSocketURL(token: string) {

@@ -68,7 +68,7 @@ func TestCreateTmuxSessionRejectsUnsafeName(t *testing.T) {
 func TestCaptureTmuxHistoryAPI(t *testing.T) {
 	server, closeServer := newTestServer(t)
 	defer closeServer()
-	server.ssh = &fakeSSHRunner{output: "muxchat history\n"}
+	server.ssh = &fakeSSHRunner{output: "$ echo muxchat\nmuxchat history\n"}
 	host := createTrustedTestHost(t, server)
 
 	body := bytes.NewBufferString(`{"password":"secret"}`)
@@ -79,7 +79,11 @@ func TestCaptureTmuxHistoryAPI(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
 	}
-	if !strings.Contains(rec.Body.String(), "muxchat history") {
-		t.Fatalf("expected history, got %s", rec.Body.String())
+	responseBody := rec.Body.String()
+	if !strings.Contains(responseBody, "muxchat history") {
+		t.Fatalf("expected history, got %s", responseBody)
+	}
+	if !strings.Contains(responseBody, `"chunks"`) || !strings.Contains(responseBody, `"kind":"command"`) {
+		t.Fatalf("expected transcript chunks, got %s", responseBody)
 	}
 }
