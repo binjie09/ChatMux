@@ -6,4 +6,4 @@ dist
 .env.local
 coverage
 *.tsbuildinfo
-muxchat-gateway
+/services/gateway/muxchat-gateway
