@@ -133,6 +133,16 @@ curl -X PATCH http://localhost:8080/api/hosts/{hostID} \
 curl -X DELETE http://localhost:8080/api/hosts/{hostID}
 ```
 
+## SSH Fixture Integration Tests
+
+The gateway has a Docker-based SSH fixture with `tmux` installed. It starts an
+ephemeral local container, maps SSH to a random localhost port, and runs the
+SSH client plus terminal WebSocket integration tests.
+
+```bash
+services/gateway/scripts/test-ssh-fixture.sh
+```
+
 ## Remote SSH Test Flow
 
 The gateway currently accepts passwords in request bodies for early local
@@ -164,8 +174,8 @@ cd services/gateway && go test ./... && go build ./cmd/muxchat-gateway
 
 ## Next Implementation Tasks
 
-1. Replace demo frontend data with API calls.
-2. Add SQLite persistence for hosts.
-3. Add SSH connection tests against a local fixture container.
-4. Implement tmux session listing and creation.
-5. Add xterm.js terminal stream once the WebSocket API is fixed.
+1. Decide the shared-session access model beyond host-level sharing.
+2. Add desktop encrypted secret storage for local gateway credentials.
+3. Add deeper terminal recovery semantics for interrupted long-running sessions.
+4. Replace early password request bodies with a safer credential flow.
+5. Broaden automation tools only through explicit allowlisted capabilities.
