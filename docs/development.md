@@ -84,6 +84,8 @@ sessions every 30 seconds and notifies on status changes.
 Session status is inferred from tmux session attachment plus the active pane
 command and pane exit state: shell panes are idle or waiting, non-shell panes are
 running, and dead panes with non-zero exit status are failed.
+Touch and narrow-screen terminal views show quick keys for Esc, Tab, Ctrl-C,
+Ctrl-D, and arrow navigation. These keys write directly to the native PTY stream.
 
 Composer-sent terminal input is recorded as audit metadata only; the raw command
 text is not stored. Native xterm.js keystrokes bypass command policy and audit

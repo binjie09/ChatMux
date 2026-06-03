@@ -2,6 +2,7 @@
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 10px;
+  min-width: 0;
   border-top: 1px solid #ded8ca;
   padding-top: 16px;
 }
@@ -9,6 +10,7 @@
 .composer-modes {
   display: inline-grid;
   grid-template-columns: repeat(3, minmax(58px, auto));
+  min-width: 0;
   overflow: hidden;
   border: 1px solid #d6cebd;
   border-radius: 8px;
@@ -63,9 +65,13 @@
 @media (max-width: 760px) {
   .composer {
     grid-template-columns: minmax(0, 1fr) auto;
+    width: 100%;
+    max-width: calc(100vw - 28px);
   }
 
   .composer-modes {
     grid-column: 1 / -1;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: 100%;
   }
 }

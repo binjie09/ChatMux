@@ -4,6 +4,7 @@
   gap: 12px;
   height: 100%;
   min-height: 0;
+  min-width: 0;
   overflow: hidden;
 }
 
@@ -17,10 +18,11 @@
 
 .terminal-shell {
   display: grid;
-  grid-template-rows: 30px minmax(0, 1fr);
+  grid-template-rows: 30px minmax(0, 1fr) auto;
   gap: 8px;
   height: 100%;
   min-height: 0;
+  min-width: 0;
   overflow: hidden;
   border: 1px solid #26372f;
   border-radius: 8px;
@@ -86,6 +88,7 @@
 .terminal-screen {
   height: 100%;
   min-height: 0;
+  min-width: 0;
   overflow: hidden;
   touch-action: none;
 }
@@ -96,6 +99,31 @@
 
 .terminal-screen .xterm-viewport {
   scrollbar-color: #496256 #101713;
+}
+
+.terminal-quick-keys {
+  display: none;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 6px;
+  width: 100%;
+}
+
+.terminal-quick-keys button {
+  display: grid;
+  place-items: center;
+  height: 34px;
+  min-width: 0;
+  border: 1px solid #35463d;
+  border-radius: 8px;
+  color: #dbe7df;
+  background: #18231d;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.terminal-quick-keys button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
 }
 
 @media (max-width: 900px) {
@@ -115,5 +143,18 @@
 
   .context-stack {
     display: none;
+  }
+}
+
+@media (max-width: 720px), (pointer: coarse) {
+  .terminal-workspace,
+  .terminal-shell {
+    width: 100%;
+    max-width: calc(100vw - 28px);
+  }
+
+  .terminal-quick-keys {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }

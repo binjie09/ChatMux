@@ -1,7 +1,7 @@
 import { type MutableRefObject, useEffect, useRef, useState } from "react";
 import { FitAddon } from "@xterm/addon-fit";
 import { Terminal } from "@xterm/xterm";
-import { RefreshCw } from "lucide-react";
+import { ArrowDown, ArrowUp, RefreshCw } from "lucide-react";
 import { sendTerminalInput, sendTerminalResize, terminalSize } from "./terminal-protocol";
 import { type ConnectionStatus, type TerminalHandlers, useTerminalSocket } from "./useTerminalSocket";
 import "@xterm/xterm/css/xterm.css";
@@ -27,6 +27,15 @@ const statusLabel: Record<ConnectionStatus, string> = {
   recovering: "Recovering",
   error: "Disconnected",
 };
+
+const terminalQuickKeys = [
+  { data: "\x1b", label: "Esc" },
+  { data: "\t", label: "Tab" },
+  { data: "\x03", label: "^C" },
+  { data: "\x04", label: "^D" },
+  { data: "\x1b[A", icon: "up", label: "Up" },
+  { data: "\x1b[B", icon: "down", label: "Down" },
+] as const;
 
 export function NativeTerminal(props: NativeTerminalProps) {
   const terminalRef = useRef<HTMLDivElement | null>(null);
@@ -67,6 +76,11 @@ export function NativeTerminal(props: NativeTerminalProps) {
     setReconnectAttempt((current) => current + 1);
   }
 
+  function sendQuickKey(data: string) {
+    sendTerminalInput(socketRef.current, data);
+    terminalInstanceRef.current?.focus();
+  }
+
   return (
     <div className="terminal-shell" aria-label="Terminal">
       <div className="terminal-toolbar">
@@ -77,8 +91,37 @@ export function NativeTerminal(props: NativeTerminalProps) {
         </button>
       </div>
       <div className="terminal-screen" ref={terminalRef} />
+      <TerminalQuickKeys disabled={status !== "connected"} onSend={sendQuickKey} />
     </div>
   );
+}
+
+function TerminalQuickKeys(props: { disabled: boolean; onSend: (data: string) => void }) {
+  return (
+    <div className="terminal-quick-keys" aria-label="Terminal quick keys">
+      {terminalQuickKeys.map((key) => (
+        <button
+          key={key.label}
+          disabled={props.disabled}
+          type="button"
+          aria-label={`Send ${key.label}`}
+          onClick={() => props.onSend(key.data)}
+        >
+          {quickKeyContent(key)}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function quickKeyContent(key: (typeof terminalQuickKeys)[number]) {
+  if (!("icon" in key)) {
+    return key.label;
+  }
+  if (key.icon === "up") {
+    return <ArrowUp size={15} aria-hidden="true" />;
+  }
+  return <ArrowDown size={15} aria-hidden="true" />;
 }
 
 function useTerminalMount(
