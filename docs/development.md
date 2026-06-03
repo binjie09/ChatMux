@@ -87,6 +87,15 @@ AI command drafting uses the same OpenAI settings. Drafts capture the selected
 tmux pane for context and return a command, explanation, and risk label. The SPA
 only inserts the draft into the composer; the user must still send it explicitly.
 
+Controlled automation exposes only allowlisted gateway tools. `GET /api/automation/tools`
+lists available tools, and `POST /api/automation/tools/{name}/run` executes one tool with an `arguments` object.
+Tool runs require an operator or admin gateway role and write an
+`automation.tool.ran` audit event. The first tool set includes `hosts.list`,
+`audit.list`, `tmux.sessions.list`, and `tmux.history.capture`. The tmux tools
+accept SSH passwords in request bodies for early local testing, but passwords are
+not persisted and are not written into audit messages. There is intentionally no
+arbitrary shell command tool.
+
 Android internal testing builds require signing material in environment
 variables: `ANDROID_KEYSTORE_PATH`, `ANDROID_KEYSTORE_PASSWORD`,
 `ANDROID_KEY_ALIAS`, and `ANDROID_KEY_PASSWORD`. The script writes the AAB to
