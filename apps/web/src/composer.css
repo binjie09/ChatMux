@@ -1,0 +1,71 @@
+.composer {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 10px;
+  border-top: 1px solid #ded8ca;
+  padding-top: 16px;
+}
+
+.composer-modes {
+  display: inline-grid;
+  grid-template-columns: repeat(3, minmax(58px, auto));
+  overflow: hidden;
+  border: 1px solid #d6cebd;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.composer-modes button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 44px;
+  border: 0;
+  border-right: 1px solid #d6cebd;
+  padding: 0 10px;
+  color: #415049;
+  background: transparent;
+  font-size: 13px;
+}
+
+.composer-modes button:last-child {
+  border-right: 0;
+}
+
+.composer-modes button.active {
+  color: #f7f2e8;
+  background: #17201b;
+}
+
+.composer input {
+  min-width: 0;
+  border: 1px solid #d6cebd;
+  border-radius: 8px;
+  padding: 12px 13px;
+  color: #17201b;
+  background: #ffffff;
+}
+
+.composer > button[type="submit"] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 8px;
+  padding: 11px 14px;
+  color: #0d1712;
+  background: #8fd5b2;
+  font-weight: 700;
+}
+
+@media (max-width: 760px) {
+  .composer {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .composer-modes {
+    grid-column: 1 / -1;
+  }
+}

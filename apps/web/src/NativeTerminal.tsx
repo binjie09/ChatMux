@@ -16,8 +16,8 @@ type NativeTerminalProps = {
 };
 
 export type QueuedTerminalInput = {
+  data: string;
   id: number;
-  text: string;
 };
 
 const statusLabel: Record<ConnectionStatus, string> = {
@@ -176,9 +176,9 @@ function useSessionReset(sessionKey: string, terminalRef: MutableRefObject<Termi
 
 function useQueuedInput(queuedInput: QueuedTerminalInput | null, socketRef: MutableRefObject<WebSocket | null>) {
   useEffect(() => {
-    if (!queuedInput?.text) {
+    if (!queuedInput?.data) {
       return;
     }
-    sendTerminalInput(socketRef.current, queuedInput.text + "\n");
+    sendTerminalInput(socketRef.current, queuedInput.data);
   }, [queuedInput, socketRef]);
 }

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Monitor, Plus, Send, Server, ShieldCheck, Smartphone, TerminalSquare } from "lucide-react";
+import { Monitor, Plus, Server, ShieldCheck, Smartphone, TerminalSquare } from "lucide-react";
 import {
   captureTmuxHistory,
   createHost,
@@ -16,6 +16,7 @@ import {
   type TmuxSession,
 } from "./api";
 import { AuditPanel } from "./AuditPanel";
+import { Composer, type ComposerMode } from "./Composer";
 import { HistoryPanel } from "./HistoryPanel";
 import { HostActions } from "./HostActions";
 import { HostForm } from "./HostForm";
@@ -31,6 +32,7 @@ export function App() {
   const [selectedSessionName, setSelectedSessionName] = useState("");
   const [newSessionName, setNewSessionName] = useState("");
   const [sshPassword, setSSHPassword] = useState("");
+  const [composerMode, setComposerMode] = useState<ComposerMode>("enter");
   const [composerValue, setComposerValue] = useState("");
   const [historyText, setHistoryText] = useState("");
   const [historyQuery, setHistoryQuery] = useState("");
@@ -146,6 +148,11 @@ export function App() {
     }
   }
 
+  function handleComposerSubmit(data: string) {
+    setQueuedInput({ data, id: Date.now() });
+    setComposerValue("");
+  }
+
   const selectedHost = hosts.find((host) => host.id === selectedHostId);
   const selectedSession = sessions.find((session) => session.name === selectedSessionName);
   const terminalSessionKey = selectedHostId && selectedSessionName ? `${selectedHostId}:${selectedSessionName}` : "";
@@ -246,25 +253,13 @@ export function App() {
           </div>
         </div>
 
-        <form className="composer" onSubmit={(event) => {
-          event.preventDefault();
-          if (!composerValue) {
-            return;
-          }
-          setQueuedInput({ id: Date.now(), text: composerValue });
-          setComposerValue("");
-        }}>
-          <input
-            aria-label="Command"
-            placeholder="Send command or terminal input..."
-            value={composerValue}
-            onChange={(event) => setComposerValue(event.target.value)}
-          />
-          <button type="submit">
-            <Send size={18} aria-hidden="true" />
-            Send
-          </button>
-        </form>
+        <Composer
+          mode={composerMode}
+          value={composerValue}
+          onModeChange={setComposerMode}
+          onSubmit={handleComposerSubmit}
+          onValueChange={setComposerValue}
+        />
       </section>
     </main>
   );

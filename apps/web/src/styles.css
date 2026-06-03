@@ -57,7 +57,7 @@ button {
   font-size: 13px;
 }
 
-.primary-action, .composer button {
+.primary-action {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -225,23 +225,6 @@ button {
   border-radius: 8px;
   padding: 9px 12px;
   color: #1c251f;
-  background: #ffffff;
-}
-
-.composer {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 10px;
-  border-top: 1px solid #ded8ca;
-  padding-top: 16px;
-}
-
-.composer input {
-  min-width: 0;
-  border: 1px solid #d6cebd;
-  border-radius: 8px;
-  padding: 12px 13px;
-  color: #17201b;
   background: #ffffff;
 }
 
