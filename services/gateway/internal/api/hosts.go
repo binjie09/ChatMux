@@ -59,6 +59,40 @@ func (s *Server) handleDeleteHost(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func (s *Server) handleUpdateHost(w http.ResponseWriter, r *http.Request) {
+	hostID, ok := routeHostAction(r.URL.Path, "")
+	if !ok {
+		writeError(w, http.StatusNotFound, errors.New("route not found"))
+		return
+	}
+	if _, err := s.visibleHost(r, hostID); err != nil {
+		writeError(w, statusForHostAccessError(err), err)
+		return
+	}
+	var input hoststore.UpdateHostInput
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+	host, err := s.hosts.UpdateHost(r.Context(), hostID, input)
+	if err != nil {
+		writeError(w, statusForHostUpdateError(err), err)
+		return
+	}
+	if err := s.logAudit(r.Context(), hoststore.LogAuditEventInput{Type: "host.updated", HostID: host.ID, Message: "updated host"}); err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, host)
+}
+
+func statusForHostUpdateError(err error) int {
+	if errors.Is(err, hoststore.ErrHostNotFound) || errors.Is(err, errHostNotVisible) {
+		return http.StatusNotFound
+	}
+	return http.StatusBadRequest
+}
+
 type pinHostRequest struct {
 	Pinned bool `json:"pinned"`
 }

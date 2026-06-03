@@ -23,6 +23,8 @@ export type CreateHostInput = {
   username: string;
 };
 
+export type UpdateHostInput = Partial<CreateHostInput>;
+
 export type TmuxSession = {
   id: string;
   name: string;
@@ -82,6 +84,13 @@ export async function listAuditEvents(): Promise<AuditEvent[]> {
 export async function createHost(input: CreateHostInput): Promise<Host> {
   return request<Host>("/api/hosts", {
     method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function updateHost(hostId: string, input: UpdateHostInput): Promise<Host> {
+  return request<Host>(`/api/hosts/${hostId}`, {
+    method: "PATCH",
     body: JSON.stringify(input),
   });
 }

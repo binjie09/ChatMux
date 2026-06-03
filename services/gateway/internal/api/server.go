@@ -81,6 +81,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/hosts", s.handleListHosts)
 	mux.HandleFunc("POST /api/hosts", s.handleCreateHost)
 	mux.HandleFunc("DELETE /api/hosts/{id}", s.handleDeleteHost)
+	mux.HandleFunc("PATCH /api/hosts/{id}", s.handleUpdateHost)
 	mux.HandleFunc("POST /api/hosts/{id}/pin", s.handlePinHost)
 	mux.HandleFunc("POST /api/hosts/{id}/share", s.handleShareHost)
 	mux.HandleFunc("POST /api/hosts/{id}/ssh/probe", s.handleSSHProbe)

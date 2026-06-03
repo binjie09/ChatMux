@@ -68,6 +68,11 @@ const insertHostSQL = `
 INSERT INTO hosts (id, name, hostname, port, username, status, host_key_fingerprint, pinned, owner, shared, created_at, updated_at)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
 
+const updateHostSQL = `
+UPDATE hosts
+SET name = ?, hostname = ?, port = ?, username = ?, updated_at = ?
+WHERE id = ?;`
+
 const trustHostKeySQL = `
 UPDATE hosts
 SET host_key_fingerprint = ?, updated_at = ?

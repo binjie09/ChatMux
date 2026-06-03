@@ -144,6 +144,54 @@ func TestSetHostShared(t *testing.T) {
 	}
 }
 
+func TestUpdateHost(t *testing.T) {
+	store := openTestStore(t)
+	defer closeStore(t, store)
+	ctx := context.Background()
+	created, err := store.CreateHost(ctx, CreateHostInput{Name: "old", Hostname: "old.test", Username: "deploy"})
+	if err != nil {
+		t.Fatalf("CreateHost failed: %v", err)
+	}
+	trusted, err := store.TrustHostKey(ctx, created.ID, "SHA256:abc")
+	if err != nil {
+		t.Fatalf("TrustHostKey failed: %v", err)
+	}
+
+	port := 22001
+	name := "new"
+	updated, err := store.UpdateHost(ctx, created.ID, UpdateHostInput{Name: &name, Port: &port})
+	if err != nil {
+		t.Fatalf("UpdateHost failed: %v", err)
+	}
+	if updated.Name != "new" || updated.Hostname != "old.test" || updated.Port != 22001 {
+		t.Fatalf("unexpected updated host: %#v", updated)
+	}
+	if updated.HostKeyFingerprint != trusted.HostKeyFingerprint || updated.Owner != trusted.Owner {
+		t.Fatalf("expected preserved metadata, got %#v", updated)
+	}
+}
+
+func TestUpdateHostRequiresField(t *testing.T) {
+	store := openTestStore(t)
+	defer closeStore(t, store)
+
+	_, err := store.UpdateHost(context.Background(), "host_missing", UpdateHostInput{})
+	if err == nil {
+		t.Fatal("expected validation error")
+	}
+}
+
+func TestUpdateHostMissing(t *testing.T) {
+	store := openTestStore(t)
+	defer closeStore(t, store)
+	name := "missing"
+
+	_, err := store.UpdateHost(context.Background(), "host_missing", UpdateHostInput{Name: &name})
+	if !errors.Is(err, ErrHostNotFound) {
+		t.Fatalf("expected host not found, got %v", err)
+	}
+}
+
 func TestDeleteHostRemovesMetadata(t *testing.T) {
 	store := openTestStore(t)
 	defer closeStore(t, store)

@@ -106,6 +106,62 @@ func TestPinHostAPI(t *testing.T) {
 	}
 }
 
+func TestUpdateHostAPI(t *testing.T) {
+	server, closeServer := newTestServer(t)
+	defer closeServer()
+	host := createTrustedTestHost(t, server)
+
+	req := httptest.NewRequest(http.MethodPatch, "/api/hosts/"+host.ID, bytes.NewBufferString(`{"name":"renamed","port":2222}`))
+	rec := httptest.NewRecorder()
+	server.Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+	var updated hoststore.Host
+	if err := json.NewDecoder(rec.Body).Decode(&updated); err != nil {
+		t.Fatalf("decode host: %v", err)
+	}
+	if updated.Name != "renamed" || updated.Port != 2222 || updated.Hostname != host.Hostname {
+		t.Fatalf("unexpected updated host: %#v", updated)
+	}
+	if updated.HostKeyFingerprint != host.HostKeyFingerprint {
+		t.Fatalf("expected trusted fingerprint to be preserved, got %#v", updated)
+	}
+	assertHostAuditEvent(t, server, "host.updated")
+}
+
+func TestUpdateHostRejectsEmptyPatch(t *testing.T) {
+	server, closeServer := newTestServer(t)
+	defer closeServer()
+	host := createTestHost(t, server.hosts)
+
+	req := httptest.NewRequest(http.MethodPatch, "/api/hosts/"+host.ID, bytes.NewBufferString(`{}`))
+	rec := httptest.NewRecorder()
+	server.Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d: %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestUpdateHostRequiresVisibility(t *testing.T) {
+	server := newRoleTestServer(t, StaticUser{Name: "ops", Role: RoleOperator, Token: "ops-token"})
+	host := createOwnedHost(t, server.hosts, "owner", "private")
+	if _, err := server.hosts.SetHostShared(testContext(t), host.ID, false); err != nil {
+		t.Fatalf("SetHostShared failed: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPatch, "/api/hosts/"+host.ID, bytes.NewBufferString(`{"name":"blocked"}`))
+	req.Header.Set("Authorization", "Bearer ops-token")
+	rec := httptest.NewRecorder()
+	server.Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("expected 404, got %d: %s", rec.Code, rec.Body.String())
+	}
+}
+
 func TestDeleteHostAPI(t *testing.T) {
 	server, closeServer := newTestServer(t)
 	defer closeServer()

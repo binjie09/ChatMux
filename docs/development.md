@@ -127,6 +127,9 @@ Useful checks:
 ```bash
 curl http://localhost:8080/healthz
 curl http://localhost:8080/api/hosts
+curl -X PATCH http://localhost:8080/api/hosts/{hostID} \
+  -H 'Content-Type: application/json' \
+  -d '{"name":"renamed"}'
 curl -X DELETE http://localhost:8080/api/hosts/{hostID}
 ```
 
