@@ -6,8 +6,9 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "tsc -b && vite build",
-    "desktop:build": "tauri build",
-    "desktop:dev": "tauri dev",
+    "desktop:build": "pnpm desktop:sidecar && tauri build",
+    "desktop:dev": "pnpm desktop:sidecar && tauri dev",
+    "desktop:sidecar": "src-tauri/scripts/build-gateway-sidecar.sh",
     "mobile:add:android": "cap add android",
     "mobile:add:ios": "cap add ios",
     "mobile:sync": "pnpm build && cap sync",

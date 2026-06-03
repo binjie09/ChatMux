@@ -36,6 +36,11 @@ pnpm --filter @muxchat/web desktop:build
 Capacitor generates `ios/` and `android/` under `apps/web` when the add commands
 run. Tauri uses `apps/web/src-tauri`.
 
+The desktop commands build a Go gateway sidecar into
+`apps/web/src-tauri/binaries/` before Tauri starts. The generated binary is
+ignored by git and is named with the Tauri target triple, for example
+`muxchat-gateway-x86_64-unknown-linux-gnu`.
+
 ## Run Gateway
 
 ```bash

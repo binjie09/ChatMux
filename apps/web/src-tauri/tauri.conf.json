@@ -25,6 +25,9 @@
   },
   "bundle": {
     "active": true,
+    "externalBin": [
+      "binaries/muxchat-gateway"
+    ],
     "targets": "all"
   }
 }

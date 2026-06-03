@@ -1,4 +1,5 @@
-const gatewayURL = import.meta.env.VITE_GATEWAY_URL ?? "";
+const desktopGatewayURL = "http://127.0.0.1:19327";
+const gatewayURL = import.meta.env.VITE_GATEWAY_URL ?? defaultGatewayURL();
 
 export type Host = {
   id: string;
@@ -148,4 +149,11 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     throw new Error(await response.text());
   }
   return response.json() as Promise<T>;
+}
+
+function defaultGatewayURL() {
+  if (window.location.protocol === "http:" || window.location.protocol === "https:") {
+    return "";
+  }
+  return desktopGatewayURL;
 }
