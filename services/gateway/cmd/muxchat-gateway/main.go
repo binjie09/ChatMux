@@ -23,9 +23,13 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	policy, err := commandPolicyFromEnv()
+	if err != nil {
+		log.Fatal(err)
+	}
 	server := &http.Server{
 		Addr:              addr,
-		Handler:           api.NewServer(store, api.WithStaticUsers(users)).Handler(),
+		Handler:           api.NewServer(store, api.WithStaticUsers(users), api.WithCommandPolicy(policy)).Handler(),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 
@@ -69,4 +73,21 @@ func staticUsersFromEnv() ([]api.StaticUser, error) {
 		return nil, err
 	}
 	return users, nil
+}
+
+func commandPolicyFromEnv() (api.CommandPolicyConfig, error) {
+	config := api.CommandPolicyConfig{
+		Mode: api.CommandPolicyMode(os.Getenv("MUXCHAT_COMMAND_POLICY_MODE")),
+	}
+	patterns := os.Getenv("MUXCHAT_COMMAND_DENY_PATTERNS_JSON")
+	if patterns == "" {
+		return config, nil
+	}
+	if err := json.Unmarshal([]byte(patterns), &config.DenyPatterns); err != nil {
+		return api.CommandPolicyConfig{}, err
+	}
+	if _, err := api.NewCommandPolicy(config); err != nil {
+		return api.CommandPolicyConfig{}, err
+	}
+	return config, nil
 }

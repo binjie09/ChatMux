@@ -39,3 +39,26 @@ func TestStaticUsersFromEnvRejectsInvalidRole(t *testing.T) {
 		t.Fatal("expected invalid role error")
 	}
 }
+
+func TestCommandPolicyFromEnvParsesPatterns(t *testing.T) {
+	t.Setenv("MUXCHAT_COMMAND_POLICY_MODE", "enforce")
+	t.Setenv("MUXCHAT_COMMAND_DENY_PATTERNS_JSON", `["^rm\\s+-rf"]`)
+
+	config, err := commandPolicyFromEnv()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if config.Mode != api.CommandPolicyEnforce || len(config.DenyPatterns) != 1 || config.DenyPatterns[0] != `^rm\s+-rf` {
+		t.Fatalf("unexpected command policy config: %#v", config)
+	}
+}
+
+func TestCommandPolicyFromEnvRejectsInvalidPattern(t *testing.T) {
+	t.Setenv("MUXCHAT_COMMAND_DENY_PATTERNS_JSON", `["["]`)
+
+	_, err := commandPolicyFromEnv()
+
+	if err == nil {
+		t.Fatal("expected invalid command policy pattern")
+	}
+}

@@ -2,6 +2,7 @@ package api
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"sync"
@@ -21,15 +22,23 @@ var terminalUpgrader = websocket.Upgrader{
 }
 
 type terminalClientMessage struct {
-	Type string `json:"type"`
-	Data string `json:"data,omitempty"`
-	Cols int    `json:"cols,omitempty"`
-	Rows int    `json:"rows,omitempty"`
+	Type   string `json:"type"`
+	Data   string `json:"data,omitempty"`
+	Source string `json:"source,omitempty"`
+	Cols   int    `json:"cols,omitempty"`
+	Rows   int    `json:"rows,omitempty"`
 }
 
 type terminalServerMessage struct {
 	Type string `json:"type"`
 	Data string `json:"data,omitempty"`
+}
+
+type terminalInputContext struct {
+	request  *http.Request
+	conn     *websocket.Conn
+	terminal *sshclient.Terminal
+	token    terminalToken
 }
 
 func (s *Server) handleTerminalWebSocket(w http.ResponseWriter, r *http.Request) {
@@ -63,7 +72,12 @@ func (s *Server) runTerminal(r *http.Request, conn *websocket.Conn, token termin
 	writer := &terminalWriter{conn: conn}
 	go streamTerminalOutput(writer, terminal.Stdout(), done)
 	go streamTerminalOutput(writer, terminal.Stderr(), done)
-	readTerminalInput(conn, terminal)
+	s.readTerminalInput(terminalInputContext{
+		request:  r,
+		conn:     conn,
+		terminal: terminal,
+		token:    token,
+	})
 	close(done)
 }
 
@@ -115,20 +129,53 @@ func streamTerminalOutput(writer *terminalWriter, reader io.Reader, done <-chan 
 	}
 }
 
-func readTerminalInput(conn *websocket.Conn, terminal *sshclient.Terminal) {
+func (s *Server) readTerminalInput(ctx terminalInputContext) {
 	for {
 		var message terminalClientMessage
-		if err := conn.ReadJSON(&message); err != nil {
+		if err := ctx.conn.ReadJSON(&message); err != nil {
 			return
 		}
 		if message.Type == "resize" {
-			_ = terminal.Resize(sshclient.TerminalSize{Cols: message.Cols, Rows: message.Rows})
+			_ = ctx.terminal.Resize(sshclient.TerminalSize{Cols: message.Cols, Rows: message.Rows})
 			continue
 		}
 		if message.Type == "input" {
-			_, _ = io.WriteString(terminal.Stdin(), message.Data)
+			if !s.allowTerminalInput(ctx, message) {
+				continue
+			}
+			_, _ = io.WriteString(ctx.terminal.Stdin(), message.Data)
 		}
 	}
+}
+
+func (s *Server) allowTerminalInput(ctx terminalInputContext, message terminalClientMessage) bool {
+	if message.Source != "composer" {
+		return true
+	}
+	decision := s.commandPolicy.Evaluate(message.Data)
+	if !decision.Allowed {
+		_ = s.logAudit(ctx.request.Context(), hoststore.LogAuditEventInput{
+			Type: "terminal.input.blocked", HostID: ctx.token.HostID, SessionName: ctx.token.SessionName,
+			Message: "blocked composer input by command policy: " + decision.Pattern,
+		})
+		writeTerminalError(ctx.conn, errors.New("command policy blocked composer input"))
+		return false
+	}
+	s.logComposerInput(ctx, message, decision)
+	return true
+}
+
+func (s *Server) logComposerInput(ctx terminalInputContext, message terminalClientMessage, decision commandPolicyDecision) {
+	eventType := "terminal.input.recorded"
+	auditMessage := fmt.Sprintf("recorded composer input (%d bytes)", len(message.Data))
+	if decision.Pattern != "" {
+		eventType = "terminal.input.policy_match"
+		auditMessage = fmt.Sprintf("recorded composer input policy match (%d bytes): %s", len(message.Data), decision.Pattern)
+	}
+	_ = s.logAudit(ctx.request.Context(), hoststore.LogAuditEventInput{
+		Type: eventType, HostID: ctx.token.HostID, SessionName: ctx.token.SessionName,
+		Message: auditMessage,
+	})
 }
 
 func writeTerminalError(conn *websocket.Conn, err error) {

@@ -70,6 +70,14 @@ Session alerts use local notifications on iOS and Android, and browser
 notifications on the web. When enabled, the SPA polls the selected host's tmux
 sessions every 30 seconds and notifies on status changes.
 
+Composer-sent terminal input is recorded as audit metadata only; the raw command
+text is not stored. Native xterm.js keystrokes bypass command policy and audit
+recording so passwords and interactive TUI input stay inside the terminal
+stream. Set `MUXCHAT_COMMAND_DENY_PATTERNS_JSON` to a JSON array of regular
+expressions, for example `["^rm\\s+-rf\\s+/"]`. Policy mode defaults to
+`enforce`; set `MUXCHAT_COMMAND_POLICY_MODE=audit` to log pattern matches while
+still allowing composer input.
+
 Android internal testing builds require signing material in environment
 variables: `ANDROID_KEYSTORE_PATH`, `ANDROID_KEYSTORE_PASSWORD`,
 `ANDROID_KEY_ALIAS`, and `ANDROID_KEY_PASSWORD`. The script writes the AAB to

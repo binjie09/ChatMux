@@ -11,6 +11,7 @@ import (
 
 type Server struct {
 	auth           authConfig
+	commandPolicy  commandPolicy
 	hosts          *hoststore.Store
 	ssh            sshRunner
 	terminalTokens *terminalTokenStore
@@ -33,8 +34,15 @@ func WithStaticUsers(users []StaticUser) ServerOption {
 	}
 }
 
+func WithCommandPolicy(config CommandPolicyConfig) ServerOption {
+	return func(s *Server) {
+		s.commandPolicy = mustCommandPolicy(config)
+	}
+}
+
 func NewServer(hosts *hoststore.Store, options ...ServerOption) *Server {
 	server := &Server{
+		commandPolicy:  mustCommandPolicy(CommandPolicyConfig{}),
 		hosts:          hosts,
 		ssh:            sshclient.NewClient(),
 		terminalTokens: newTerminalTokenStore(),

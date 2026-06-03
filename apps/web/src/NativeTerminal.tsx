@@ -178,6 +178,6 @@ function useQueuedInput(queuedInput: QueuedTerminalInput | null, socketRef: Muta
     if (!queuedInput?.data) {
       return;
     }
-    sendTerminalInput(socketRef.current, queuedInput.data);
+    sendTerminalInput(socketRef.current, queuedInput.data, "composer");
   }, [queuedInput, socketRef]);
 }

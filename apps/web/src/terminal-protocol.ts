@@ -5,9 +5,11 @@ type TerminalMessage = {
   data?: string;
 };
 
-export function sendTerminalInput(socket: WebSocket | null, data: string) {
+export type TerminalInputSource = "composer" | "terminal";
+
+export function sendTerminalInput(socket: WebSocket | null, data: string, source: TerminalInputSource = "terminal") {
   if (socket?.readyState === WebSocket.OPEN) {
-    socket.send(JSON.stringify({ type: "input", data }));
+    socket.send(JSON.stringify({ type: "input", data, source }));
   }
 }
 
