@@ -5,7 +5,13 @@ import "@xterm/xterm/css/xterm.css";
 import "./terminal.css";
 
 type NativeTerminalProps = {
+  queuedInput: QueuedTerminalInput | null;
   webSocketURL: string;
+};
+
+export type QueuedTerminalInput = {
+  id: number;
+  text: string;
 };
 
 type TerminalMessage = {
@@ -13,8 +19,10 @@ type TerminalMessage = {
   data?: string;
 };
 
-export function NativeTerminal({ webSocketURL }: NativeTerminalProps) {
+export function NativeTerminal({ queuedInput, webSocketURL }: NativeTerminalProps) {
   const terminalRef = useRef<HTMLDivElement | null>(null);
+  const socketRef = useRef<WebSocket | null>(null);
+  const terminalInstanceRef = useRef<Terminal | null>(null);
 
   useEffect(() => {
     if (!terminalRef.current) {
@@ -34,6 +42,7 @@ export function NativeTerminal({ webSocketURL }: NativeTerminalProps) {
       },
     });
     const fit = new FitAddon();
+    terminalInstanceRef.current = terminal;
     terminal.loadAddon(fit);
     terminal.open(terminalRef.current);
     fit.fit();
@@ -42,6 +51,7 @@ export function NativeTerminal({ webSocketURL }: NativeTerminalProps) {
     }
 
     const socket = webSocketURL ? new WebSocket(webSocketURL) : null;
+    socketRef.current = socket;
     socket?.addEventListener("open", () => sendResize(socket, terminal.cols, terminal.rows));
     socket?.addEventListener("message", (event) => writeSocketMessage(terminal, event.data));
     const resizeObserver = new ResizeObserver(() => {
@@ -61,11 +71,20 @@ export function NativeTerminal({ webSocketURL }: NativeTerminalProps) {
 
     return () => {
       socket?.close();
+      socketRef.current = null;
+      terminalInstanceRef.current = null;
       inputDisposable.dispose();
       resizeObserver.disconnect();
       terminal.dispose();
     };
   }, [webSocketURL]);
+
+  useEffect(() => {
+    if (!queuedInput?.text) {
+      return;
+    }
+    sendInput(socketRef.current, terminalInstanceRef.current, queuedInput.text + "\n");
+  }, [queuedInput]);
 
   return <div className="terminal-shell" ref={terminalRef} aria-label="Terminal" />;
 }
@@ -79,4 +98,12 @@ function writeSocketMessage(terminal: Terminal, data: string) {
   if (message.data) {
     terminal.write(message.data);
   }
+}
+
+function sendInput(socket: WebSocket | null, terminal: Terminal | null, data: string) {
+  if (socket?.readyState === WebSocket.OPEN) {
+    socket.send(JSON.stringify({ type: "input", data }));
+    return;
+  }
+  terminal?.write(data);
 }

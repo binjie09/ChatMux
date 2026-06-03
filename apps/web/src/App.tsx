@@ -24,7 +24,7 @@ import {
   type TmuxSession,
 } from "./api";
 import { HostForm } from "./HostForm";
-import { NativeTerminal } from "./NativeTerminal";
+import { NativeTerminal, type QueuedTerminalInput } from "./NativeTerminal";
 import "./session-controls.css";
 
 export function App() {
@@ -35,6 +35,8 @@ export function App() {
   const [newSessionName, setNewSessionName] = useState("");
   const [sshPassword, setSSHPassword] = useState("");
   const [terminalURL, setTerminalURL] = useState("");
+  const [composerValue, setComposerValue] = useState("");
+  const [queuedInput, setQueuedInput] = useState<QueuedTerminalInput | null>(null);
   const [showHostForm, setShowHostForm] = useState(false);
   const [error, setError] = useState("");
 
@@ -236,10 +238,22 @@ export function App() {
           </div>
         </header>
 
-        <NativeTerminal webSocketURL={terminalURL} />
+        <NativeTerminal queuedInput={queuedInput} webSocketURL={terminalURL} />
 
-        <form className="composer" onSubmit={(event) => event.preventDefault()}>
-          <input aria-label="Command" placeholder="Send command or terminal input..." />
+        <form className="composer" onSubmit={(event) => {
+          event.preventDefault();
+          if (!composerValue) {
+            return;
+          }
+          setQueuedInput({ id: Date.now(), text: composerValue });
+          setComposerValue("");
+        }}>
+          <input
+            aria-label="Command"
+            placeholder="Send command or terminal input..."
+            value={composerValue}
+            onChange={(event) => setComposerValue(event.target.value)}
+          />
           <button type="submit">
             <Send size={18} aria-hidden="true" />
             Send
