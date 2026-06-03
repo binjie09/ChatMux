@@ -55,7 +55,8 @@ The gateway listens on `http://localhost:8080` by default.
 Set `MUXCHAT_GATEWAY_TOKEN` to require `Authorization: Bearer <token>` on API
 requests. The SPA can store that token from the sidebar; iOS uses Keychain,
 Android uses Android Keystore backed storage, and the web fallback is only for
-local development.
+local development. When biometric unlock is enabled, the stored token is loaded
+only after Face ID, Touch ID, Android biometrics, or device credentials succeed.
 
 Useful checks:
 
