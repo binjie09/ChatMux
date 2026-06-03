@@ -100,8 +100,15 @@ func parseSessionLine(line string) (Session, error) {
 		Windows:   windows,
 		Attached:  parts[3] == "1",
 		UpdatedAt: time.Unix(activity, 0).UTC(),
-		Status:    "unknown",
+		Status:    sessionStatus(parts[3] == "1"),
 	}, nil
+}
+
+func sessionStatus(attached bool) string {
+	if attached {
+		return "running"
+	}
+	return "idle"
 }
 
 func rawListSessionsCommand() string {

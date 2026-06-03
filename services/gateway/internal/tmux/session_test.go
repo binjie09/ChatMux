@@ -20,8 +20,14 @@ func TestParseSessions(t *testing.T) {
 	if !sessions[0].Attached {
 		t.Fatal("expected first session to be attached")
 	}
+	if sessions[0].Status != "running" {
+		t.Fatalf("expected running, got %q", sessions[0].Status)
+	}
 	if sessions[1].Windows != 1 {
 		t.Fatalf("expected one window, got %d", sessions[1].Windows)
+	}
+	if sessions[1].Status != "idle" {
+		t.Fatalf("expected idle, got %q", sessions[1].Status)
 	}
 }
 
