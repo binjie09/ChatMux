@@ -1,9 +1,7 @@
 :root {
   color: #18201c;
   background: #f6f3ec;
-  font-family:
-    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    sans-serif;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
 }
@@ -55,15 +53,11 @@ button {
   color: #8fd5b2;
 }
 
-.brand strong,
-.host-row strong,
-.session-row strong {
+.brand strong, .host-row strong, .session-row strong {
   display: block;
 }
 
-.brand span,
-.host-row small,
-.session-row small {
+.brand span, .host-row small, .session-row small {
   display: block;
   margin-top: 3px;
   color: #9fa9a3;
@@ -234,46 +228,6 @@ button {
   padding: 9px 12px;
   color: #1c251f;
   background: #ffffff;
-}
-
-.transcript {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  min-height: 0;
-  overflow: auto;
-  padding: 8px 0 18px;
-}
-
-.message {
-  max-width: 860px;
-  border: 1px solid #ddd6c7;
-  border-radius: 8px;
-  padding: 12px;
-  background: #ffffff;
-}
-
-.message.command {
-  margin-left: auto;
-  background: #e9f6ef;
-}
-
-.message span {
-  display: block;
-  margin-bottom: 7px;
-  color: #64706a;
-  font-size: 12px;
-  text-transform: uppercase;
-}
-
-.message pre {
-  margin: 0;
-  overflow: auto;
-  white-space: pre-wrap;
-  word-break: break-word;
-  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
-  font-size: 14px;
-  line-height: 1.55;
 }
 
 .composer {

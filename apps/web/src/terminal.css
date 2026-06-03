@@ -1,0 +1,16 @@
+.terminal-shell {
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid #26372f;
+  border-radius: 8px;
+  padding: 10px;
+  background: #101713;
+}
+
+.terminal-shell .xterm {
+  height: 100%;
+}
+
+.terminal-shell .xterm-viewport {
+  scrollbar-color: #496256 #101713;
+}

@@ -11,6 +11,7 @@ import {
   Smartphone,
   TerminalSquare,
 } from "lucide-react";
+import { NativeTerminal } from "./NativeTerminal";
 
 type Host = {
   id: string;
@@ -37,13 +38,6 @@ const sessions: Session[] = [
   { id: "deploy", name: "deploy-check", host: "prod-api-01", status: "waiting", updatedAt: "2 min ago" },
   { id: "train", name: "train-run-42", host: "gpu-worker", status: "running", updatedAt: "12 min ago" },
   { id: "logs", name: "nginx-logs", host: "edge-cache", status: "idle", updatedAt: "1 hr ago" },
-];
-
-const transcript = [
-  { kind: "system", text: "Attached to tmux session prod-api-01:deploy-check" },
-  { kind: "command", text: "kubectl rollout status deployment/api -n prod" },
-  { kind: "output", text: "Waiting for deployment \"api\" rollout to finish: 2 of 6 updated replicas are available..." },
-  { kind: "output", text: "deployment \"api\" successfully rolled out" },
 ];
 
 export function App() {
@@ -138,16 +132,9 @@ export function App() {
           </div>
         </header>
 
-        <div className="transcript">
-          {transcript.map((entry, index) => (
-            <article className={`message ${entry.kind}`} key={`${entry.kind}-${index}`}>
-              <span>{entry.kind}</span>
-              <pre>{entry.text}</pre>
-            </article>
-          ))}
-        </div>
+        <NativeTerminal />
 
-        <form className="composer">
+        <form className="composer" onSubmit={(event) => event.preventDefault()}>
           <input aria-label="Command" placeholder="Send command or terminal input..." />
           <button type="submit">
             <Send size={18} aria-hidden="true" />
