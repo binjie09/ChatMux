@@ -95,6 +95,12 @@ export async function updateHost(hostId: string, input: UpdateHostInput): Promis
   });
 }
 
+export async function deleteHost(hostId: string): Promise<void> {
+  await requestWithoutBody(`/api/hosts/${hostId}`, {
+    method: "DELETE",
+  });
+}
+
 export async function trustHost(hostId: string): Promise<Host> {
   const response = await request<{ host: Host }>(`/api/hosts/${hostId}/ssh/trust`, {
     method: "POST",
@@ -196,6 +202,16 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     throw new Error(await response.text());
   }
   return response.json() as Promise<T>;
+}
+
+async function requestWithoutBody(path: string, init: RequestInit = {}) {
+  const response = await fetch(gatewayURL + path, {
+    ...init,
+    headers: requestHeaders(init.headers),
+  });
+  if (!response.ok) {
+    throw new Error(await response.text());
+  }
 }
 
 function requestHeaders(initHeaders?: HeadersInit) {

@@ -1,11 +1,14 @@
 import { useState } from "react";
 import {
   createHost,
+  deleteHost,
   listHosts,
   setHostPinned,
   setHostShared,
   trustHost,
+  updateHost,
   type CreateHostInput,
+  type Host,
 } from "./api";
 import { errorMessage, sortHosts } from "./view-utils";
 
@@ -17,7 +20,7 @@ type HostWorkspaceOptions = {
 };
 
 export function useHostWorkspace(options: HostWorkspaceOptions) {
-  const [hosts, setHosts] = useState<Awaited<ReturnType<typeof listHosts>>>([]);
+  const [hosts, setHosts] = useState<Host[]>([]);
   const [selectedHostId, setSelectedHostId] = useState("");
   const [showHostForm, setShowHostForm] = useState(false);
   const selectedHost = hosts.find((host) => host.id === selectedHostId);
@@ -34,12 +37,18 @@ export function useHostWorkspace(options: HostWorkspaceOptions) {
   }
 
   async function handleCreateHost(input: CreateHostInput) {
-    const host = await createHost(input);
-    setHosts((current) => sortHosts([host, ...current]));
-    setSelectedHostId(host.id);
-    setShowHostForm(false);
-    options.onHostCreated();
-    options.onAuditRefresh();
+    try {
+      const host = await createHost(input);
+      setHosts((current) => sortHosts([host, ...current]));
+      setSelectedHostId(host.id);
+      setShowHostForm(false);
+      options.onHostCreated();
+      options.onAuditRefresh();
+      options.onError("");
+    } catch (err) {
+      options.onError(errorMessage(err));
+      throw err;
+    }
   }
 
   function handleSelectHost(hostId: string) {
@@ -84,16 +93,51 @@ export function useHostWorkspace(options: HostWorkspaceOptions) {
     }
   }
 
-  function updateHostInList(updated: NonNullable<typeof selectedHost>) {
+  async function handleUpdateHost(hostId: string, input: CreateHostInput) {
+    try {
+      const updated = await updateHost(hostId, input);
+      updateHostInList(updated);
+      options.onAuditRefresh();
+      options.onError("");
+    } catch (err) {
+      options.onError(errorMessage(err));
+      throw err;
+    }
+  }
+
+  async function handleDeleteHost(hostId: string) {
+    try {
+      await deleteHost(hostId);
+      removeHostFromList(hostId);
+      options.onAuditRefresh();
+      options.onError("");
+    } catch (err) {
+      options.onError(errorMessage(err));
+      throw err;
+    }
+  }
+
+  function updateHostInList(updated: Host) {
     setHosts((current) => sortHosts(current.map((host) => (host.id === updated.id ? updated : host))));
+  }
+
+  function removeHostFromList(hostId: string) {
+    const remaining = hosts.filter((host) => host.id !== hostId);
+    setHosts(remaining);
+    if (selectedHostId === hostId) {
+      setSelectedHostId(remaining[0]?.id ?? "");
+      options.onHostSelected();
+    }
   }
 
   return {
     handleCreateHost,
+    handleDeleteHost,
     handleSelectHost,
     handleTogglePin,
     handleToggleShare,
     handleTrustHost,
+    handleUpdateHost,
     hosts,
     refreshHosts,
     selectedHost,

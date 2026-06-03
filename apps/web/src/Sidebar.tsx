@@ -1,18 +1,23 @@
-import { Monitor, Plus, Server, ShieldCheck, Smartphone, TerminalSquare } from "lucide-react";
+import { useState } from "react";
+import { Monitor, Pencil, Plus, Server, ShieldCheck, Smartphone, TerminalSquare, Trash2 } from "lucide-react";
 import { type CreateHostInput, type Host } from "./api";
 import { GatewayTokenControl } from "./GatewayTokenControl";
 import { HostForm } from "./HostForm";
 import { type GatewayTokenState } from "./useGatewayAccessToken";
+import "./sidebar-host-actions.css";
 
 type SidebarProps = {
   error: string;
   hosts: Host[];
   gatewayToken: GatewayTokenState;
   mobileOpen: boolean;
+  selectedHostId: string;
   showHostForm: boolean;
   onCreateHost: (input: CreateHostInput) => Promise<void>;
+  onDeleteHost: (hostId: string) => Promise<void>;
   onSelectHost: (hostId: string) => void;
   onShowHostForm: (show: boolean) => void;
+  onUpdateHost: (hostId: string, input: CreateHostInput) => Promise<void>;
 };
 
 export function Sidebar(props: SidebarProps) {
@@ -37,14 +42,14 @@ export function Sidebar(props: SidebarProps) {
         <h2>Hosts</h2>
         <div className="host-list">
           {props.hosts.map((host) => (
-            <button className="host-row" type="button" key={host.id} onClick={() => props.onSelectHost(host.id)}>
-              <Server size={18} aria-hidden="true" />
-              <span>
-                <strong>{host.name}</strong>
-                <small>{host.username}@{host.hostname}:{host.port} · {host.shared ? "shared" : host.owner}</small>
-              </span>
-              <i className={`status-dot ${host.status}`} />
-            </button>
+            <HostEntry
+              host={host}
+              isSelected={props.selectedHostId === host.id}
+              key={host.id}
+              onDeleteHost={props.onDeleteHost}
+              onSelectHost={props.onSelectHost}
+              onUpdateHost={props.onUpdateHost}
+            />
           ))}
         </div>
         {props.error ? <p className="sidebar-error">{props.error}</p> : null}
@@ -67,4 +72,70 @@ export function Sidebar(props: SidebarProps) {
       </section>
     </aside>
   );
+}
+
+type HostEntryProps = {
+  host: Host;
+  isSelected: boolean;
+  onDeleteHost: (hostId: string) => Promise<void>;
+  onSelectHost: (hostId: string) => void;
+  onUpdateHost: (hostId: string, input: CreateHostInput) => Promise<void>;
+};
+
+function HostEntry(props: HostEntryProps) {
+  const [isEditing, setIsEditing] = useState(false);
+
+  async function handleDeleteHost() {
+    if (!window.confirm(`Delete ${props.host.name}?`)) {
+      return;
+    }
+    await props.onDeleteHost(props.host.id);
+    setIsEditing(false);
+  }
+
+  return (
+    <article className="host-entry">
+      <div className="host-entry-main">
+        <button className={`host-row ${props.isSelected ? "selected" : ""}`} type="button" onClick={() => props.onSelectHost(props.host.id)}>
+          <Server size={18} aria-hidden="true" />
+          <span>
+            <strong>{props.host.name}</strong>
+            <small>{hostAddress(props.host)}</small>
+          </span>
+          <i className={`status-dot ${props.host.status}`} />
+        </button>
+        <div className="host-row-actions">
+          <button className="host-action-button" type="button" onClick={() => setIsEditing(!isEditing)} aria-label={`Edit ${props.host.name}`} title="Edit host">
+            <Pencil size={15} aria-hidden="true" />
+          </button>
+          <button className="host-action-button danger" type="button" onClick={() => void handleDeleteHost()} aria-label={`Delete ${props.host.name}`} title="Delete host">
+            <Trash2 size={15} aria-hidden="true" />
+          </button>
+        </div>
+      </div>
+      {isEditing ? (
+        <HostForm
+          initialValue={hostFormValue(props.host)}
+          onCancel={() => setIsEditing(false)}
+          onSubmit={async (input) => {
+            await props.onUpdateHost(props.host.id, input);
+            setIsEditing(false);
+          }}
+        />
+      ) : null}
+    </article>
+  );
+}
+
+function hostFormValue(host: Host): CreateHostInput {
+  return {
+    hostname: host.hostname,
+    name: host.name,
+    port: host.port,
+    username: host.username,
+  };
+}
+
+function hostAddress(host: Host) {
+  return `${host.username}@${host.hostname}:${host.port} · ${host.shared ? "shared" : host.owner}`;
 }

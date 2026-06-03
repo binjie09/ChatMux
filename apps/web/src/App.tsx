@@ -43,10 +43,12 @@ export function App() {
   const gatewayToken = useGatewayAccessToken(setError);
   const {
     handleCreateHost,
+    handleDeleteHost,
     handleSelectHost,
     handleTogglePin,
     handleToggleShare,
     handleTrustHost,
+    handleUpdateHost,
     hosts,
     refreshHosts,
     selectedHost,
@@ -188,10 +190,13 @@ export function App() {
         gatewayToken={gatewayToken}
         hosts={hosts}
         mobileOpen={mobilePanel === "hosts"}
+        selectedHostId={selectedHostId}
         showHostForm={showHostForm}
         onCreateHost={handleCreateHost}
+        onDeleteHost={handleDeleteHost}
         onSelectHost={handleSelectHost}
         onShowHostForm={setShowHostForm}
+        onUpdateHost={handleUpdateHost}
       />
 
       <SessionList

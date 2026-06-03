@@ -1,9 +1,10 @@
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import { Check, X } from "lucide-react";
 import { type CreateHostInput } from "./api";
 import "./host-form.css";
 
 type HostFormProps = {
+  initialValue?: CreateHostInput;
   onCancel: () => void;
   onSubmit: (input: CreateHostInput) => Promise<void>;
 };
@@ -15,9 +16,13 @@ const initialForm = {
   username: "",
 };
 
-export function HostForm({ onCancel, onSubmit }: HostFormProps) {
-  const [form, setForm] = useState<CreateHostInput>(initialForm);
+export function HostForm({ initialValue, onCancel, onSubmit }: HostFormProps) {
+  const [form, setForm] = useState<CreateHostInput>(initialValue ?? initialForm);
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    setForm(initialValue ?? initialForm);
+  }, [initialValue?.hostname, initialValue?.name, initialValue?.port, initialValue?.username]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -44,10 +49,10 @@ export function HostForm({ onCancel, onSubmit }: HostFormProps) {
         placeholder="Port"
       />
       <div className="host-form-actions">
-        <button type="submit" disabled={submitting} aria-label="Save host">
+        <button type="submit" disabled={submitting} aria-label="Save host" title="Save host">
           <Check size={16} aria-hidden="true" />
         </button>
-        <button type="button" onClick={onCancel} aria-label="Cancel">
+        <button type="button" onClick={onCancel} aria-label="Cancel" title="Cancel">
           <X size={16} aria-hidden="true" />
         </button>
       </div>
