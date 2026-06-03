@@ -4,7 +4,16 @@ import { Terminal } from "@xterm/xterm";
 import "@xterm/xterm/css/xterm.css";
 import "./terminal.css";
 
-export function NativeTerminal() {
+type NativeTerminalProps = {
+  webSocketURL: string;
+};
+
+type TerminalMessage = {
+  type: "output" | "error";
+  data?: string;
+};
+
+export function NativeTerminal({ webSocketURL }: NativeTerminalProps) {
   const terminalRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -28,18 +37,46 @@ export function NativeTerminal() {
     terminal.loadAddon(fit);
     terminal.open(terminalRef.current);
     fit.fit();
-    terminal.write("$ ");
+    if (!webSocketURL) {
+      terminal.write("$ ");
+    }
 
-    const resizeObserver = new ResizeObserver(() => fit.fit());
+    const socket = webSocketURL ? new WebSocket(webSocketURL) : null;
+    socket?.addEventListener("open", () => sendResize(socket, terminal.cols, terminal.rows));
+    socket?.addEventListener("message", (event) => writeSocketMessage(terminal, event.data));
+    const resizeObserver = new ResizeObserver(() => {
+      fit.fit();
+      if (socket?.readyState === WebSocket.OPEN) {
+        sendResize(socket, terminal.cols, terminal.rows);
+      }
+    });
     resizeObserver.observe(terminalRef.current);
-    const inputDisposable = terminal.onData((data) => terminal.write(data));
+    const inputDisposable = terminal.onData((data) => {
+      if (socket?.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify({ type: "input", data }));
+        return;
+      }
+      terminal.write(data);
+    });
 
     return () => {
+      socket?.close();
       inputDisposable.dispose();
       resizeObserver.disconnect();
       terminal.dispose();
     };
-  }, []);
+  }, [webSocketURL]);
 
   return <div className="terminal-shell" ref={terminalRef} aria-label="Terminal" />;
+}
+
+function sendResize(socket: WebSocket, cols: number, rows: number) {
+  socket.send(JSON.stringify({ type: "resize", cols, rows }));
+}
+
+function writeSocketMessage(terminal: Terminal, data: string) {
+  const message = JSON.parse(data) as TerminalMessage;
+  if (message.data) {
+    terminal.write(message.data);
+  }
 }

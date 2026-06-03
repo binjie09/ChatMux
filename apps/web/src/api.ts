@@ -26,6 +26,11 @@ export type TmuxSession = {
   status: "idle" | "running" | "waiting" | "failed" | "unknown";
 };
 
+type TerminalTokenResponse = {
+  token: string;
+  expiresIn: number;
+};
+
 export async function listHosts(): Promise<Host[]> {
   return request<Host[]>("/api/hosts");
 }
@@ -49,6 +54,23 @@ export async function listTmuxSessions(hostId: string, password: string): Promis
     method: "POST",
     body: JSON.stringify({ password }),
   });
+}
+
+export async function createTerminalToken(hostId: string, sessionName: string, password: string): Promise<string> {
+  const response = await request<TerminalTokenResponse>(`/api/hosts/${hostId}/tmux/sessions/${sessionName}/terminal-token`, {
+    method: "POST",
+    body: JSON.stringify({ password }),
+  });
+  return response.token;
+}
+
+export function terminalWebSocketURL(token: string) {
+  const url = new URL(gatewayURL);
+  url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
+  url.pathname = "/api/terminal";
+  url.search = "";
+  url.searchParams.set("token", token);
+  return url.toString();
 }
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {

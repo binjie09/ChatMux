@@ -12,7 +12,16 @@ import {
   Smartphone,
   TerminalSquare,
 } from "lucide-react";
-import { createHost, listHosts, listTmuxSessions, trustHost, type Host, type TmuxSession } from "./api";
+import {
+  createHost,
+  createTerminalToken,
+  listHosts,
+  listTmuxSessions,
+  terminalWebSocketURL,
+  trustHost,
+  type Host,
+  type TmuxSession,
+} from "./api";
 import { HostForm } from "./HostForm";
 import { NativeTerminal } from "./NativeTerminal";
 import "./session-controls.css";
@@ -23,6 +32,7 @@ export function App() {
   const [selectedHostId, setSelectedHostId] = useState<string>("");
   const [selectedSessionName, setSelectedSessionName] = useState("");
   const [sshPassword, setSSHPassword] = useState("");
+  const [terminalURL, setTerminalURL] = useState("");
   const [showHostForm, setShowHostForm] = useState(false);
   const [error, setError] = useState("");
 
@@ -64,6 +74,21 @@ export function App() {
       const nextSessions = await listTmuxSessions(selectedHostId, sshPassword);
       setSessions(nextSessions);
       setSelectedSessionName((current) => current || nextSessions[0]?.name || "");
+      setTerminalURL("");
+      setError("");
+    } catch (err) {
+      setError(errorMessage(err));
+    }
+  }
+
+  async function handleOpenSession(sessionName: string) {
+    if (!selectedHostId || !sshPassword) {
+      return;
+    }
+    try {
+      const token = await createTerminalToken(selectedHostId, sessionName, sshPassword);
+      setSelectedSessionName(sessionName);
+      setTerminalURL(terminalWebSocketURL(token));
       setError("");
     } catch (err) {
       setError(errorMessage(err));
@@ -152,7 +177,7 @@ export function App() {
         </form>
 
         {sessions.map((session) => (
-          <button className="session-row" type="button" key={session.id} onClick={() => setSelectedSessionName(session.name)}>
+          <button className="session-row" type="button" key={session.id} onClick={() => void handleOpenSession(session.name)}>
             <Activity size={18} aria-hidden="true" />
             <span>
               <strong>{session.name}</strong>
@@ -183,7 +208,7 @@ export function App() {
           </div>
         </header>
 
-        <NativeTerminal />
+        <NativeTerminal webSocketURL={terminalURL} />
 
         <form className="composer" onSubmit={(event) => event.preventDefault()}>
           <input aria-label="Command" placeholder="Send command or terminal input..." />
