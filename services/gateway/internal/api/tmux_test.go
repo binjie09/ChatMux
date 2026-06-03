@@ -58,6 +58,9 @@ func TestCreateTmuxSessionAPI(t *testing.T) {
 	if !strings.Contains(rec.Body.String(), "new-work") {
 		t.Fatalf("expected new session, got %s", rec.Body.String())
 	}
+	if strings.Contains(rec.Body.String(), `"tags":null`) {
+		t.Fatalf("expected empty tags array, got %s", rec.Body.String())
+	}
 }
 
 func TestCreateTmuxSessionRejectsUnsafeName(t *testing.T) {

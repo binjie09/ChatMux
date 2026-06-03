@@ -129,6 +129,7 @@ func parseSessionLine(line string) (Session, error) {
 		Windows:   windows,
 		Attached:  attached,
 		UpdatedAt: time.Unix(activity, 0).UTC(),
+		Tags:      []string{},
 		Status: sessionStatus(sessionStatusInput{
 			attached:       attached,
 			currentCommand: parts[5],

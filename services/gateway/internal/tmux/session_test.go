@@ -29,6 +29,9 @@ func TestParseSessions(t *testing.T) {
 	if sessions[1].Status != SessionStatusIdle {
 		t.Fatalf("expected idle, got %q", sessions[1].Status)
 	}
+	if sessions[1].Tags == nil {
+		t.Fatal("expected empty tags slice")
+	}
 }
 
 func TestParseSessionsDetectsPaneStatuses(t *testing.T) {

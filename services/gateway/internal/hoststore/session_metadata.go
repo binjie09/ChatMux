@@ -89,6 +89,9 @@ func scanSessionMetadata(row hostScanner) (SessionMetadata, error) {
 	if err := json.Unmarshal([]byte(tagsJSON), &metadata.Tags); err != nil {
 		return SessionMetadata{}, fmt.Errorf("decode session tags: %w", err)
 	}
+	if metadata.Tags == nil {
+		metadata.Tags = []string{}
+	}
 	return metadata, nil
 }
 
