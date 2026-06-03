@@ -8,5 +8,6 @@ coverage
 *.tsbuildinfo
 *.db
 /services/gateway/muxchat-gateway
+/apps/web/build/
 /apps/web/src-tauri/binaries/muxchat-gateway-*
 !/apps/web/src-tauri/binaries/.gitkeep

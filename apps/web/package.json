@@ -11,6 +11,8 @@
     "desktop:sidecar": "src-tauri/scripts/build-gateway-sidecar.sh",
     "mobile:add:android": "cap add android",
     "mobile:add:ios": "cap add ios",
+    "mobile:build:android-internal": "scripts/build-android-internal.sh",
+    "mobile:build:ios-testflight": "scripts/build-ios-testflight.sh",
     "mobile:sync": "pnpm build && cap sync",
     "typecheck": "tsc -b"
   },

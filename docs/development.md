@@ -30,6 +30,8 @@ The native shells reuse the Web SPA build in `apps/web`.
 pnpm --filter @muxchat/web mobile:add:ios
 pnpm --filter @muxchat/web mobile:add:android
 pnpm --filter @muxchat/web mobile:sync
+pnpm --filter @muxchat/web mobile:build:android-internal
+pnpm --filter @muxchat/web mobile:build:ios-testflight
 pnpm --filter @muxchat/web desktop:dev
 pnpm --filter @muxchat/web desktop:build
 ```
@@ -60,6 +62,15 @@ only after Face ID, Touch ID, Android biometrics, or device credentials succeed.
 Session alerts use local notifications on iOS and Android, and browser
 notifications on the web. When enabled, the SPA polls the selected host's tmux
 sessions every 30 seconds and notifies on status changes.
+
+Android internal testing builds require signing material in environment
+variables: `ANDROID_KEYSTORE_PATH`, `ANDROID_KEYSTORE_PASSWORD`,
+`ANDROID_KEY_ALIAS`, and `ANDROID_KEY_PASSWORD`. The script writes the AAB to
+`apps/web/android/app/build/outputs/bundle/release/app-release.aab`.
+
+TestFlight builds require macOS with Xcode. `MUXCHAT_IOS_TEAM_ID` can be set for
+automatic signing, and `MUXCHAT_IOS_EXPORT_OPTIONS_PLIST` can override the
+default export options at `apps/web/scripts/ios-export-options.plist`.
 
 Useful checks:
 
