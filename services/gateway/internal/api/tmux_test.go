@@ -39,6 +39,44 @@ func TestListTmuxSessionsAPI(t *testing.T) {
 	}
 }
 
+func TestListTmuxSessionsAcceptsCredentialToken(t *testing.T) {
+	server, closeServer := newTestServer(t)
+	defer closeServer()
+	runner := &fakeSSHRunner{output: "$0\tdeploy\t1\t0\t1710000000\tzsh\t0\t\n"}
+	server.ssh = runner
+	host := createTrustedTestHost(t, server)
+	token := server.credentialTokens.Create(credentialToken{
+		HostID: host.ID, Password: "secret", Principal: "local-dev",
+	})
+
+	body := bytes.NewBufferString(`{"credentialToken":"` + token + `"}`)
+	req := httptest.NewRequest(http.MethodPost, "/api/hosts/"+host.ID+"/tmux/sessions/list", body)
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+	if runner.password != "secret" {
+		t.Fatalf("expected credential token password, got %q", runner.password)
+	}
+}
+
+func TestListTmuxSessionsRejectsInvalidCredentialToken(t *testing.T) {
+	server, closeServer := newTestServer(t)
+	defer closeServer()
+	host := createTrustedTestHost(t, server)
+
+	body := bytes.NewBufferString(`{"credentialToken":"missing"}`)
+	req := httptest.NewRequest(http.MethodPost, "/api/hosts/"+host.ID+"/tmux/sessions/list", body)
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("expected 401, got %d: %s", rec.Code, rec.Body.String())
+	}
+}
+
 func TestCreateTmuxSessionAPI(t *testing.T) {
 	server, closeServer := newTestServer(t)
 	defer closeServer()

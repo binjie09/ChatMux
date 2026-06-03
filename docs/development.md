@@ -146,7 +146,9 @@ services/gateway/scripts/test-ssh-fixture.sh
 ## Remote SSH Test Flow
 
 The gateway currently accepts passwords in request bodies for early local
-testing. Do not commit credentials.
+testing. Prefer issuing a short-lived credential token once per host connection
+and passing `credentialToken` to tmux, history, summary, command draft, and
+terminal-token endpoints. Do not commit credentials.
 
 ```bash
 curl -X POST http://localhost:8080/api/hosts \
@@ -155,13 +157,17 @@ curl -X POST http://localhost:8080/api/hosts \
 
 curl -X POST http://localhost:8080/api/hosts/{hostID}/ssh/trust
 
+curl -X POST http://localhost:8080/api/hosts/{hostID}/ssh/credentials \
+  -H 'Content-Type: application/json' \
+  -d '{"password":"<password>"}'
+
 curl -X POST http://localhost:8080/api/hosts/{hostID}/ssh/probe \
   -H 'Content-Type: application/json' \
   -d '{"password":"<password>"}'
 
 curl -X POST http://localhost:8080/api/hosts/{hostID}/tmux/sessions/list \
   -H 'Content-Type: application/json' \
-  -d '{"password":"<password>"}'
+  -d '{"credentialToken":"<token>"}'
 ```
 
 ## Verify

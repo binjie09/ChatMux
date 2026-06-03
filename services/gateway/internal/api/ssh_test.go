@@ -13,12 +13,14 @@ import (
 )
 
 type fakeSSHRunner struct {
-	command string
-	output  string
+	command  string
+	output   string
+	password string
 }
 
-func (r *fakeSSHRunner) Run(_ context.Context, _ sshclient.HostConfig, _ sshclient.PasswordCredential, command string) ([]byte, error) {
+func (r *fakeSSHRunner) Run(_ context.Context, _ sshclient.HostConfig, credential sshclient.PasswordCredential, command string) ([]byte, error) {
 	r.command = command
+	r.password = credential.Password
 	if r.output != "" {
 		return []byte(r.output), nil
 	}
@@ -71,6 +73,47 @@ func TestTrustHostKeyAPI(t *testing.T) {
 	}
 	if !strings.Contains(rec.Body.String(), "SHA256:test") {
 		t.Fatalf("expected fingerprint, got %s", rec.Body.String())
+	}
+}
+
+func TestCreateSSHCredentialTokenAPI(t *testing.T) {
+	server, closeServer := newTestServer(t)
+	defer closeServer()
+	host := createTestHost(t, server.hosts)
+
+	body := bytes.NewBufferString(`{"password":"secret"}`)
+	req := httptest.NewRequest(http.MethodPost, "/api/hosts/"+host.ID+"/ssh/credentials", body)
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("expected 201, got %d: %s", rec.Code, rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), "token") {
+		t.Fatalf("expected token response, got %s", rec.Body.String())
+	}
+	assertHostAuditEvent(t, server, "ssh.credential.created")
+}
+
+func TestSSHCredentialTokenRequiresPrincipal(t *testing.T) {
+	server := newRoleTestServer(t,
+		StaticUser{Name: "owner", Role: RoleOperator, Token: "owner-token"},
+		StaticUser{Name: "other", Role: RoleOperator, Token: "other-token"},
+	)
+	server.ssh = &fakeSSHRunner{output: "$0\tdeploy\t1\t0\t1710000000\tzsh\t0\t\n"}
+	host := createOwnedHost(t, server.hosts, "owner", "shared")
+	token := server.credentialTokens.Create(credentialToken{
+		HostID: host.ID, Password: "secret", Principal: "owner",
+	})
+
+	body := bytes.NewBufferString(`{"credentialToken":"` + token + `"}`)
+	req := httptest.NewRequest(http.MethodPost, "/api/hosts/"+host.ID+"/tmux/sessions/list", body)
+	req.Header.Set("Authorization", "Bearer other-token")
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("expected 401, got %d: %s", rec.Code, rec.Body.String())
 	}
 }
 

@@ -11,8 +11,9 @@ import (
 )
 
 type tmuxCommandDraftRequest struct {
-	Password string `json:"password"`
-	Prompt   string `json:"prompt"`
+	CredentialToken string `json:"credentialToken"`
+	Password        string `json:"password"`
+	Prompt          string `json:"prompt"`
 }
 
 type draftSessionCommandInput struct {
@@ -43,8 +44,13 @@ func (s *Server) handleDraftTmuxCommand(w http.ResponseWriter, r *http.Request) 
 		writeError(w, statusForHostAccessError(err), err)
 		return
 	}
+	password, err := s.sshPasswordForRequest(r, hostID, input.credential())
+	if err != nil {
+		writeError(w, statusForCredentialError(err), err)
+		return
+	}
 	draft, err := s.draftSessionCommand(draftSessionCommandInput{
-		host: host, password: input.Password, prompt: input.Prompt, request: r, sessionName: sessionName,
+		host: host, password: password, prompt: input.Prompt, request: r, sessionName: sessionName,
 	})
 	if err != nil {
 		writeError(w, statusForDraftError(err), err)
@@ -62,13 +68,17 @@ func decodeCommandDraftRequest(r *http.Request) (tmuxCommandDraftRequest, error)
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		return tmuxCommandDraftRequest{}, err
 	}
-	if input.Password == "" {
-		return tmuxCommandDraftRequest{}, errors.New("password is required")
+	if input.Password == "" && input.CredentialToken == "" {
+		return tmuxCommandDraftRequest{}, errCredentialRequired
 	}
 	if input.Prompt == "" {
 		return tmuxCommandDraftRequest{}, errEmptyCommandGoal
 	}
 	return input, nil
+}
+
+func (r tmuxCommandDraftRequest) credential() sshCredentialRequest {
+	return sshCredentialRequest{CredentialToken: r.CredentialToken, Password: r.Password}
 }
 
 func (s *Server) draftSessionCommand(input draftSessionCommandInput) (CommandDraft, error) {

@@ -10,13 +10,14 @@ import (
 )
 
 type Server struct {
-	auth           authConfig
-	commandPolicy  commandPolicy
-	drafter        CommandDrafter
-	hosts          *hoststore.Store
-	ssh            sshRunner
-	summarizer     TranscriptSummarizer
-	terminalTokens *terminalTokenStore
+	auth             authConfig
+	commandPolicy    commandPolicy
+	credentialTokens *credentialTokenStore
+	drafter          CommandDrafter
+	hosts            *hoststore.Store
+	ssh              sshRunner
+	summarizer       TranscriptSummarizer
+	terminalTokens   *terminalTokenStore
 }
 
 type ServerOption func(*Server)
@@ -60,10 +61,11 @@ func WithTranscriptSummarizer(summarizer TranscriptSummarizer) ServerOption {
 
 func NewServer(hosts *hoststore.Store, options ...ServerOption) *Server {
 	server := &Server{
-		commandPolicy:  mustCommandPolicy(CommandPolicyConfig{}),
-		hosts:          hosts,
-		ssh:            sshclient.NewClient(),
-		terminalTokens: newTerminalTokenStore(),
+		commandPolicy:    mustCommandPolicy(CommandPolicyConfig{}),
+		credentialTokens: newCredentialTokenStore(),
+		hosts:            hosts,
+		ssh:              sshclient.NewClient(),
+		terminalTokens:   newTerminalTokenStore(),
 	}
 	for _, option := range options {
 		option(server)
@@ -84,6 +86,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("PATCH /api/hosts/{id}", s.handleUpdateHost)
 	mux.HandleFunc("POST /api/hosts/{id}/pin", s.handlePinHost)
 	mux.HandleFunc("POST /api/hosts/{id}/share", s.handleShareHost)
+	mux.HandleFunc("POST /api/hosts/{id}/ssh/credentials", s.handleCreateSSHCredential)
 	mux.HandleFunc("POST /api/hosts/{id}/ssh/probe", s.handleSSHProbe)
 	mux.HandleFunc("POST /api/hosts/{id}/ssh/trust", s.handleTrustHostKey)
 	mux.HandleFunc("POST /api/hosts/{id}/tmux/sessions/list", s.handleListTmuxSessions)

@@ -10,7 +10,8 @@ import (
 )
 
 type createTerminalTokenRequest struct {
-	Password string `json:"password"`
+	CredentialToken string `json:"credentialToken"`
+	Password        string `json:"password"`
 }
 
 type createTerminalTokenResponse struct {
@@ -34,19 +35,20 @@ func (s *Server) handleCreateTerminalToken(w http.ResponseWriter, r *http.Reques
 		writeError(w, http.StatusBadRequest, err)
 		return
 	}
-	if input.Password == "" {
-		writeError(w, http.StatusBadRequest, errors.New("password is required"))
-		return
-	}
 	if err := s.ensureHostExists(r, hostID); err != nil {
 		writeError(w, statusForHostError(err), err)
+		return
+	}
+	password, err := s.sshPasswordForRequest(r, hostID, input.credential())
+	if err != nil {
+		writeError(w, statusForCredentialError(err), err)
 		return
 	}
 
 	id := s.terminalTokens.Create(terminalToken{
 		HostID:      hostID,
 		SessionName: sessionName,
-		Password:    input.Password,
+		Password:    password,
 	})
 	if err := s.logAudit(r.Context(), hoststore.LogAuditEventInput{Type: "terminal.token.created", HostID: hostID, SessionName: sessionName, Message: "created terminal token"}); err != nil {
 		writeError(w, http.StatusInternalServerError, err)
@@ -56,6 +58,10 @@ func (s *Server) handleCreateTerminalToken(w http.ResponseWriter, r *http.Reques
 		Token:     id,
 		ExpiresIn: int(terminalTokenTTL.Seconds()),
 	})
+}
+
+func (r createTerminalTokenRequest) credential() sshCredentialRequest {
+	return sshCredentialRequest{CredentialToken: r.CredentialToken, Password: r.Password}
 }
 
 func (s *Server) ensureHostExists(r *http.Request, hostID string) error {

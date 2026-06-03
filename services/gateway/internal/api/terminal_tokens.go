@@ -1,8 +1,6 @@
 package api
 
 import (
-	"crypto/rand"
-	"encoding/hex"
 	"sync"
 	"time"
 )
@@ -29,7 +27,7 @@ func (s *terminalTokenStore) Create(token terminalToken) string {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	id := newTerminalToken()
+	id := newOpaqueToken()
 	token.ExpiresAt = time.Now().Add(terminalTokenTTL)
 	s.tokens[id] = token
 	return id
@@ -45,12 +43,4 @@ func (s *terminalTokenStore) Consume(id string) (terminalToken, bool) {
 		return terminalToken{}, false
 	}
 	return token, true
-}
-
-func newTerminalToken() string {
-	bytes := make([]byte, 18)
-	if _, err := rand.Read(bytes); err != nil {
-		panic(err)
-	}
-	return hex.EncodeToString(bytes)
 }

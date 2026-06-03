@@ -26,6 +26,27 @@ func TestCreateTerminalTokenAPI(t *testing.T) {
 	}
 }
 
+func TestCreateTerminalTokenAcceptsCredentialToken(t *testing.T) {
+	server, closeServer := newTestServer(t)
+	defer closeServer()
+	host := createTrustedTestHost(t, server)
+	credentialID := server.credentialTokens.Create(credentialToken{
+		HostID: host.ID, Password: "secret", Principal: "local-dev",
+	})
+
+	body := bytes.NewBufferString(`{"credentialToken":"` + credentialID + `"}`)
+	req := httptest.NewRequest(http.MethodPost, "/api/hosts/"+host.ID+"/tmux/sessions/deploy/terminal-token", body)
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("expected 201, got %d: %s", rec.Code, rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), "token") {
+		t.Fatalf("expected token response, got %s", rec.Body.String())
+	}
+}
+
 func TestTerminalTokenIsSingleUse(t *testing.T) {
 	store := newTerminalTokenStore()
 	id := store.Create(terminalToken{HostID: "host", SessionName: "session", Password: "secret"})

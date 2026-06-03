@@ -11,16 +11,19 @@ import (
 )
 
 type tmuxListRequest struct {
-	Password string `json:"password"`
+	CredentialToken string `json:"credentialToken"`
+	Password        string `json:"password"`
 }
 
 type tmuxCreateRequest struct {
-	Name     string `json:"name"`
-	Password string `json:"password"`
+	CredentialToken string `json:"credentialToken"`
+	Name            string `json:"name"`
+	Password        string `json:"password"`
 }
 
 type tmuxHistoryRequest struct {
-	Password string `json:"password"`
+	CredentialToken string `json:"credentialToken"`
+	Password        string `json:"password"`
 }
 
 type tmuxHistoryResponse struct {
@@ -47,18 +50,19 @@ func (s *Server) handleListTmuxSessions(w http.ResponseWriter, r *http.Request) 
 		writeError(w, http.StatusBadRequest, err)
 		return
 	}
-	if input.Password == "" {
-		writeError(w, http.StatusBadRequest, errors.New("password is required"))
-		return
-	}
 
 	host, err := s.visibleHost(r, hostID)
 	if err != nil {
 		writeError(w, statusForHostAccessError(err), err)
 		return
 	}
+	password, err := s.sshPasswordForRequest(r, hostID, input.credential())
+	if err != nil {
+		writeError(w, statusForCredentialError(err), err)
+		return
+	}
 
-	output, err := s.ssh.Run(r.Context(), hostToSSHConfig(host), sshclient.PasswordCredential{Password: input.Password}, tmux.ListSessionsCommand())
+	output, err := s.ssh.Run(r.Context(), hostToSSHConfig(host), sshclient.PasswordCredential{Password: password}, tmux.ListSessionsCommand())
 	if err != nil {
 		writeError(w, http.StatusBadGateway, err)
 		return
@@ -92,17 +96,18 @@ func (s *Server) handleCreateTmuxSession(w http.ResponseWriter, r *http.Request)
 		writeError(w, http.StatusBadRequest, err)
 		return
 	}
-	if input.Password == "" {
-		writeError(w, http.StatusBadRequest, errors.New("password is required"))
-		return
-	}
 
 	command, err := tmux.CreateSessionCommand(input.Name)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err)
 		return
 	}
-	sessions, err := s.runTmuxListCommand(r, hostID, input.Password, command)
+	password, err := s.sshPasswordForRequest(r, hostID, input.credential())
+	if err != nil {
+		writeError(w, statusForCredentialError(err), err)
+		return
+	}
+	sessions, err := s.runTmuxListCommand(r, hostID, password, command)
 	if err != nil {
 		writeError(w, http.StatusBadGateway, err)
 		return
@@ -131,17 +136,18 @@ func (s *Server) handleCaptureTmuxHistory(w http.ResponseWriter, r *http.Request
 		writeError(w, http.StatusBadRequest, err)
 		return
 	}
-	if input.Password == "" {
-		writeError(w, http.StatusBadRequest, errors.New("password is required"))
-		return
-	}
 
 	command, err := tmux.CapturePaneCommand(sessionName)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err)
 		return
 	}
-	output, err := s.runTmuxCommand(r, hostID, input.Password, command)
+	password, err := s.sshPasswordForRequest(r, hostID, input.credential())
+	if err != nil {
+		writeError(w, statusForCredentialError(err), err)
+		return
+	}
+	output, err := s.runTmuxCommand(r, hostID, password, command)
 	if err != nil {
 		writeError(w, http.StatusBadGateway, err)
 		return
@@ -174,8 +180,13 @@ func (s *Server) handleSummarizeTmuxHistory(w http.ResponseWriter, r *http.Reque
 		writeError(w, statusForHostAccessError(err), err)
 		return
 	}
+	password, err := s.sshPasswordForRequest(r, hostID, input.credential())
+	if err != nil {
+		writeError(w, statusForCredentialError(err), err)
+		return
+	}
 	summary, err := s.summarizeSessionHistory(summarizeSessionRequest{
-		host: host, password: input.Password, request: r, sessionName: sessionName,
+		host: host, password: password, request: r, sessionName: sessionName,
 	})
 	if err != nil {
 		writeError(w, statusForSummaryError(err), err)
@@ -194,7 +205,9 @@ func decodeTmuxHistoryRequest(r *http.Request) (tmuxHistoryRequest, error) {
 		return tmuxHistoryRequest{}, err
 	}
 	if input.Password == "" {
-		return tmuxHistoryRequest{}, errors.New("password is required")
+		if input.CredentialToken == "" {
+			return tmuxHistoryRequest{}, errCredentialRequired
+		}
 	}
 	return input, nil
 }
@@ -211,6 +224,18 @@ func (s *Server) summarizeSessionHistory(input summarizeSessionRequest) (Transcr
 	return s.summarizer.Summarize(input.request.Context(), TranscriptSummaryInput{
 		HostName: input.host.Name, SessionName: input.sessionName, Transcript: string(output),
 	})
+}
+
+func (r tmuxListRequest) credential() sshCredentialRequest {
+	return sshCredentialRequest{CredentialToken: r.CredentialToken, Password: r.Password}
+}
+
+func (r tmuxCreateRequest) credential() sshCredentialRequest {
+	return sshCredentialRequest{CredentialToken: r.CredentialToken, Password: r.Password}
+}
+
+func (r tmuxHistoryRequest) credential() sshCredentialRequest {
+	return sshCredentialRequest{CredentialToken: r.CredentialToken, Password: r.Password}
 }
 
 func statusForSummaryError(err error) int {
