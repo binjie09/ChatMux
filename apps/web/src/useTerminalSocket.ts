@@ -37,7 +37,9 @@ export function useTerminalSocket(options: TerminalSocketOptions) {
         bindTerminalSocket(options, socket, () => active, connect, (timer) => {
           reconnectTimer = timer;
         });
+        return;
       }
+      reconnectTimer = scheduleReconnect(() => active, connect);
     };
 
     void connect("connecting");
@@ -50,6 +52,16 @@ export function useTerminalSocket(options: TerminalSocketOptions) {
       }
     };
   }, [options.reconnectAttempt, options.sessionKey]);
+}
+
+function scheduleReconnect(
+  isActive: () => boolean,
+  connect: (status: ConnectionStatus) => Promise<void>,
+) {
+  if (!isActive()) {
+    return 0;
+  }
+  return window.setTimeout(() => void connect("recovering"), reconnectDelayMs);
 }
 
 async function openTerminalSocket(
@@ -95,7 +107,7 @@ function bindTerminalSocket(
     }
     options.socketRef.current = null;
     options.setStatus("recovering");
-    setReconnectTimer(window.setTimeout(() => void connect("recovering"), reconnectDelayMs));
+    setReconnectTimer(scheduleReconnect(isActive, connect));
   });
 }
 
