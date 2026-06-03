@@ -84,8 +84,9 @@ function SessionRow({ session, onOpenSession }: { session: TmuxSession; onOpenSe
     <button className="session-row" type="button" onClick={() => onOpenSession(session.name)}>
       <Activity size={18} aria-hidden="true" />
       <span>
-        <strong>{session.name}</strong>
-        <small>{session.windows} windows · {formatTime(session.updatedAt)}</small>
+        <strong>{session.title || session.name}</strong>
+        <small>{session.name} · {session.windows} windows · {formatTime(session.updatedAt)}</small>
+        {session.tags.length > 0 ? <i>{session.tags.join(", ")}</i> : null}
       </span>
       <em className={session.status}>{session.status}</em>
       <ChevronRight size={17} aria-hidden="true" />

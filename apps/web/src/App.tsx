@@ -8,6 +8,7 @@ import {
   listAuditEvents,
   listHosts,
   listTmuxSessions,
+  saveSessionMetadata,
   setHostPinned,
   terminalWebSocketURL,
   trustHost,
@@ -22,6 +23,7 @@ import { HistoryPanel } from "./HistoryPanel";
 import { HostActions } from "./HostActions";
 import { HostForm } from "./HostForm";
 import { NativeTerminal, type QueuedTerminalInput } from "./NativeTerminal";
+import { SessionMetadataEditor } from "./SessionMetadataEditor";
 import { SessionList } from "./SessionList";
 import { errorMessage, sortHosts } from "./view-utils";
 
@@ -158,6 +160,22 @@ export function App() {
     setComposerValue("");
   }
 
+  async function handleSaveSessionMetadata(title: string, tags: string[]) {
+    if (!selectedHostId || !selectedSessionName) {
+      return;
+    }
+    try {
+      const metadata = await saveSessionMetadata(selectedHostId, selectedSessionName, title, tags);
+      setSessions((current) => current.map((session) => (
+        session.name === metadata.sessionName ? { ...session, tags: metadata.tags, title: metadata.title } : session
+      )));
+      void refreshAuditEvents();
+      setError("");
+    } catch (err) {
+      setError(errorMessage(err));
+    }
+  }
+
   const selectedHost = hosts.find((host) => host.id === selectedHostId);
   const selectedSession = sessions.find((session) => session.name === selectedSessionName);
   const terminalSessionKey = selectedHostId && selectedSessionName ? `${selectedHostId}:${selectedSessionName}` : "";
@@ -236,7 +254,8 @@ export function App() {
         <header className="conversation-header">
           <div>
             <p>{selectedHost?.name ?? "No host"}</p>
-            <h2>{selectedSession?.name ?? "Terminal"}</h2>
+            <h2>{selectedSession?.title || selectedSession?.name || "Terminal"}</h2>
+            <SessionMetadataEditor session={selectedSession} onSave={handleSaveSessionMetadata} />
           </div>
           <HostActions host={selectedHost} onTogglePin={handleTogglePin} onTrustHost={handleTrustHost} />
         </header>

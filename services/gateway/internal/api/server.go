@@ -35,6 +35,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/hosts/{id}/tmux/sessions", s.handleCreateTmuxSession)
 	mux.HandleFunc("POST /api/hosts/{id}/tmux/sessions/{name}/terminal-token", s.handleCreateTerminalToken)
 	mux.HandleFunc("POST /api/hosts/{id}/tmux/sessions/{name}/history", s.handleCaptureTmuxHistory)
+	mux.HandleFunc("POST /api/hosts/{id}/tmux/sessions/{name}/metadata", s.handleSaveTmuxSessionMetadata)
 	mux.HandleFunc("GET /api/terminal", s.handleTerminalWebSocket)
 	return withCORS(mux)
 }

@@ -24,6 +24,16 @@ CREATE TABLE IF NOT EXISTS audit_events (
 	created_at TIMESTAMP NOT NULL
 );`
 
+const createSessionMetadataTableSQL = `
+CREATE TABLE IF NOT EXISTS session_metadata (
+	host_id TEXT NOT NULL,
+	session_name TEXT NOT NULL,
+	title TEXT NOT NULL DEFAULT '',
+	tags TEXT NOT NULL DEFAULT '[]',
+	updated_at TIMESTAMP NOT NULL,
+	PRIMARY KEY (host_id, session_name)
+);`
+
 const addHostFingerprintSQL = `
 ALTER TABLE hosts ADD COLUMN host_key_fingerprint TEXT NOT NULL DEFAULT '';`
 
@@ -63,3 +73,21 @@ SELECT id, type, host_id, session_name, message, created_at
 FROM audit_events
 ORDER BY created_at DESC
 LIMIT 200;`
+
+const upsertSessionMetadataSQL = `
+INSERT INTO session_metadata (host_id, session_name, title, tags, updated_at)
+VALUES (?, ?, ?, ?, ?)
+ON CONFLICT(host_id, session_name) DO UPDATE SET
+	title = excluded.title,
+	tags = excluded.tags,
+	updated_at = excluded.updated_at;`
+
+const listSessionMetadataSQL = `
+SELECT host_id, session_name, title, tags, updated_at
+FROM session_metadata
+WHERE host_id = ?;`
+
+const getSessionMetadataSQL = `
+SELECT host_id, session_name, title, tags, updated_at
+FROM session_metadata
+WHERE host_id = ? AND session_name = ?;`

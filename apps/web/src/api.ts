@@ -25,6 +25,8 @@ export type TmuxSession = {
   attached: boolean;
   updatedAt: string;
   status: "idle" | "running" | "waiting" | "failed" | "unknown";
+  title: string;
+  tags: string[];
 };
 
 export type AuditEvent = {
@@ -94,6 +96,21 @@ export async function createTmuxSession(hostId: string, password: string, name: 
     body: JSON.stringify({ name, password }),
   });
 }
+
+export async function saveSessionMetadata(hostId: string, sessionName: string, title: string, tags: string[]): Promise<TmuxSessionMetadata> {
+  return request<TmuxSessionMetadata>(`/api/hosts/${hostId}/tmux/sessions/${sessionName}/metadata`, {
+    method: "POST",
+    body: JSON.stringify({ tags, title }),
+  });
+}
+
+export type TmuxSessionMetadata = {
+  hostId: string;
+  sessionName: string;
+  title: string;
+  tags: string[];
+  updatedAt: string;
+};
 
 export async function createTerminalToken(hostId: string, sessionName: string, password: string): Promise<string> {
   const response = await request<TerminalTokenResponse>(`/api/hosts/${hostId}/tmux/sessions/${sessionName}/terminal-token`, {

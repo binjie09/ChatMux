@@ -65,6 +65,11 @@ func (s *Server) handleListTmuxSessions(w http.ResponseWriter, r *http.Request) 
 		writeError(w, http.StatusBadGateway, err)
 		return
 	}
+	sessions, err = s.applySessionMetadata(r.Context(), hostID, sessions)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
 	if err := s.logAudit(r.Context(), hoststore.LogAuditEventInput{Type: "tmux.sessions.listed", HostID: hostID, Message: "listed tmux sessions"}); err != nil {
 		writeError(w, http.StatusInternalServerError, err)
 		return
@@ -151,7 +156,11 @@ func (s *Server) runTmuxListCommand(r *http.Request, hostID string, password str
 	if err != nil {
 		return nil, err
 	}
-	return tmux.ParseSessions(string(output))
+	sessions, err := tmux.ParseSessions(string(output))
+	if err != nil {
+		return nil, err
+	}
+	return s.applySessionMetadata(r.Context(), hostID, sessions)
 }
 
 func (s *Server) runTmuxCommand(r *http.Request, hostID string, password string, command string) ([]byte, error) {

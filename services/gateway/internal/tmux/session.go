@@ -20,6 +20,8 @@ type Session struct {
 	Attached  bool      `json:"attached"`
 	UpdatedAt time.Time `json:"updatedAt"`
 	Status    string    `json:"status"`
+	Title     string    `json:"title"`
+	Tags      []string  `json:"tags"`
 }
 
 func ListSessionsCommand() string {
