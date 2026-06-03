@@ -27,11 +27,18 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	drafter, err := commandDrafterFromEnv()
+	if err != nil {
+		log.Fatal(err)
+	}
 	summarizer, err := transcriptSummarizerFromEnv()
 	if err != nil {
 		log.Fatal(err)
 	}
 	options := []api.ServerOption{api.WithStaticUsers(users), api.WithCommandPolicy(policy)}
+	if drafter != nil {
+		options = append(options, api.WithCommandDrafter(drafter))
+	}
 	if summarizer != nil {
 		options = append(options, api.WithTranscriptSummarizer(summarizer))
 	}
@@ -100,14 +107,26 @@ func commandPolicyFromEnv() (api.CommandPolicyConfig, error) {
 	return config, nil
 }
 
+func commandDrafterFromEnv() (api.CommandDrafter, error) {
+	apiKey := os.Getenv("OPENAI_API_KEY")
+	if apiKey == "" {
+		return nil, nil
+	}
+	return api.NewOpenAICommandDrafter(openAIConfigFromEnv(apiKey))
+}
+
 func transcriptSummarizerFromEnv() (api.TranscriptSummarizer, error) {
 	apiKey := os.Getenv("OPENAI_API_KEY")
 	if apiKey == "" {
 		return nil, nil
 	}
-	return api.NewOpenAITranscriptSummarizer(api.OpenAITranscriptSummarizerConfig{
+	return api.NewOpenAITranscriptSummarizer(openAIConfigFromEnv(apiKey))
+}
+
+func openAIConfigFromEnv(apiKey string) api.OpenAIConfig {
+	return api.OpenAIConfig{
 		APIKey:  apiKey,
 		BaseURL: os.Getenv("OPENAI_BASE_URL"),
 		Model:   os.Getenv("OPENAI_MODEL"),
-	})
+	}
 }

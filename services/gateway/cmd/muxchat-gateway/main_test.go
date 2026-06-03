@@ -64,6 +64,8 @@ func TestCommandPolicyFromEnvRejectsInvalidPattern(t *testing.T) {
 }
 
 func TestTranscriptSummarizerFromEnvDisabledWithoutKey(t *testing.T) {
+	t.Setenv("OPENAI_API_KEY", "")
+
 	summarizer, err := transcriptSummarizerFromEnv()
 	if err != nil {
 		t.Fatal(err)
@@ -83,5 +85,30 @@ func TestTranscriptSummarizerFromEnvCreatesOpenAIClient(t *testing.T) {
 	}
 	if summarizer == nil {
 		t.Fatal("expected configured summarizer")
+	}
+}
+
+func TestCommandDrafterFromEnvDisabledWithoutKey(t *testing.T) {
+	t.Setenv("OPENAI_API_KEY", "")
+
+	drafter, err := commandDrafterFromEnv()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if drafter != nil {
+		t.Fatal("expected nil drafter without OPENAI_API_KEY")
+	}
+}
+
+func TestCommandDrafterFromEnvCreatesOpenAIClient(t *testing.T) {
+	t.Setenv("OPENAI_API_KEY", "test-key")
+	t.Setenv("OPENAI_MODEL", "gpt-test")
+
+	drafter, err := commandDrafterFromEnv()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if drafter == nil {
+		t.Fatal("expected configured drafter")
 	}
 }

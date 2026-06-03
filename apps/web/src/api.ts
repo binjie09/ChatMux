@@ -59,6 +59,13 @@ export type TranscriptSummary = {
   summary: string;
 };
 
+export type CommandDraft = {
+  command: string;
+  explanation: string;
+  model: string;
+  risk: "low" | "medium" | "high";
+};
+
 type TerminalTokenResponse = {
   token: string;
   expiresIn: number;
@@ -148,6 +155,13 @@ export async function summarizeTmuxHistory(hostId: string, sessionName: string, 
   return request<TranscriptSummary>(`/api/hosts/${hostId}/tmux/sessions/${sessionName}/summary`, {
     method: "POST",
     body: JSON.stringify({ password }),
+  });
+}
+
+export async function draftTmuxCommand(hostId: string, sessionName: string, password: string, prompt: string): Promise<CommandDraft> {
+  return request<CommandDraft>(`/api/hosts/${hostId}/tmux/sessions/${sessionName}/command-draft`, {
+    method: "POST",
+    body: JSON.stringify({ password, prompt }),
   });
 }
 

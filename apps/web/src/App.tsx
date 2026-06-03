@@ -19,6 +19,7 @@ import {
 } from "./api";
 import { AuditPanel } from "./AuditPanel";
 import { Composer, type ComposerMode } from "./Composer";
+import { CommandDraftPanel } from "./CommandDraftPanel";
 import { HistoryPanel } from "./HistoryPanel";
 import { HostActions } from "./HostActions";
 import { MobileNavigation, type MobilePanel } from "./MobileNavigation";
@@ -204,7 +205,6 @@ export function App() {
   const selectedHost = hosts.find((host) => host.id === selectedHostId);
   const selectedSession = sessions.find((session) => session.name === selectedSessionName);
   const terminalSessionKey = selectedHostId && selectedSessionName ? `${selectedHostId}:${selectedSessionName}` : "";
-
   const refreshSelectedSessions = useCallback(async () => {
     if (!selectedHostId || !sshPassword) {
       return [];
@@ -286,6 +286,7 @@ export function App() {
         </div>
 
         <Composer
+          draftPanel={<CommandDraftPanel target={{ hostId: selectedHostId, password: sshPassword, sessionName: selectedSessionName }} onDrafted={() => void refreshAuditEvents()} onInsert={(command) => { setComposerMode("enter"); setComposerValue(command); }} />}
           mode={composerMode}
           value={composerValue}
           onModeChange={setComposerMode}

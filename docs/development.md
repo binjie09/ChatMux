@@ -83,6 +83,9 @@ gateway. The summary endpoint captures the selected tmux pane and sends that
 transcript to the configured OpenAI-compatible Responses API only when the user
 presses Summarize. `OPENAI_MODEL` defaults to `gpt-5.5`, and `OPENAI_BASE_URL`
 defaults to `https://api.openai.com/v1`.
+AI command drafting uses the same OpenAI settings. Drafts capture the selected
+tmux pane for context and return a command, explanation, and risk label. The SPA
+only inserts the draft into the composer; the user must still send it explicitly.
 
 Android internal testing builds require signing material in environment
 variables: `ANDROID_KEYSTORE_PATH`, `ANDROID_KEYSTORE_PASSWORD`,

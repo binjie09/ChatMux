@@ -12,6 +12,7 @@ import (
 type Server struct {
 	auth           authConfig
 	commandPolicy  commandPolicy
+	drafter        CommandDrafter
 	hosts          *hoststore.Store
 	ssh            sshRunner
 	summarizer     TranscriptSummarizer
@@ -38,6 +39,14 @@ func WithStaticUsers(users []StaticUser) ServerOption {
 func WithCommandPolicy(config CommandPolicyConfig) ServerOption {
 	return func(s *Server) {
 		s.commandPolicy = mustCommandPolicy(config)
+	}
+}
+
+func WithCommandDrafter(drafter CommandDrafter) ServerOption {
+	return func(s *Server) {
+		if drafter != nil {
+			s.drafter = drafter
+		}
 	}
 }
 
@@ -75,6 +84,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/hosts/{id}/ssh/trust", s.handleTrustHostKey)
 	mux.HandleFunc("POST /api/hosts/{id}/tmux/sessions/list", s.handleListTmuxSessions)
 	mux.HandleFunc("POST /api/hosts/{id}/tmux/sessions", s.handleCreateTmuxSession)
+	mux.HandleFunc("POST /api/hosts/{id}/tmux/sessions/{name}/command-draft", s.handleDraftTmuxCommand)
 	mux.HandleFunc("POST /api/hosts/{id}/tmux/sessions/{name}/terminal-token", s.handleCreateTerminalToken)
 	mux.HandleFunc("POST /api/hosts/{id}/tmux/sessions/{name}/history", s.handleCaptureTmuxHistory)
 	mux.HandleFunc("POST /api/hosts/{id}/tmux/sessions/{name}/metadata", s.handleSaveTmuxSessionMetadata)

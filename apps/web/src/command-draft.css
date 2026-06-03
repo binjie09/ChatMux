@@ -1,0 +1,121 @@
+.command-draft-panel {
+  display: grid;
+  gap: 8px;
+  border-top: 1px solid #ded8ca;
+  padding-top: 12px;
+}
+
+.command-draft-panel + .composer {
+  border-top: 0;
+  padding-top: 4px;
+}
+
+.command-draft-panel form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+}
+
+.command-draft-panel input {
+  min-width: 0;
+  border: 1px solid #d6cebd;
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: #17201b;
+  background: #ffffff;
+}
+
+.command-draft-panel form button,
+.command-draft-result button {
+  display: inline-grid;
+  grid-template-columns: 15px auto;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 0;
+  border-radius: 8px;
+  color: #f7fbf8;
+  background: #2f5f59;
+  font-weight: 700;
+}
+
+.command-draft-panel form button {
+  min-width: 92px;
+  padding: 10px 12px;
+}
+
+.command-draft-panel form button:disabled {
+  color: #738079;
+  background: #e9eee8;
+}
+
+.command-draft-error {
+  margin: 0;
+  border: 1px solid #e4bab0;
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: #8e3329;
+  background: #fff4f1;
+  font-size: 12px;
+}
+
+.command-draft-result {
+  display: grid;
+  gap: 8px;
+  border: 1px solid #d6cebd;
+  border-left: 4px solid #58736a;
+  border-radius: 8px;
+  padding: 10px;
+  background: #fffdf8;
+}
+
+.command-draft-result.medium {
+  border-left-color: #9b7a2e;
+}
+
+.command-draft-result.high {
+  border-left-color: #a54035;
+}
+
+.command-draft-result header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.command-draft-result strong {
+  color: #34443d;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.command-draft-result small,
+.command-draft-result p {
+  margin: 0;
+  color: #59655f;
+  font-size: 12px;
+}
+
+.command-draft-result pre {
+  margin: 0;
+  overflow: auto;
+  border-radius: 6px;
+  padding: 9px;
+  color: #e6ece8;
+  background: #17201b;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.command-draft-result button {
+  justify-self: start;
+  padding: 8px 10px;
+}
+
+@media (max-width: 760px) {
+  .command-draft-panel form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
