@@ -27,6 +27,15 @@ export type TmuxSession = {
   status: "idle" | "running" | "waiting" | "failed" | "unknown";
 };
 
+export type AuditEvent = {
+  id: string;
+  type: string;
+  hostId: string;
+  sessionName: string;
+  message: string;
+  createdAt: string;
+};
+
 type TerminalTokenResponse = {
   token: string;
   expiresIn: number;
@@ -38,6 +47,10 @@ type TmuxHistoryResponse = {
 
 export async function listHosts(): Promise<Host[]> {
   return request<Host[]>("/api/hosts");
+}
+
+export async function listAuditEvents(): Promise<AuditEvent[]> {
+  return request<AuditEvent[]>("/api/audit-events");
 }
 
 export async function createHost(input: CreateHostInput): Promise<Host> {

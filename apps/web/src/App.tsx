@@ -1,37 +1,31 @@
 import { useEffect, useState } from "react";
-import {
-  Activity,
-  ChevronRight,
-  KeyRound,
-  Monitor,
-  Plus,
-  Send,
-  Server,
-  ShieldCheck,
-  Smartphone,
-  TerminalSquare,
-} from "lucide-react";
+import { Activity, ChevronRight, KeyRound, Monitor, Plus, Send, Server, ShieldCheck, Smartphone, TerminalSquare } from "lucide-react";
 import {
   captureTmuxHistory,
   createHost,
   createTmuxSession,
   createTerminalToken,
+  listAuditEvents,
   listHosts,
   listTmuxSessions,
   setHostPinned,
   terminalWebSocketURL,
   trustHost,
   type Host,
+  type AuditEvent,
   type TmuxSession,
 } from "./api";
+import { AuditPanel } from "./AuditPanel";
 import { HistoryPanel } from "./HistoryPanel";
 import { HostActions } from "./HostActions";
 import { HostForm } from "./HostForm";
 import { NativeTerminal, type QueuedTerminalInput } from "./NativeTerminal";
 import "./session-controls.css";
+import { errorMessage, formatTime, sortHosts } from "./view-utils";
 
 export function App() {
   const [hosts, setHosts] = useState<Host[]>([]);
+  const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([]);
   const [sessions, setSessions] = useState<TmuxSession[]>([]);
   const [selectedHostId, setSelectedHostId] = useState<string>("");
   const [selectedSessionName, setSelectedSessionName] = useState("");
@@ -47,6 +41,7 @@ export function App() {
 
   useEffect(() => {
     void refreshHosts();
+    void refreshAuditEvents();
   }, []);
 
   async function refreshHosts() {
@@ -60,11 +55,20 @@ export function App() {
     }
   }
 
+  async function refreshAuditEvents() {
+    try {
+      setAuditEvents(await listAuditEvents());
+    } catch (err) {
+      setError(errorMessage(err));
+    }
+  }
+
   async function handleCreateHost(input: Parameters<typeof createHost>[0]) {
     const host = await createHost(input);
     setHosts((current) => sortHosts([host, ...current]));
     setSelectedHostId(host.id);
     setShowHostForm(false);
+    void refreshAuditEvents();
   }
 
   async function handleTrustHost() {
@@ -73,6 +77,7 @@ export function App() {
     }
     const trusted = await trustHost(selectedHostId);
     setHosts((current) => current.map((host) => (host.id === trusted.id ? trusted : host)));
+    void refreshAuditEvents();
   }
 
   async function handleTogglePin() {
@@ -82,6 +87,7 @@ export function App() {
     try {
       const updated = await setHostPinned(selectedHost.id, !selectedHost.pinned);
       setHosts((current) => sortHosts(current.map((host) => (host.id === updated.id ? updated : host))));
+      void refreshAuditEvents();
       setError("");
     } catch (err) {
       setError(errorMessage(err));
@@ -98,6 +104,7 @@ export function App() {
       setSelectedSessionName((current) => current || nextSessions[0]?.name || "");
       setTerminalURL("");
       setHistoryText("");
+      void refreshAuditEvents();
       setError("");
     } catch (err) {
       setError(errorMessage(err));
@@ -114,6 +121,7 @@ export function App() {
       setSelectedSessionName(sessionName);
       setTerminalURL(terminalWebSocketURL(token));
       setHistoryText(history);
+      void refreshAuditEvents();
       setError("");
     } catch (err) {
       setError(errorMessage(err));
@@ -129,6 +137,7 @@ export function App() {
       setSessions((current) => [session, ...current.filter((item) => item.name !== session.name)]);
       setNewSessionName("");
       await handleOpenSession(session.name);
+      void refreshAuditEvents();
     } catch (err) {
       setError(errorMessage(err));
     }
@@ -252,7 +261,10 @@ export function App() {
 
         <div className="terminal-workspace">
           <NativeTerminal queuedInput={queuedInput} webSocketURL={terminalURL} />
-          <HistoryPanel query={historyQuery} text={historyText} onQueryChange={setHistoryQuery} />
+          <div className="context-stack">
+            <HistoryPanel query={historyQuery} text={historyText} onQueryChange={setHistoryQuery} />
+            <AuditPanel events={auditEvents} />
+          </div>
         </div>
 
         <form className="composer" onSubmit={(event) => {
@@ -277,19 +289,4 @@ export function App() {
       </section>
     </main>
   );
-}
-
-function errorMessage(error: unknown) {
-  if (error instanceof Error) {
-    return error.message;
-  }
-  return String(error);
-}
-
-function formatTime(value: string) {
-  return new Date(value).toLocaleString();
-}
-
-function sortHosts(hosts: Host[]) {
-  return [...hosts].sort((left, right) => Number(right.pinned) - Number(left.pinned));
 }

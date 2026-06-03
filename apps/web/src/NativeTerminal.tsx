@@ -92,7 +92,11 @@ export function NativeTerminal({ queuedInput, webSocketURL }: NativeTerminalProp
     sendInput(socketRef.current, terminalInstanceRef.current, queuedInput.text + "\n");
   }, [queuedInput]);
 
-  return <div className="terminal-shell" ref={terminalRef} aria-label="Terminal" />;
+  return (
+    <div className="terminal-shell" aria-label="Terminal">
+      <div className="terminal-screen" ref={terminalRef} />
+    </div>
+  );
 }
 
 function sendResize(socket: WebSocket, cols: number, rows: number) {

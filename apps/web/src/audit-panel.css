@@ -1,0 +1,38 @@
+.audit-panel {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid #ddd6c7;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.audit-panel h3 {
+  margin: 0;
+  border-bottom: 1px solid #ddd6c7;
+  padding: 9px 10px;
+  color: #263029;
+  font-size: 13px;
+}
+
+.audit-events {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  min-height: 0;
+  overflow: auto;
+  padding: 10px;
+}
+
+.audit-event {
+  display: grid;
+  gap: 3px;
+  color: #263029;
+  font-size: 12px;
+}
+
+.audit-event span,
+.audit-event small {
+  color: #69746e;
+}
