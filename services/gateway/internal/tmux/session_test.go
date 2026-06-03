@@ -6,7 +6,7 @@ import (
 )
 
 func TestParseSessions(t *testing.T) {
-	output := "$0\tdeploy\t2\t1\t1710000000\n$1\tlogs\t1\t0\t1710000300\n"
+	output := "$0\tdeploy\t2\t1\t1710000000\tnode\t0\t\n$1\tlogs\t1\t0\t1710000300\tzsh\t0\t\n"
 	sessions, err := ParseSessions(output)
 	if err != nil {
 		t.Fatalf("ParseSessions failed: %v", err)
@@ -20,14 +20,37 @@ func TestParseSessions(t *testing.T) {
 	if !sessions[0].Attached {
 		t.Fatal("expected first session to be attached")
 	}
-	if sessions[0].Status != "running" {
+	if sessions[0].Status != SessionStatusRunning {
 		t.Fatalf("expected running, got %q", sessions[0].Status)
 	}
 	if sessions[1].Windows != 1 {
 		t.Fatalf("expected one window, got %d", sessions[1].Windows)
 	}
-	if sessions[1].Status != "idle" {
+	if sessions[1].Status != SessionStatusIdle {
 		t.Fatalf("expected idle, got %q", sessions[1].Status)
+	}
+}
+
+func TestParseSessionsDetectsPaneStatuses(t *testing.T) {
+	output := strings.Join([]string{
+		"$0\trunning\t1\t0\t1710000000\tnode\t0\t",
+		"$1\twaiting\t1\t1\t1710000001\tzsh\t0\t",
+		"$2\tidle\t1\t0\t1710000002\t/bin/bash\t0\t",
+		"$3\tfailed\t1\t0\t1710000003\tsh\t1\t2",
+		"$4\tunknown\t1\t0\t1710000004\t\t0\t",
+	}, "\n")
+	sessions, err := ParseSessions(output)
+	if err != nil {
+		t.Fatalf("ParseSessions failed: %v", err)
+	}
+	want := []string{
+		SessionStatusRunning, SessionStatusWaiting, SessionStatusIdle,
+		SessionStatusFailed, SessionStatusUnknown,
+	}
+	for index, status := range want {
+		if sessions[index].Status != status {
+			t.Fatalf("session %d expected %q, got %q", index, status, sessions[index].Status)
+		}
 	}
 }
 
@@ -55,6 +78,9 @@ func TestCreateSessionCommand(t *testing.T) {
 	}
 	if !strings.Contains(command, "$HOME/.local/bin/tmux") {
 		t.Fatalf("expected user-local tmux lookup, got %q", command)
+	}
+	if !strings.Contains(command, "pane_current_command") || !strings.Contains(command, "pane_dead_status") {
+		t.Fatalf("expected status format fields, got %q", command)
 	}
 	if !strings.Contains(command, "exec ${SHELL:-/bin/sh} -lc") {
 		t.Fatalf("expected login shell wrapper, got %q", command)

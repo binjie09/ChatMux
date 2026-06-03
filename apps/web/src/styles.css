@@ -169,40 +169,6 @@ button {
   color: #1a231e;
 }
 
-.session-row {
-  display: grid;
-  grid-template-columns: 20px 1fr auto 16px;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  margin-bottom: 9px;
-  border: 1px solid #dfd8c9;
-  border-radius: 8px;
-  padding: 12px 10px;
-  color: #1b241f;
-  background: #ffffff;
-  text-align: left;
-}
-
-.session-row em {
-  border-radius: 999px;
-  padding: 4px 8px;
-  color: #4b554f;
-  background: #f0ede6;
-  font-size: 12px;
-  font-style: normal;
-}
-
-.session-row em.running {
-  color: #174c32;
-  background: #dff4e8;
-}
-
-.session-row em.waiting {
-  color: #6b3b0f;
-  background: #f8e5c7;
-}
-
 .conversation {
   display: grid;
   grid-template-rows: auto 1fr auto;

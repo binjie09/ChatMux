@@ -69,6 +69,9 @@ admins. tmux session access follows the host visibility rule.
 Session alerts use local notifications on iOS and Android, and browser
 notifications on the web. When enabled, the SPA polls the selected host's tmux
 sessions every 30 seconds and notifies on status changes.
+Session status is inferred from tmux session attachment plus the active pane
+command and pane exit state: shell panes are idle or waiting, non-shell panes are
+running, and dead panes with non-zero exit status are failed.
 
 Composer-sent terminal input is recorded as audit metadata only; the raw command
 text is not stored. Native xterm.js keystrokes bypass command policy and audit

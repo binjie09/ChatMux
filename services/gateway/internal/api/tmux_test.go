@@ -14,7 +14,7 @@ func TestListTmuxSessionsAPI(t *testing.T) {
 	server, closeServer := newTestServer(t)
 	defer closeServer()
 	server.ssh = &fakeSSHRunner{
-		output: "$0\tdeploy\t2\t0\t1710000000\n",
+		output: "$0\tdeploy\t2\t0\t1710000000\tzsh\t0\t\n",
 	}
 	host := createTrustedTestHost(t, server)
 	if _, err := server.hosts.SaveSessionMetadata(testContext(t), hoststore.SaveSessionMetadataInput{
@@ -43,7 +43,7 @@ func TestCreateTmuxSessionAPI(t *testing.T) {
 	server, closeServer := newTestServer(t)
 	defer closeServer()
 	server.ssh = &fakeSSHRunner{
-		output: "$2\tnew-work\t1\t0\t1710000500\n",
+		output: "$2\tnew-work\t1\t0\t1710000500\tzsh\t0\t\n",
 	}
 	host := createTrustedTestHost(t, server)
 
