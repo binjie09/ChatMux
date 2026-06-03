@@ -28,3 +28,39 @@ func TestListTmuxSessionsAPI(t *testing.T) {
 		t.Fatalf("expected deploy session, got %s", rec.Body.String())
 	}
 }
+
+func TestCreateTmuxSessionAPI(t *testing.T) {
+	server, closeServer := newTestServer(t)
+	defer closeServer()
+	server.ssh = &fakeSSHRunner{
+		output: "$2\tnew-work\t1\t0\t1710000500\n",
+	}
+	host := createTrustedTestHost(t, server)
+
+	body := bytes.NewBufferString(`{"name":"new-work","password":"secret"}`)
+	req := httptest.NewRequest(http.MethodPost, "/api/hosts/"+host.ID+"/tmux/sessions", body)
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("expected 201, got %d: %s", rec.Code, rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), "new-work") {
+		t.Fatalf("expected new session, got %s", rec.Body.String())
+	}
+}
+
+func TestCreateTmuxSessionRejectsUnsafeName(t *testing.T) {
+	server, closeServer := newTestServer(t)
+	defer closeServer()
+	host := createTrustedTestHost(t, server)
+
+	body := bytes.NewBufferString(`{"name":"bad;name","password":"secret"}`)
+	req := httptest.NewRequest(http.MethodPost, "/api/hosts/"+host.ID+"/tmux/sessions", body)
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d: %s", rec.Code, rec.Body.String())
+	}
+}

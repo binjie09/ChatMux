@@ -1,6 +1,9 @@
 package tmux
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestParseSessions(t *testing.T) {
 	output := "$0\tdeploy\t2\t1\t1710000000\n$1\tlogs\t1\t0\t1710000300\n"
@@ -26,5 +29,28 @@ func TestParseSessionsRejectsBadLine(t *testing.T) {
 	_, err := ParseSessions("bad line")
 	if err == nil {
 		t.Fatal("expected parse error")
+	}
+}
+
+func TestCreateSessionCommandRejectsUnsafeName(t *testing.T) {
+	_, err := CreateSessionCommand("bad;rm-rf")
+	if err == nil {
+		t.Fatal("expected validation error")
+	}
+}
+
+func TestCreateSessionCommand(t *testing.T) {
+	command, err := CreateSessionCommand("deploy_1")
+	if err != nil {
+		t.Fatalf("CreateSessionCommand failed: %v", err)
+	}
+	if !strings.Contains(command, "\"$TMUX_BIN\" new-session -d -s deploy_1") {
+		t.Fatalf("expected new-session command, got %q", command)
+	}
+	if !strings.Contains(command, "$HOME/.local/bin/tmux") {
+		t.Fatalf("expected user-local tmux lookup, got %q", command)
+	}
+	if !strings.Contains(command, "exec ${SHELL:-/bin/sh} -lc") {
+		t.Fatalf("expected login shell wrapper, got %q", command)
 	}
 }

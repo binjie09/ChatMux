@@ -1,13 +1,17 @@
 package tmux
 
 import (
+	"errors"
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
 )
 
 const listSessionFormat = "#{session_id}\t#{session_name}\t#{session_windows}\t#{session_attached}\t#{session_activity}"
+
+var sessionNamePattern = regexp.MustCompile(`^[A-Za-z0-9_.-]{1,64}$`)
 
 type Session struct {
 	ID        string    `json:"id"`
@@ -19,7 +23,22 @@ type Session struct {
 }
 
 func ListSessionsCommand() string {
-	return "tmux list-sessions -F '" + listSessionFormat + "'"
+	return loginShellCommand(rawListSessionsCommand())
+}
+
+func CreateSessionCommand(name string) (string, error) {
+	if err := ValidateSessionName(name); err != nil {
+		return "", err
+	}
+	command := tmuxPrelude() + "\"$TMUX_BIN\" new-session -d -s " + name + " && " + rawListSessionsCommand()
+	return loginShellCommand(command), nil
+}
+
+func ValidateSessionName(name string) error {
+	if !sessionNamePattern.MatchString(name) {
+		return errors.New("session name must be 1-64 chars using letters, numbers, underscore, dot, or dash")
+	}
+	return nil
 }
 
 func ParseSessions(output string) ([]Session, error) {
@@ -59,4 +78,22 @@ func parseSessionLine(line string) (Session, error) {
 		UpdatedAt: time.Unix(activity, 0).UTC(),
 		Status:    "unknown",
 	}, nil
+}
+
+func rawListSessionsCommand() string {
+	return tmuxPrelude() + "\"$TMUX_BIN\" list-sessions -F " + shellQuote(listSessionFormat)
+}
+
+func loginShellCommand(command string) string {
+	return "exec ${SHELL:-/bin/sh} -lc " + shellQuote(command)
+}
+
+func tmuxPrelude() string {
+	return "TMUX_BIN=\"${MUXCHAT_TMUX_BIN:-$(command -v tmux || true)}\"; " +
+		"if [ -z \"$TMUX_BIN\" ] && [ -x \"$HOME/.local/bin/tmux\" ]; then TMUX_BIN=\"$HOME/.local/bin/tmux\"; fi; " +
+		"if [ -z \"$TMUX_BIN\" ]; then echo 'tmux not found in PATH, MUXCHAT_TMUX_BIN, or $HOME/.local/bin' >&2; exit 127; fi; "
+}
+
+func shellQuote(value string) string {
+	return "'" + strings.ReplaceAll(value, "'", "'\\''") + "'"
 }
