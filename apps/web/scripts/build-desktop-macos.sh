@@ -12,6 +12,9 @@ Signing:
   Set APPLE_SIGNING_IDENTITY to a Developer ID/Application signing identity.
   Or set APPLE_CERTIFICATE and APPLE_CERTIFICATE_PASSWORD for CI import.
   Set MUXCHAT_MACOS_AD_HOC=1 to create an ad-hoc signed local artifact.
+Updates:
+  Set MUXCHAT_CREATE_UPDATER_ARTIFACTS=1 and TAURI_SIGNING_PRIVATE_KEY to
+  generate updater archives and .sig files during the Tauri build.
 USAGE
 }
 
@@ -51,8 +54,43 @@ validate_signing() {
   fi
 }
 
+write_updater_config() {
+  local config_path="$1"
+  cat >"$config_path" <<'JSON'
+{
+  "bundle": {
+    "createUpdaterArtifacts": true
+  }
+}
+JSON
+}
+
+configure_updater_artifacts() {
+  if [[ "${MUXCHAT_CREATE_UPDATER_ARTIFACTS:-}" != "1" ]]; then
+    return
+  fi
+  if [[ -z "${TAURI_SIGNING_PRIVATE_KEY:-}" ]]; then
+    echo "TAURI_SIGNING_PRIVATE_KEY is required for updater artifacts" >&2
+    exit 2
+  fi
+  local config_path
+  config_path="$(mktemp "${TMPDIR:-/tmp}/muxchat-tauri-updater.XXXXXX.json")"
+  temp_configs+=("$config_path")
+  write_updater_config "$config_path"
+  tauri_config_args+=(--config "$config_path")
+}
+
+cleanup() {
+  for path in "${temp_configs[@]}"; do
+    rm -f "$path"
+  done
+}
+
 check_only=false
 target="${TAURI_TARGET_TRIPLE:-}"
+tauri_config_args=()
+temp_configs=()
+trap cleanup EXIT
 for arg in "$@"; do
   case "$arg" in
     --)
@@ -90,6 +128,7 @@ if [[ "$(uname -s)" != "Darwin" ]]; then
 fi
 
 validate_signing
+configure_updater_artifacts
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 web_dir="$(cd "${script_dir}/.." && pwd)"
@@ -100,6 +139,7 @@ TAURI_TARGET_TRIPLE="$target" pnpm --filter @muxchat/web desktop:sidecar "$targe
 
 cd "${web_dir}"
 tauri_args=(--target "$target" --ci)
+tauri_args+=("${tauri_config_args[@]}")
 if [[ "${MUXCHAT_MACOS_SKIP_STAPLING:-}" == "1" ]]; then
   tauri_args+=(--skip-stapling)
 fi

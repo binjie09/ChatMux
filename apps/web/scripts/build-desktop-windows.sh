@@ -12,6 +12,9 @@ Signing:
   Set MUXCHAT_WINDOWS_CERT_THUMBPRINT for a certificate in the Windows store.
   Optional: MUXCHAT_WINDOWS_DIGEST_ALGORITHM, MUXCHAT_WINDOWS_TIMESTAMP_URL.
   Or set MUXCHAT_WINDOWS_SIGN_COMMAND to use a custom signing command.
+Updates:
+  Set MUXCHAT_CREATE_UPDATER_ARTIFACTS=1 and TAURI_SIGNING_PRIVATE_KEY to
+  generate updater archives and .sig files during the Tauri build.
 USAGE
 }
 
@@ -63,8 +66,43 @@ fs.writeFileSync(configPath, JSON.stringify({ bundle: { windows } }, null, 2));
 NODE
 }
 
+write_updater_config() {
+  local config_path="$1"
+  cat >"$config_path" <<'JSON'
+{
+  "bundle": {
+    "createUpdaterArtifacts": true
+  }
+}
+JSON
+}
+
+configure_updater_artifacts() {
+  if [[ "${MUXCHAT_CREATE_UPDATER_ARTIFACTS:-}" != "1" ]]; then
+    return
+  fi
+  if [[ -z "${TAURI_SIGNING_PRIVATE_KEY:-}" ]]; then
+    echo "TAURI_SIGNING_PRIVATE_KEY is required for updater artifacts" >&2
+    exit 2
+  fi
+  local config_path
+  config_path="$(mktemp "${TMPDIR:-/tmp}/muxchat-tauri-updater.XXXXXX.json")"
+  temp_configs+=("$config_path")
+  write_updater_config "$config_path"
+  tauri_config_args+=(--config "$config_path")
+}
+
+cleanup() {
+  for path in "${temp_configs[@]}"; do
+    rm -f "$path"
+  done
+}
+
 check_only=false
 target="${TAURI_TARGET_TRIPLE:-}"
+tauri_config_args=()
+temp_configs=()
+trap cleanup EXIT
 for arg in "$@"; do
   case "$arg" in
     --)
@@ -106,16 +144,18 @@ case "$(uname -s)" in
 esac
 
 validate_signing
+configure_updater_artifacts
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 web_dir="$(cd "${script_dir}/.." && pwd)"
 repo_root="$(cd "${web_dir}/../.." && pwd)"
 config_path="$(mktemp "${TMPDIR:-/tmp}/muxchat-tauri-windows.XXXXXX.json")"
-trap 'rm -f "$config_path"' EXIT
+temp_configs+=("$config_path")
 write_signing_config "$config_path"
+tauri_config_args+=(--config "$config_path")
 
 cd "${repo_root}"
 TAURI_TARGET_TRIPLE="$target" pnpm --filter @muxchat/web desktop:sidecar "$target"
 
 cd "${web_dir}"
-pnpm exec tauri build --target "$target" --config "$config_path" --ci
+pnpm exec tauri build --target "$target" "${tauri_config_args[@]}" --ci

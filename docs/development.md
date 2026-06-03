@@ -53,6 +53,9 @@ artifacts. Windows builds must run on Windows with
 `MUXCHAT_WINDOWS_CERT_THUMBPRINT` for a certificate in the Windows store, or
 `MUXCHAT_WINDOWS_SIGN_COMMAND` for a custom signer. Optional Windows overrides
 are `MUXCHAT_WINDOWS_DIGEST_ALGORITHM` and `MUXCHAT_WINDOWS_TIMESTAMP_URL`.
+Set `MUXCHAT_CREATE_UPDATER_ARTIFACTS=1` plus `TAURI_SIGNING_PRIVATE_KEY` to
+have Tauri generate updater archives and `.sig` files alongside signed desktop
+bundles. Keep the updater private key outside the repository.
 
 ## Run Gateway
 
