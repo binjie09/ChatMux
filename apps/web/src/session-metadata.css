@@ -1,6 +1,6 @@
 .session-metadata {
   display: grid;
-  grid-template-columns: minmax(140px, 220px) minmax(140px, 240px) 34px;
+  grid-template-columns: minmax(140px, 220px) minmax(140px, 240px) 104px 34px;
   gap: 8px;
   margin-top: 10px;
 }
@@ -24,6 +24,33 @@
   color: #69746e;
 }
 
+.session-share-toggle {
+  min-width: 0;
+  grid-template-columns: 14px 16px minmax(0, 1fr);
+  border: 1px solid #d6cebd;
+  border-radius: 8px;
+  padding: 0 9px;
+  background: #ffffff;
+  cursor: pointer;
+}
+
+.session-share-toggle input {
+  min-width: 14px;
+  width: 14px;
+  height: 14px;
+  border: 0;
+  padding: 0;
+  accent-color: #286f5a;
+}
+
+.session-share-toggle span {
+  overflow: hidden;
+  color: #17201b;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .session-metadata button {
   display: grid;
   place-items: center;
@@ -40,10 +67,14 @@
 
 @media (max-width: 820px) {
   .session-metadata {
-    grid-template-columns: minmax(0, 1fr) 34px;
+    grid-template-columns: minmax(0, 1fr) 104px 34px;
   }
 
   .session-metadata label {
     grid-column: 1 / -1;
+  }
+
+  .session-metadata .session-share-toggle {
+    grid-column: 1 / 3;
   }
 }

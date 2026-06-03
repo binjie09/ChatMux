@@ -9,10 +9,13 @@ func TestSaveAndListSessionMetadata(t *testing.T) {
 	store := openTestStore(t)
 	defer closeStore(t, store)
 	ctx := context.Background()
+	shared := true
 
 	metadata, err := store.SaveSessionMetadata(ctx, SaveSessionMetadataInput{
 		HostID:      "host_1",
+		Owner:       "ops",
 		SessionName: "deploy",
+		Shared:      &shared,
 		Title:       " Deploy shell ",
 		Tags:        []string{"prod", " deploy ", "prod", ""},
 	})
@@ -21,6 +24,9 @@ func TestSaveAndListSessionMetadata(t *testing.T) {
 	}
 	if metadata.Title != "Deploy shell" {
 		t.Fatalf("expected trimmed title, got %q", metadata.Title)
+	}
+	if metadata.Owner != "ops" || !metadata.Shared {
+		t.Fatalf("expected owner/shared fields, got %#v", metadata)
 	}
 	assertTags(t, metadata.Tags, []string{"prod", "deploy"})
 
@@ -32,6 +38,28 @@ func TestSaveAndListSessionMetadata(t *testing.T) {
 		t.Fatalf("expected one metadata row, got %d", len(items))
 	}
 	assertTags(t, items[0].Tags, []string{"prod", "deploy"})
+}
+
+func TestSaveSessionMetadataPreservesOwnerAndShared(t *testing.T) {
+	store := openTestStore(t)
+	defer closeStore(t, store)
+	ctx := context.Background()
+	shared := true
+
+	if _, err := store.SaveSessionMetadata(ctx, SaveSessionMetadataInput{
+		HostID: "host_1", Owner: "ops", SessionName: "deploy", Shared: &shared,
+	}); err != nil {
+		t.Fatalf("SaveSessionMetadata failed: %v", err)
+	}
+	updated, err := store.SaveSessionMetadata(ctx, SaveSessionMetadataInput{
+		HostID: "host_1", Owner: "other", SessionName: "deploy", Title: "Updated",
+	})
+	if err != nil {
+		t.Fatalf("SaveSessionMetadata update failed: %v", err)
+	}
+	if updated.Owner != "ops" || !updated.Shared {
+		t.Fatalf("expected owner/shared preservation, got %#v", updated)
+	}
 }
 
 func assertTags(t *testing.T, actual []string, expected []string) {

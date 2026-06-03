@@ -37,6 +37,8 @@ type Session struct {
 	Status    string    `json:"status"`
 	Title     string    `json:"title"`
 	Tags      []string  `json:"tags"`
+	Owner     string    `json:"owner"`
+	Shared    bool      `json:"shared"`
 }
 
 func ListSessionsCommand() string {

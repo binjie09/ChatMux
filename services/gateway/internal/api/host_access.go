@@ -21,10 +21,7 @@ func (s *Server) visibleHost(r *http.Request, hostID string) (hoststore.Host, er
 }
 
 func principalCanAccessHost(r *http.Request, host hoststore.Host) bool {
-	principal, ok := principalFromContext(r.Context())
-	if !ok {
-		principal = localDevPrincipal
-	}
+	principal := requestPrincipal(r)
 	if principal.Role == RoleAdmin {
 		return true
 	}

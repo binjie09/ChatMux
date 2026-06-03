@@ -77,7 +77,11 @@ biometric unlock is enabled, the stored token is loaded only after Face ID,
 Touch ID, Android biometrics, or device credentials succeed.
 Hosts are owned by the principal that creates them. Shared hosts are visible to
 all authenticated users; private hosts are visible only to their owner and
-admins. tmux session access follows the host visibility rule.
+admins. tmux sessions can also carry owner/shared metadata. Host owners and
+admins can see all sessions on a visible host; session owners can see and manage
+their private sessions; other users can see only sessions explicitly marked
+shared. tmux sessions without MuxChat metadata are visible only to the host owner
+and admins.
 Session alerts use local notifications on iOS and Android, and browser
 notifications on the web. When enabled, the SPA polls the selected host's tmux
 sessions every 30 seconds and notifies on status changes.
@@ -181,7 +185,7 @@ cd services/gateway && go test ./... && go build ./cmd/muxchat-gateway
 
 ## Next Implementation Tasks
 
-1. Decide the shared-session access model beyond host-level sharing.
+1. Add per-session collaborator grants beyond owner/shared visibility.
 2. Add desktop encrypted secret storage for local gateway credentials.
 3. Add deeper terminal recovery semantics for interrupted long-running sessions.
 4. Replace early password request bodies with a safer credential flow.

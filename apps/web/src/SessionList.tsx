@@ -122,11 +122,18 @@ function SessionRow({ session, onOpenSession }: { session: TmuxSession; onOpenSe
       <Activity size={18} aria-hidden="true" />
       <span>
         <strong>{session.title || session.name}</strong>
-        <small>{session.name} · {session.windows} windows · {formatTime(session.updatedAt)}</small>
+        <small>{session.name} · {session.windows} windows · {sessionAccessLabel(session)} · {formatTime(session.updatedAt)}</small>
         {session.tags.length > 0 ? <i>{session.tags.join(", ")}</i> : null}
       </span>
       <em className={session.status}>{session.status}</em>
       <ChevronRight size={17} aria-hidden="true" />
     </button>
   );
+}
+
+function sessionAccessLabel(session: TmuxSession) {
+  if (session.shared) {
+    return "shared";
+  }
+  return session.owner || "private";
 }

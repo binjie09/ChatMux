@@ -35,8 +35,13 @@ func (s *Server) handleCreateTerminalToken(w http.ResponseWriter, r *http.Reques
 		writeError(w, http.StatusBadRequest, err)
 		return
 	}
-	if err := s.ensureHostExists(r, hostID); err != nil {
-		writeError(w, statusForHostError(err), err)
+	host, err := s.visibleHost(r, hostID)
+	if err != nil {
+		writeError(w, statusForHostAccessError(err), err)
+		return
+	}
+	if err := s.visibleSession(r, host, sessionName); err != nil {
+		writeError(w, statusForSessionAccessError(err), err)
 		return
 	}
 	password, err := s.sshPasswordForRequest(r, hostID, input.credential())
@@ -62,16 +67,4 @@ func (s *Server) handleCreateTerminalToken(w http.ResponseWriter, r *http.Reques
 
 func (r createTerminalTokenRequest) credential() sshCredentialRequest {
 	return sshCredentialRequest{CredentialToken: r.CredentialToken, Password: r.Password}
-}
-
-func (s *Server) ensureHostExists(r *http.Request, hostID string) error {
-	_, err := s.visibleHost(r, hostID)
-	return err
-}
-
-func statusForHostError(err error) int {
-	if errors.Is(err, hoststore.ErrHostNotFound) || errors.Is(err, errHostNotVisible) {
-		return http.StatusNotFound
-	}
-	return http.StatusInternalServerError
 }

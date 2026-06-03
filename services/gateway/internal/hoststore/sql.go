@@ -32,6 +32,8 @@ CREATE TABLE IF NOT EXISTS session_metadata (
 	session_name TEXT NOT NULL,
 	title TEXT NOT NULL DEFAULT '',
 	tags TEXT NOT NULL DEFAULT '[]',
+	owner TEXT NOT NULL DEFAULT 'local-dev',
+	shared BOOLEAN NOT NULL DEFAULT FALSE,
 	updated_at TIMESTAMP NOT NULL,
 	PRIMARY KEY (host_id, session_name)
 );`
@@ -47,6 +49,12 @@ ALTER TABLE hosts ADD COLUMN owner TEXT NOT NULL DEFAULT 'local-dev';`
 
 const addHostSharedSQL = `
 ALTER TABLE hosts ADD COLUMN shared BOOLEAN NOT NULL DEFAULT TRUE;`
+
+const addSessionOwnerSQL = `
+ALTER TABLE session_metadata ADD COLUMN owner TEXT NOT NULL DEFAULT 'local-dev';`
+
+const addSessionSharedSQL = `
+ALTER TABLE session_metadata ADD COLUMN shared BOOLEAN NOT NULL DEFAULT FALSE;`
 
 const listHostsSQL = `
 SELECT id, name, hostname, port, username, status, host_key_fingerprint, pinned, owner, shared, created_at, updated_at
@@ -107,19 +115,21 @@ ORDER BY created_at DESC
 LIMIT 200;`
 
 const upsertSessionMetadataSQL = `
-INSERT INTO session_metadata (host_id, session_name, title, tags, updated_at)
-VALUES (?, ?, ?, ?, ?)
+INSERT INTO session_metadata (host_id, session_name, title, tags, owner, shared, updated_at)
+VALUES (?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(host_id, session_name) DO UPDATE SET
 	title = excluded.title,
 	tags = excluded.tags,
+	owner = excluded.owner,
+	shared = excluded.shared,
 	updated_at = excluded.updated_at;`
 
 const listSessionMetadataSQL = `
-SELECT host_id, session_name, title, tags, updated_at
+SELECT host_id, session_name, title, tags, owner, shared, updated_at
 FROM session_metadata
 WHERE host_id = ?;`
 
 const getSessionMetadataSQL = `
-SELECT host_id, session_name, title, tags, updated_at
+SELECT host_id, session_name, title, tags, owner, shared, updated_at
 FROM session_metadata
 WHERE host_id = ? AND session_name = ?;`

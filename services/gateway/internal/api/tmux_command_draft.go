@@ -44,6 +44,10 @@ func (s *Server) handleDraftTmuxCommand(w http.ResponseWriter, r *http.Request) 
 		writeError(w, statusForHostAccessError(err), err)
 		return
 	}
+	if err := s.visibleSession(r, host, sessionName); err != nil {
+		writeError(w, statusForSessionAccessError(err), err)
+		return
+	}
 	password, err := s.sshPasswordForRequest(r, hostID, input.credential())
 	if err != nil {
 		writeError(w, statusForCredentialError(err), err)

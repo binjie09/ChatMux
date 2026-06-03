@@ -224,7 +224,13 @@ func (s *Server) historyCaptureArgs(r *http.Request, args map[string]string) (ho
 		return hoststore.Host{}, "", "", err
 	}
 	host, err := s.visibleHost(r, hostID)
-	return host, password, sessionName, err
+	if err != nil {
+		return hoststore.Host{}, "", "", err
+	}
+	if err := s.visibleSession(r, host, sessionName); err != nil {
+		return hoststore.Host{}, "", "", err
+	}
+	return host, password, sessionName, nil
 }
 
 func automationCredential(args map[string]string) sshCredentialRequest {
@@ -264,14 +270,14 @@ func statusForAutomationError(err error) int {
 	if errors.Is(err, errAutomationArgumentRequired) || errors.Is(err, tmux.ErrInvalidSessionName) {
 		return http.StatusBadRequest
 	}
-	if errors.Is(err, hoststore.ErrHostNotFound) || errors.Is(err, errHostNotVisible) {
+	if errors.Is(err, hoststore.ErrHostNotFound) || errors.Is(err, errHostNotVisible) || errors.Is(err, errSessionNotVisible) {
 		return http.StatusNotFound
 	}
 	return http.StatusInternalServerError
 }
 
 func statusWrappedTmuxError(err error) error {
-	if errors.Is(err, hoststore.ErrHostNotFound) || errors.Is(err, errHostNotVisible) {
+	if errors.Is(err, hoststore.ErrHostNotFound) || errors.Is(err, errHostNotVisible) || errors.Is(err, errSessionNotVisible) {
 		return err
 	}
 	if errors.Is(err, tmux.ErrInvalidSessionName) {

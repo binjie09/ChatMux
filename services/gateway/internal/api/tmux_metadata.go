@@ -1,7 +1,6 @@
 package api
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -11,8 +10,9 @@ import (
 )
 
 type saveSessionMetadataRequest struct {
-	Tags  []string `json:"tags"`
-	Title string   `json:"title"`
+	Shared *bool    `json:"shared"`
+	Tags   []string `json:"tags"`
+	Title  string   `json:"title"`
 }
 
 func (s *Server) handleSaveTmuxSessionMetadata(w http.ResponseWriter, r *http.Request) {
@@ -25,8 +25,13 @@ func (s *Server) handleSaveTmuxSessionMetadata(w http.ResponseWriter, r *http.Re
 		writeError(w, http.StatusBadRequest, err)
 		return
 	}
-	if err := s.ensureHostExists(r, hostID); err != nil {
-		writeError(w, statusForHostError(err), err)
+	host, err := s.visibleHost(r, hostID)
+	if err != nil {
+		writeError(w, statusForHostAccessError(err), err)
+		return
+	}
+	if err := s.manageableSession(r, host, sessionName); err != nil {
+		writeError(w, statusForSessionAccessError(err), err)
 		return
 	}
 
@@ -36,7 +41,8 @@ func (s *Server) handleSaveTmuxSessionMetadata(w http.ResponseWriter, r *http.Re
 		return
 	}
 	metadata, err := s.hosts.SaveSessionMetadata(r.Context(), hoststore.SaveSessionMetadataInput{
-		HostID: hostID, SessionName: sessionName, Tags: input.Tags, Title: input.Title,
+		HostID: hostID, Owner: requestPrincipal(r).Name, SessionName: sessionName,
+		Shared: input.Shared, Tags: input.Tags, Title: input.Title,
 	})
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err)
@@ -49,8 +55,8 @@ func (s *Server) handleSaveTmuxSessionMetadata(w http.ResponseWriter, r *http.Re
 	writeJSON(w, http.StatusOK, metadata)
 }
 
-func (s *Server) applySessionMetadata(ctx context.Context, hostID string, sessions []tmux.Session) ([]tmux.Session, error) {
-	items, err := s.hosts.ListSessionMetadata(ctx, hostID)
+func (s *Server) applyVisibleSessionMetadata(r *http.Request, host hoststore.Host, sessions []tmux.Session) ([]tmux.Session, error) {
+	items, err := s.hosts.ListSessionMetadata(r.Context(), host.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -58,11 +64,24 @@ func (s *Server) applySessionMetadata(ctx context.Context, hostID string, sessio
 	for _, item := range items {
 		lookup[item.SessionName] = item
 	}
-	for index := range sessions {
-		if metadata, ok := lookup[sessions[index].Name]; ok {
-			sessions[index].Title = metadata.Title
-			sessions[index].Tags = metadata.Tags
+	visible := make([]tmux.Session, 0, len(sessions))
+	for _, session := range sessions {
+		metadata, found := lookup[session.Name]
+		if !principalCanAccessSession(r, host, metadata, found) {
+			continue
 		}
+		visible = append(visible, applySessionMetadata(session, metadata, found))
 	}
-	return sessions, nil
+	return visible, nil
+}
+
+func applySessionMetadata(session tmux.Session, metadata hoststore.SessionMetadata, found bool) tmux.Session {
+	if !found {
+		return session
+	}
+	session.Title = metadata.Title
+	session.Tags = metadata.Tags
+	session.Owner = metadata.Owner
+	session.Shared = metadata.Shared
+	return session
 }

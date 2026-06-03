@@ -34,6 +34,8 @@ export type TmuxSession = {
   status: "idle" | "running" | "waiting" | "failed" | "unknown";
   title: string;
   tags: string[];
+  owner: string;
+  shared: boolean;
 };
 
 export type AuditEvent = {
@@ -148,10 +150,10 @@ export async function createTmuxSession(hostId: string, credentialToken: string,
   });
 }
 
-export async function saveSessionMetadata(hostId: string, sessionName: string, title: string, tags: string[]): Promise<TmuxSessionMetadata> {
+export async function saveSessionMetadata(hostId: string, sessionName: string, title: string, tags: string[], shared: boolean): Promise<TmuxSessionMetadata> {
   return request<TmuxSessionMetadata>(`/api/hosts/${hostId}/tmux/sessions/${sessionName}/metadata`, {
     method: "POST",
-    body: JSON.stringify({ tags, title }),
+    body: JSON.stringify({ shared, tags, title }),
   });
 }
 
@@ -160,6 +162,8 @@ export type TmuxSessionMetadata = {
   sessionName: string;
   title: string;
   tags: string[];
+  owner: string;
+  shared: boolean;
   updatedAt: string;
 };
 

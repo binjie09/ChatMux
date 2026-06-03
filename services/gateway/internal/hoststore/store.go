@@ -227,6 +227,31 @@ func (s *Store) migrate(ctx context.Context) error {
 			return fmt.Errorf("migrate host shared: %w", err)
 		}
 	}
+	if err := s.migrateSessionMetadata(ctx); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *Store) migrateSessionMetadata(ctx context.Context) error {
+	exists, err := s.columnExists(ctx, "session_metadata", "owner")
+	if err != nil {
+		return err
+	}
+	if !exists {
+		if _, err := s.db.ExecContext(ctx, addSessionOwnerSQL); err != nil {
+			return fmt.Errorf("migrate session owner: %w", err)
+		}
+	}
+	exists, err = s.columnExists(ctx, "session_metadata", "shared")
+	if err != nil {
+		return err
+	}
+	if !exists {
+		if _, err := s.db.ExecContext(ctx, addSessionSharedSQL); err != nil {
+			return fmt.Errorf("migrate session shared: %w", err)
+		}
+	}
 	return nil
 }
 

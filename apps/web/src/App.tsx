@@ -146,14 +146,20 @@ export function App() {
     setComposerValue("");
   }
 
-  async function handleSaveSessionMetadata(title: string, tags: string[]) {
+  async function handleSaveSessionMetadata(title: string, tags: string[], shared: boolean) {
     if (!selectedHostId || !selectedSessionName) {
       return;
     }
     try {
-      const metadata = await saveSessionMetadata(selectedHostId, selectedSessionName, title, tags);
+      const metadata = await saveSessionMetadata(selectedHostId, selectedSessionName, title, tags, shared);
       setSessions((current) => current.map((session) => (
-        session.name === metadata.sessionName ? { ...session, tags: metadata.tags, title: metadata.title } : session
+        session.name === metadata.sessionName ? {
+          ...session,
+          owner: metadata.owner,
+          shared: metadata.shared,
+          tags: metadata.tags,
+          title: metadata.title,
+        } : session
       )));
       void refreshAuditEvents();
       setError("");
