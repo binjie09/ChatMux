@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import {
   createHost,
+  createTmuxSession,
   createTerminalToken,
   listHosts,
   listTmuxSessions,
@@ -31,6 +32,7 @@ export function App() {
   const [sessions, setSessions] = useState<TmuxSession[]>([]);
   const [selectedHostId, setSelectedHostId] = useState<string>("");
   const [selectedSessionName, setSelectedSessionName] = useState("");
+  const [newSessionName, setNewSessionName] = useState("");
   const [sshPassword, setSSHPassword] = useState("");
   const [terminalURL, setTerminalURL] = useState("");
   const [showHostForm, setShowHostForm] = useState(false);
@@ -90,6 +92,20 @@ export function App() {
       setSelectedSessionName(sessionName);
       setTerminalURL(terminalWebSocketURL(token));
       setError("");
+    } catch (err) {
+      setError(errorMessage(err));
+    }
+  }
+
+  async function handleCreateSession() {
+    if (!selectedHostId || !sshPassword || !newSessionName) {
+      return;
+    }
+    try {
+      const session = await createTmuxSession(selectedHostId, sshPassword, newSessionName);
+      setSessions((current) => [session, ...current.filter((item) => item.name !== session.name)]);
+      setNewSessionName("");
+      await handleOpenSession(session.name);
     } catch (err) {
       setError(errorMessage(err));
     }
@@ -155,7 +171,7 @@ export function App() {
             <p>Remote tmux</p>
             <h1>Conversations</h1>
           </div>
-          <button className="icon-button" type="button" aria-label="New session">
+          <button className="icon-button" type="button" aria-label="New session" onClick={() => void handleCreateSession()}>
             <Plus size={19} aria-hidden="true" />
           </button>
         </header>
@@ -174,6 +190,18 @@ export function App() {
           <button type="submit" aria-label="Connect">
             <KeyRound size={17} aria-hidden="true" />
           </button>
+        </form>
+
+        <form className="session-create" onSubmit={(event) => {
+          event.preventDefault();
+          void handleCreateSession();
+        }}>
+          <input
+            aria-label="New session name"
+            placeholder="New session"
+            value={newSessionName}
+            onChange={(event) => setNewSessionName(event.target.value)}
+          />
         </form>
 
         {sessions.map((session) => (

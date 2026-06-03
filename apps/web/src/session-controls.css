@@ -5,6 +5,19 @@
   margin-bottom: 12px;
 }
 
+.session-create {
+  margin-bottom: 12px;
+}
+
+.session-create input {
+  width: 100%;
+  border: 1px solid #d6cebd;
+  border-radius: 8px;
+  padding: 9px 10px;
+  color: #1a231e;
+  background: #ffffff;
+}
+
 .session-auth input {
   min-width: 0;
   border: 1px solid #d6cebd;

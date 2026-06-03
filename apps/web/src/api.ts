@@ -56,6 +56,13 @@ export async function listTmuxSessions(hostId: string, password: string): Promis
   });
 }
 
+export async function createTmuxSession(hostId: string, password: string, name: string): Promise<TmuxSession> {
+  return request<TmuxSession>(`/api/hosts/${hostId}/tmux/sessions`, {
+    method: "POST",
+    body: JSON.stringify({ name, password }),
+  });
+}
+
 export async function createTerminalToken(hostId: string, sessionName: string, password: string): Promise<string> {
   const response = await request<TerminalTokenResponse>(`/api/hosts/${hostId}/tmux/sessions/${sessionName}/terminal-token`, {
     method: "POST",
