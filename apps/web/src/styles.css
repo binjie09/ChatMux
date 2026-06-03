@@ -257,9 +257,29 @@ button {
     display: none;
   }
 
+  .sidebar.mobile-open,
+  .session-list.mobile-open {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 64px;
+    left: 0;
+    z-index: 30;
+    overflow: auto;
+  }
+
+  .sidebar.mobile-open {
+    display: flex;
+  }
+
+  .session-list.mobile-open {
+    display: block;
+    border-right: 0;
+  }
+
   .conversation {
     min-height: 100vh;
-    padding: 18px;
+    padding: 14px 14px 82px;
   }
 
   .conversation-header {

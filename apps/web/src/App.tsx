@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from "react";
-import { Monitor, Plus, Server, ShieldCheck, Smartphone, TerminalSquare } from "lucide-react";
 import {
   captureTmuxHistory,
   createHost,
@@ -21,10 +20,11 @@ import { AuditPanel } from "./AuditPanel";
 import { Composer, type ComposerMode } from "./Composer";
 import { HistoryPanel } from "./HistoryPanel";
 import { HostActions } from "./HostActions";
-import { HostForm } from "./HostForm";
+import { MobileNavigation, type MobilePanel } from "./MobileNavigation";
 import { NativeTerminal, type QueuedTerminalInput } from "./NativeTerminal";
 import { SessionMetadataEditor } from "./SessionMetadataEditor";
 import { SessionList } from "./SessionList";
+import { Sidebar } from "./Sidebar";
 import { errorMessage, sortHosts } from "./view-utils";
 
 export function App() {
@@ -40,6 +40,7 @@ export function App() {
   const [historyChunks, setHistoryChunks] = useState<TranscriptChunk[]>([]);
   const [historyText, setHistoryText] = useState("");
   const [historyQuery, setHistoryQuery] = useState("");
+  const [mobilePanel, setMobilePanel] = useState<MobilePanel>("terminal");
   const [queuedInput, setQueuedInput] = useState<QueuedTerminalInput | null>(null);
   const [showHostForm, setShowHostForm] = useState(false);
   const [error, setError] = useState("");
@@ -72,6 +73,7 @@ export function App() {
     const host = await createHost(input);
     setHosts((current) => sortHosts([host, ...current]));
     setSelectedHostId(host.id);
+    setMobilePanel("sessions");
     setShowHostForm(false);
     void refreshAuditEvents();
   }
@@ -82,6 +84,7 @@ export function App() {
     setSessions([]);
     setHistoryChunks([]);
     setHistoryText("");
+    setMobilePanel("sessions");
   }
 
   async function handleTrustHost() {
@@ -129,6 +132,7 @@ export function App() {
       return;
     }
     setSelectedSessionName(sessionName);
+    setMobilePanel("terminal");
     try {
       const history = await captureTmuxHistory(selectedHostId, sessionName, sshPassword);
       setHistoryChunks(history.chunks);
@@ -190,56 +194,18 @@ export function App() {
 
   return (
     <main className="app-shell">
-      <aside className="sidebar">
-        <div className="brand">
-          <TerminalSquare aria-hidden="true" />
-          <div>
-            <strong>MuxChat</strong>
-            <span>SSH tmux workspaces</span>
-          </div>
-        </div>
-
-        <button className="primary-action" type="button" onClick={() => setShowHostForm(true)}>
-          <Plus size={18} aria-hidden="true" />
-          Add host
-        </button>
-        {showHostForm ? <HostForm onCancel={() => setShowHostForm(false)} onSubmit={handleCreateHost} /> : null}
-
-        <section className="nav-section">
-          <h2>Hosts</h2>
-          <div className="host-list">
-            {hosts.map((host) => (
-              <button className="host-row" type="button" key={host.id} onClick={() => handleSelectHost(host.id)}>
-                <Server size={18} aria-hidden="true" />
-                <span>
-                  <strong>{host.name}</strong>
-                  <small>{host.username}@{host.hostname}:{host.port}</small>
-                </span>
-                <i className={`status-dot ${host.status}`} />
-              </button>
-            ))}
-          </div>
-          {error ? <p className="sidebar-error">{error}</p> : null}
-        </section>
-
-        <section className="platforms">
-          <h2>Targets</h2>
-          <div>
-            <Monitor size={16} aria-hidden="true" />
-            Web, macOS, Windows
-          </div>
-          <div>
-            <Smartphone size={16} aria-hidden="true" />
-            iOS, Android
-          </div>
-          <div>
-            <ShieldCheck size={16} aria-hidden="true" />
-            Gateway secured SSH
-          </div>
-        </section>
-      </aside>
+      <Sidebar
+        error={error}
+        hosts={hosts}
+        mobileOpen={mobilePanel === "hosts"}
+        showHostForm={showHostForm}
+        onCreateHost={handleCreateHost}
+        onSelectHost={handleSelectHost}
+        onShowHostForm={setShowHostForm}
+      />
 
       <SessionList
+        mobileOpen={mobilePanel === "sessions"}
         newSessionName={newSessionName}
         sessions={sessions}
         sshPassword={sshPassword}
@@ -285,6 +251,7 @@ export function App() {
           onValueChange={setComposerValue}
         />
       </section>
+      <MobileNavigation activePanel={mobilePanel} onPanelChange={setMobilePanel} />
     </main>
   );
 }

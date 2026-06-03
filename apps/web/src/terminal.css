@@ -87,6 +87,7 @@
   height: 100%;
   min-height: 0;
   overflow: hidden;
+  touch-action: none;
 }
 
 .terminal-screen .xterm {
@@ -104,5 +105,15 @@
 
   .history-panel {
     min-height: 180px;
+  }
+}
+
+@media (max-width: 720px) {
+  .terminal-workspace {
+    grid-template-rows: minmax(0, 1fr);
+  }
+
+  .context-stack {
+    display: none;
   }
 }

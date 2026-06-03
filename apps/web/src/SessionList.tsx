@@ -4,6 +4,7 @@ import "./session-controls.css";
 import { formatTime } from "./view-utils";
 
 type SessionListProps = {
+  mobileOpen: boolean;
   newSessionName: string;
   sessions: TmuxSession[];
   sshPassword: string;
@@ -16,7 +17,7 @@ type SessionListProps = {
 
 export function SessionList(props: SessionListProps) {
   return (
-    <section className="session-list">
+    <section className={`session-list ${props.mobileOpen ? "mobile-open" : ""}`}>
       <header>
         <div>
           <p>Remote tmux</p>

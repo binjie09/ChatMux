@@ -128,7 +128,6 @@ function mountTerminal(terminal: Terminal, container: HTMLDivElement) {
   terminal.loadAddon(fit);
   terminal.open(container);
   fit.fit();
-  terminal.write("$ ");
   return fit;
 }
 
