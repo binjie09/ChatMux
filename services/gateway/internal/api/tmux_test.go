@@ -64,3 +64,22 @@ func TestCreateTmuxSessionRejectsUnsafeName(t *testing.T) {
 		t.Fatalf("expected 400, got %d: %s", rec.Code, rec.Body.String())
 	}
 }
+
+func TestCaptureTmuxHistoryAPI(t *testing.T) {
+	server, closeServer := newTestServer(t)
+	defer closeServer()
+	server.ssh = &fakeSSHRunner{output: "muxchat history\n"}
+	host := createTrustedTestHost(t, server)
+
+	body := bytes.NewBufferString(`{"password":"secret"}`)
+	req := httptest.NewRequest(http.MethodPost, "/api/hosts/"+host.ID+"/tmux/sessions/deploy/history", body)
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), "muxchat history") {
+		t.Fatalf("expected history, got %s", rec.Body.String())
+	}
+}

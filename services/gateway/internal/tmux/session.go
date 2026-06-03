@@ -50,6 +50,14 @@ func KillSessionCommand(name string) (string, error) {
 	return loginShellCommand(command), nil
 }
 
+func CapturePaneCommand(name string) (string, error) {
+	if err := ValidateSessionName(name); err != nil {
+		return "", err
+	}
+	command := tmuxPrelude() + "\"$TMUX_BIN\" capture-pane -p -t " + name + " -S -200"
+	return loginShellCommand(command), nil
+}
+
 func ValidateSessionName(name string) error {
 	if !sessionNamePattern.MatchString(name) {
 		return errors.New("session name must be 1-64 chars using letters, numbers, underscore, dot, or dash")

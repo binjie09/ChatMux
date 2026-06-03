@@ -74,3 +74,13 @@ func TestKillSessionCommand(t *testing.T) {
 		t.Fatalf("expected kill command, got %q", command)
 	}
 }
+
+func TestCapturePaneCommand(t *testing.T) {
+	command, err := CapturePaneCommand("deploy_1")
+	if err != nil {
+		t.Fatalf("CapturePaneCommand failed: %v", err)
+	}
+	if !strings.Contains(command, "capture-pane -p -t deploy_1 -S -200") {
+		t.Fatalf("expected capture command, got %q", command)
+	}
+}
