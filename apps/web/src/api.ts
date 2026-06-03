@@ -17,6 +17,15 @@ export type CreateHostInput = {
   username: string;
 };
 
+export type TmuxSession = {
+  id: string;
+  name: string;
+  windows: number;
+  attached: boolean;
+  updatedAt: string;
+  status: "idle" | "running" | "waiting" | "failed" | "unknown";
+};
+
 export async function listHosts(): Promise<Host[]> {
   return request<Host[]>("/api/hosts");
 }
@@ -33,6 +42,13 @@ export async function trustHost(hostId: string): Promise<Host> {
     method: "POST",
   });
   return response.host;
+}
+
+export async function listTmuxSessions(hostId: string, password: string): Promise<TmuxSession[]> {
+  return request<TmuxSession[]>(`/api/hosts/${hostId}/tmux/sessions/list`, {
+    method: "POST",
+    body: JSON.stringify({ password }),
+  });
 }
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {

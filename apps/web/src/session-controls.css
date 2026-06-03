@@ -1,0 +1,31 @@
+.session-auth {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.session-auth input {
+  min-width: 0;
+  border: 1px solid #d6cebd;
+  border-radius: 8px;
+  padding: 9px 10px;
+  color: #1a231e;
+  background: #ffffff;
+}
+
+.session-auth button {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  border: 1px solid #d7d0c2;
+  border-radius: 8px;
+  color: #1a231e;
+  background: #ffffff;
+}
+
+.session-empty {
+  margin: 12px 4px 0;
+  color: #69746e;
+  font-size: 13px;
+}

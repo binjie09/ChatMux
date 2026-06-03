@@ -12,27 +12,17 @@ import {
   Smartphone,
   TerminalSquare,
 } from "lucide-react";
-import { createHost, listHosts, trustHost, type Host } from "./api";
+import { createHost, listHosts, listTmuxSessions, trustHost, type Host, type TmuxSession } from "./api";
 import { HostForm } from "./HostForm";
 import { NativeTerminal } from "./NativeTerminal";
-
-type Session = {
-  id: string;
-  name: string;
-  host: string;
-  status: "running" | "waiting" | "idle";
-  updatedAt: string;
-};
-
-const sessions: Session[] = [
-  { id: "deploy", name: "deploy-check", host: "prod-api-01", status: "waiting", updatedAt: "2 min ago" },
-  { id: "train", name: "train-run-42", host: "gpu-worker", status: "running", updatedAt: "12 min ago" },
-  { id: "logs", name: "nginx-logs", host: "edge-cache", status: "idle", updatedAt: "1 hr ago" },
-];
+import "./session-controls.css";
 
 export function App() {
   const [hosts, setHosts] = useState<Host[]>([]);
+  const [sessions, setSessions] = useState<TmuxSession[]>([]);
   const [selectedHostId, setSelectedHostId] = useState<string>("");
+  const [selectedSessionName, setSelectedSessionName] = useState("");
+  const [sshPassword, setSSHPassword] = useState("");
   const [showHostForm, setShowHostForm] = useState(false);
   const [error, setError] = useState("");
 
@@ -66,7 +56,22 @@ export function App() {
     setHosts((current) => current.map((host) => (host.id === trusted.id ? trusted : host)));
   }
 
+  async function handleListSessions() {
+    if (!selectedHostId || !sshPassword) {
+      return;
+    }
+    try {
+      const nextSessions = await listTmuxSessions(selectedHostId, sshPassword);
+      setSessions(nextSessions);
+      setSelectedSessionName((current) => current || nextSessions[0]?.name || "");
+      setError("");
+    } catch (err) {
+      setError(errorMessage(err));
+    }
+  }
+
   const selectedHost = hosts.find((host) => host.id === selectedHostId);
+  const selectedSession = sessions.find((session) => session.name === selectedSessionName);
 
   return (
     <main className="app-shell">
@@ -130,24 +135,41 @@ export function App() {
           </button>
         </header>
 
+        <form className="session-auth" onSubmit={(event) => {
+          event.preventDefault();
+          void handleListSessions();
+        }}>
+          <input
+            aria-label="SSH password"
+            placeholder="Password"
+            type="password"
+            value={sshPassword}
+            onChange={(event) => setSSHPassword(event.target.value)}
+          />
+          <button type="submit" aria-label="Connect">
+            <KeyRound size={17} aria-hidden="true" />
+          </button>
+        </form>
+
         {sessions.map((session) => (
-          <button className="session-row" type="button" key={session.id}>
+          <button className="session-row" type="button" key={session.id} onClick={() => setSelectedSessionName(session.name)}>
             <Activity size={18} aria-hidden="true" />
             <span>
               <strong>{session.name}</strong>
-              <small>{session.host} · {session.updatedAt}</small>
+              <small>{session.windows} windows · {formatTime(session.updatedAt)}</small>
             </span>
             <em className={session.status}>{session.status}</em>
             <ChevronRight size={17} aria-hidden="true" />
           </button>
         ))}
+        {sessions.length === 0 ? <p className="session-empty">No sessions</p> : null}
       </section>
 
       <section className="conversation">
         <header className="conversation-header">
           <div>
             <p>{selectedHost?.name ?? "No host"}</p>
-            <h2>{sessions[0]?.name ?? "Terminal"}</h2>
+            <h2>{selectedSession?.name ?? "Terminal"}</h2>
           </div>
           <div className="header-actions">
             <button className="utility-button" type="button" onClick={handleTrustHost}>
@@ -180,4 +202,8 @@ function errorMessage(error: unknown) {
     return error.message;
   }
   return String(error);
+}
+
+function formatTime(value: string) {
+  return new Date(value).toLocaleString();
 }
