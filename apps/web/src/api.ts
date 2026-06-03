@@ -1,6 +1,8 @@
 const desktopGatewayURL = "http://127.0.0.1:19327";
 const gatewayURL = import.meta.env.VITE_GATEWAY_URL ?? defaultGatewayURL();
 
+let gatewayAccessToken = "";
+
 export type Host = {
   id: string;
   name: string;
@@ -128,6 +130,10 @@ export async function captureTmuxHistory(hostId: string, sessionName: string, pa
   });
 }
 
+export function setGatewayAccessToken(token: string) {
+  gatewayAccessToken = token.trim();
+}
+
 export function terminalWebSocketURL(token: string) {
   const url = new URL(gatewayURL || window.location.origin);
   url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
@@ -140,15 +146,21 @@ export function terminalWebSocketURL(token: string) {
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const response = await fetch(gatewayURL + path, {
     ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...init.headers,
-    },
+    headers: requestHeaders(init.headers),
   });
   if (!response.ok) {
     throw new Error(await response.text());
   }
   return response.json() as Promise<T>;
+}
+
+function requestHeaders(initHeaders?: HeadersInit) {
+  const headers = new Headers(initHeaders);
+  headers.set("Content-Type", "application/json");
+  if (gatewayAccessToken) {
+    headers.set("Authorization", `Bearer ${gatewayAccessToken}`);
+  }
+  return headers;
 }
 
 function defaultGatewayURL() {

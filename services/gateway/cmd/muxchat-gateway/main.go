@@ -20,7 +20,7 @@ func main() {
 	addr := envOrDefault("MUXCHAT_ADDR", ":8080")
 	server := &http.Server{
 		Addr:              addr,
-		Handler:           api.NewServer(store).Handler(),
+		Handler:           api.NewServer(store, api.WithGatewayAccessToken(os.Getenv("MUXCHAT_GATEWAY_TOKEN"))).Handler(),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 

@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/muxchat/muxchat/services/gateway/internal/hoststore"
@@ -9,17 +10,30 @@ import (
 )
 
 type Server struct {
-	hosts          *hoststore.Store
-	ssh            sshRunner
-	terminalTokens *terminalTokenStore
+	gatewayAccessToken string
+	hosts              *hoststore.Store
+	ssh                sshRunner
+	terminalTokens     *terminalTokenStore
 }
 
-func NewServer(hosts *hoststore.Store) *Server {
-	return &Server{
+type ServerOption func(*Server)
+
+func WithGatewayAccessToken(token string) ServerOption {
+	return func(s *Server) {
+		s.gatewayAccessToken = strings.TrimSpace(token)
+	}
+}
+
+func NewServer(hosts *hoststore.Store, options ...ServerOption) *Server {
+	server := &Server{
 		hosts:          hosts,
 		ssh:            sshclient.NewClient(),
 		terminalTokens: newTerminalTokenStore(),
 	}
+	for _, option := range options {
+		option(server)
+	}
+	return server
 }
 
 func (s *Server) Handler() http.Handler {
@@ -37,7 +51,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/hosts/{id}/tmux/sessions/{name}/history", s.handleCaptureTmuxHistory)
 	mux.HandleFunc("POST /api/hosts/{id}/tmux/sessions/{name}/metadata", s.handleSaveTmuxSessionMetadata)
 	mux.HandleFunc("GET /api/terminal", s.handleTerminalWebSocket)
-	return withCORS(mux)
+	return withCORS(s.withGatewayAuth(mux))
 }
 
 type healthResponse struct {

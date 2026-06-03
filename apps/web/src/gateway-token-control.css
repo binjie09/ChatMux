@@ -1,0 +1,69 @@
+.gateway-token-control {
+  display: grid;
+  gap: 9px;
+  border: 1px solid #2c3931;
+  border-radius: 8px;
+  padding: 10px;
+  background: #202b25;
+}
+
+.gateway-token-control header {
+  display: grid;
+  grid-template-columns: 16px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  color: #d9dedb;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.gateway-token-control small {
+  color: #9fa9a3;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.gateway-token-control form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 34px 34px;
+  gap: 7px;
+}
+
+.gateway-token-control input {
+  min-width: 0;
+  border: 1px solid #405146;
+  border-radius: 6px;
+  padding: 8px 9px;
+  color: #f7f2e8;
+  background: #17201b;
+}
+
+.gateway-token-control input::placeholder {
+  color: #8c9891;
+}
+
+.gateway-token-control button {
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 6px;
+  color: #102018;
+  background: #8fd5b2;
+}
+
+.gateway-token-control button:last-child {
+  color: #f3ebe1;
+  background: #3a463f;
+}
+
+.gateway-token-control button:disabled,
+.gateway-token-control input:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+@media (min-width: 721px) and (max-width: 980px) {
+  .gateway-token-control {
+    display: none;
+  }
+}

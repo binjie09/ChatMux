@@ -1,10 +1,13 @@
 import { Monitor, Plus, Server, ShieldCheck, Smartphone, TerminalSquare } from "lucide-react";
 import { type CreateHostInput, type Host } from "./api";
+import { GatewayTokenControl } from "./GatewayTokenControl";
 import { HostForm } from "./HostForm";
+import { type GatewayTokenState } from "./useGatewayAccessToken";
 
 type SidebarProps = {
   error: string;
   hosts: Host[];
+  gatewayToken: GatewayTokenState;
   mobileOpen: boolean;
   showHostForm: boolean;
   onCreateHost: (input: CreateHostInput) => Promise<void>;
@@ -28,6 +31,7 @@ export function Sidebar(props: SidebarProps) {
         Add host
       </button>
       {props.showHostForm ? <HostForm onCancel={() => props.onShowHostForm(false)} onSubmit={props.onCreateHost} /> : null}
+      <GatewayTokenControl tokenState={props.gatewayToken} />
 
       <section className="nav-section">
         <h2>Hosts</h2>

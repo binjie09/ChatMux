@@ -25,6 +25,7 @@ import { NativeTerminal, type QueuedTerminalInput } from "./NativeTerminal";
 import { SessionMetadataEditor } from "./SessionMetadataEditor";
 import { SessionList } from "./SessionList";
 import { Sidebar } from "./Sidebar";
+import { useGatewayAccessToken } from "./useGatewayAccessToken";
 import { errorMessage, sortHosts } from "./view-utils";
 
 export function App() {
@@ -44,11 +45,15 @@ export function App() {
   const [queuedInput, setQueuedInput] = useState<QueuedTerminalInput | null>(null);
   const [showHostForm, setShowHostForm] = useState(false);
   const [error, setError] = useState("");
+  const gatewayToken = useGatewayAccessToken(setError);
 
   useEffect(() => {
+    if (!gatewayToken.ready) {
+      return;
+    }
     void refreshHosts();
     void refreshAuditEvents();
-  }, []);
+  }, [gatewayToken.ready]);
 
   async function refreshHosts() {
     try {
@@ -196,6 +201,7 @@ export function App() {
     <main className="app-shell">
       <Sidebar
         error={error}
+        gatewayToken={gatewayToken}
         hosts={hosts}
         mobileOpen={mobilePanel === "hosts"}
         showHostForm={showHostForm}

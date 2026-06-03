@@ -5,7 +5,7 @@
 - Node.js 24+
 - pnpm 10+
 - Go 1.23+
-- JDK 17+ for Android builds
+- JDK 21+ for Android builds
 - `tmux` installed on SSH hosts used for tmux feature testing
 
 ## Install
@@ -51,6 +51,11 @@ go run ./cmd/muxchat-gateway
 ```
 
 The gateway listens on `http://localhost:8080` by default.
+
+Set `MUXCHAT_GATEWAY_TOKEN` to require `Authorization: Bearer <token>` on API
+requests. The SPA can store that token from the sidebar; iOS uses Keychain,
+Android uses Android Keystore backed storage, and the web fallback is only for
+local development.
 
 Useful checks:
 
