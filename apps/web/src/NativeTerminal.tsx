@@ -54,10 +54,16 @@ export function NativeTerminal({ queuedInput, webSocketURL }: NativeTerminalProp
     socketRef.current = socket;
     socket?.addEventListener("open", () => sendResize(socket, terminal.cols, terminal.rows));
     socket?.addEventListener("message", (event) => writeSocketMessage(terminal, event.data));
+    let lastSize = terminalSize(terminal);
     const resizeObserver = new ResizeObserver(() => {
       fit.fit();
+      const nextSize = terminalSize(terminal);
+      if (nextSize.cols === lastSize.cols && nextSize.rows === lastSize.rows) {
+        return;
+      }
+      lastSize = nextSize;
       if (socket?.readyState === WebSocket.OPEN) {
-        sendResize(socket, terminal.cols, terminal.rows);
+        sendResize(socket, nextSize.cols, nextSize.rows);
       }
     });
     resizeObserver.observe(terminalRef.current);
@@ -91,6 +97,10 @@ export function NativeTerminal({ queuedInput, webSocketURL }: NativeTerminalProp
 
 function sendResize(socket: WebSocket, cols: number, rows: number) {
   socket.send(JSON.stringify({ type: "resize", cols, rows }));
+}
+
+function terminalSize(terminal: Terminal) {
+  return { cols: terminal.cols, rows: terminal.rows };
 }
 
 function writeSocketMessage(terminal: Terminal, data: string) {

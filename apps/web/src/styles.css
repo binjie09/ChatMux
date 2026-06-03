@@ -27,7 +27,9 @@ button {
 .app-shell {
   display: grid;
   grid-template-columns: 280px minmax(260px, 360px) minmax(0, 1fr);
+  height: 100vh;
   min-height: 100vh;
+  overflow: hidden;
   background: #f6f3ec;
 }
 
@@ -40,17 +42,9 @@ button {
   color: #f7f2e8;
 }
 
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
+.brand { display: flex; align-items: center; gap: 12px; }
 
-.brand svg {
-  width: 34px;
-  height: 34px;
-  color: #8fd5b2;
-}
+.brand svg { width: 34px; height: 34px; color: #8fd5b2; }
 
 .brand strong, .host-row strong, .session-row strong {
   display: block;
@@ -212,7 +206,9 @@ button {
 .conversation {
   display: grid;
   grid-template-rows: auto 1fr auto;
+  min-height: 0;
   min-width: 0;
+  overflow: hidden;
   padding: 24px;
 }
 
