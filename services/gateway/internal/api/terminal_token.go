@@ -59,12 +59,12 @@ func (s *Server) handleCreateTerminalToken(w http.ResponseWriter, r *http.Reques
 }
 
 func (s *Server) ensureHostExists(r *http.Request, hostID string) error {
-	_, err := s.hosts.GetHost(r.Context(), hostID)
+	_, err := s.visibleHost(r, hostID)
 	return err
 }
 
 func statusForHostError(err error) int {
-	if errors.Is(err, hoststore.ErrHostNotFound) {
+	if errors.Is(err, hoststore.ErrHostNotFound) || errors.Is(err, errHostNotVisible) {
 		return http.StatusNotFound
 	}
 	return http.StatusInternalServerError

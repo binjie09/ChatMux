@@ -45,13 +45,9 @@ func (s *Server) handleListTmuxSessions(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	host, err := s.hosts.GetHost(r.Context(), hostID)
-	if errors.Is(err, hoststore.ErrHostNotFound) {
-		writeError(w, http.StatusNotFound, err)
-		return
-	}
+	host, err := s.visibleHost(r, hostID)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err)
+		writeError(w, statusForHostAccessError(err), err)
 		return
 	}
 
@@ -164,7 +160,7 @@ func (s *Server) runTmuxListCommand(r *http.Request, hostID string, password str
 }
 
 func (s *Server) runTmuxCommand(r *http.Request, hostID string, password string, command string) ([]byte, error) {
-	host, err := s.hosts.GetHost(r.Context(), hostID)
+	host, err := s.visibleHost(r, hostID)
 	if err != nil {
 		return nil, err
 	}

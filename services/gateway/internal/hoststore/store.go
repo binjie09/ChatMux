@@ -21,6 +21,8 @@ type Host struct {
 	Status             string    `json:"status"`
 	HostKeyFingerprint string    `json:"hostKeyFingerprint"`
 	Pinned             bool      `json:"pinned"`
+	Owner              string    `json:"owner"`
+	Shared             bool      `json:"shared"`
 	CreatedAt          time.Time `json:"createdAt"`
 	UpdatedAt          time.Time `json:"updatedAt"`
 }
@@ -30,6 +32,7 @@ type CreateHostInput struct {
 	Hostname string `json:"hostname"`
 	Port     int    `json:"port"`
 	Username string `json:"username"`
+	Owner    string `json:"-"`
 }
 
 type Store struct {
@@ -72,6 +75,24 @@ func (s *Store) ListHosts(ctx context.Context) ([]Host, error) {
 	return hosts, rows.Err()
 }
 
+func (s *Store) ListHostsVisibleTo(ctx context.Context, owner string) ([]Host, error) {
+	rows, err := s.db.QueryContext(ctx, listVisibleHostsSQL, owner)
+	if err != nil {
+		return nil, fmt.Errorf("list visible hosts: %w", err)
+	}
+	defer rows.Close()
+
+	hosts := []Host{}
+	for rows.Next() {
+		host, err := scanHost(rows)
+		if err != nil {
+			return nil, err
+		}
+		hosts = append(hosts, host)
+	}
+	return hosts, rows.Err()
+}
+
 func (s *Store) GetHost(ctx context.Context, id string) (Host, error) {
 	row := s.db.QueryRowContext(ctx, getHostSQL, id)
 	host, err := scanHost(row)
@@ -97,11 +118,13 @@ func (s *Store) CreateHost(ctx context.Context, input CreateHostInput) (Host, er
 		Port:      normalizePort(input.Port),
 		Username:  input.Username,
 		Status:    "offline",
+		Owner:     normalizeOwner(input.Owner),
+		Shared:    true,
 		CreatedAt: now,
 		UpdatedAt: now,
 	}
 
-	if _, err := s.db.ExecContext(ctx, insertHostSQL, host.ID, host.Name, host.Hostname, host.Port, host.Username, host.Status, host.HostKeyFingerprint, host.Pinned, host.CreatedAt, host.UpdatedAt); err != nil {
+	if _, err := s.db.ExecContext(ctx, insertHostSQL, host.ID, host.Name, host.Hostname, host.Port, host.Username, host.Status, host.HostKeyFingerprint, host.Pinned, host.Owner, host.Shared, host.CreatedAt, host.UpdatedAt); err != nil {
 		return Host{}, fmt.Errorf("insert host: %w", err)
 	}
 	return host, nil
@@ -116,6 +139,22 @@ func (s *Store) SetHostPinned(ctx context.Context, id string, pinned bool) (Host
 	affected, err := result.RowsAffected()
 	if err != nil {
 		return Host{}, fmt.Errorf("set host pinned affected rows: %w", err)
+	}
+	if affected == 0 {
+		return Host{}, ErrHostNotFound
+	}
+	return s.GetHost(ctx, id)
+}
+
+func (s *Store) SetHostShared(ctx context.Context, id string, shared bool) (Host, error) {
+	now := time.Now().UTC()
+	result, err := s.db.ExecContext(ctx, setHostSharedSQL, shared, now, id)
+	if err != nil {
+		return Host{}, fmt.Errorf("set host shared: %w", err)
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return Host{}, fmt.Errorf("set host shared affected rows: %w", err)
 	}
 	if affected == 0 {
 		return Host{}, ErrHostNotFound
@@ -170,6 +209,24 @@ func (s *Store) migrate(ctx context.Context) error {
 			return fmt.Errorf("migrate host pinned: %w", err)
 		}
 	}
+	exists, err = s.columnExists(ctx, "hosts", "owner")
+	if err != nil {
+		return err
+	}
+	if !exists {
+		if _, err := s.db.ExecContext(ctx, addHostOwnerSQL); err != nil {
+			return fmt.Errorf("migrate host owner: %w", err)
+		}
+	}
+	exists, err = s.columnExists(ctx, "hosts", "shared")
+	if err != nil {
+		return err
+	}
+	if !exists {
+		if _, err := s.db.ExecContext(ctx, addHostSharedSQL); err != nil {
+			return fmt.Errorf("migrate host shared: %w", err)
+		}
+	}
 	return nil
 }
 
@@ -216,4 +273,11 @@ func normalizePort(port int) int {
 		return defaultSSHPort
 	}
 	return port
+}
+
+func normalizeOwner(owner string) string {
+	if owner == "" {
+		return "local-dev"
+	}
+	return owner
 }

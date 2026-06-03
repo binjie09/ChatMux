@@ -41,7 +41,7 @@ export function Sidebar(props: SidebarProps) {
               <Server size={18} aria-hidden="true" />
               <span>
                 <strong>{host.name}</strong>
-                <small>{host.username}@{host.hostname}:{host.port}</small>
+                <small>{host.username}@{host.hostname}:{host.port} · {host.shared ? "shared" : host.owner}</small>
               </span>
               <i className={`status-dot ${host.status}`} />
             </button>

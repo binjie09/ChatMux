@@ -10,6 +10,8 @@ CREATE TABLE IF NOT EXISTS hosts (
 	status TEXT NOT NULL,
 	host_key_fingerprint TEXT NOT NULL DEFAULT '',
 	pinned BOOLEAN NOT NULL DEFAULT FALSE,
+	owner TEXT NOT NULL DEFAULT 'local-dev',
+	shared BOOLEAN NOT NULL DEFAULT TRUE,
 	created_at TIMESTAMP NOT NULL,
 	updated_at TIMESTAMP NOT NULL
 );`
@@ -40,19 +42,31 @@ ALTER TABLE hosts ADD COLUMN host_key_fingerprint TEXT NOT NULL DEFAULT '';`
 const addHostPinnedSQL = `
 ALTER TABLE hosts ADD COLUMN pinned BOOLEAN NOT NULL DEFAULT FALSE;`
 
+const addHostOwnerSQL = `
+ALTER TABLE hosts ADD COLUMN owner TEXT NOT NULL DEFAULT 'local-dev';`
+
+const addHostSharedSQL = `
+ALTER TABLE hosts ADD COLUMN shared BOOLEAN NOT NULL DEFAULT TRUE;`
+
 const listHostsSQL = `
-SELECT id, name, hostname, port, username, status, host_key_fingerprint, pinned, created_at, updated_at
+SELECT id, name, hostname, port, username, status, host_key_fingerprint, pinned, owner, shared, created_at, updated_at
 FROM hosts
 ORDER BY pinned DESC, created_at DESC;`
 
+const listVisibleHostsSQL = `
+SELECT id, name, hostname, port, username, status, host_key_fingerprint, pinned, owner, shared, created_at, updated_at
+FROM hosts
+WHERE shared = TRUE OR owner = ?
+ORDER BY pinned DESC, created_at DESC;`
+
 const getHostSQL = `
-SELECT id, name, hostname, port, username, status, host_key_fingerprint, pinned, created_at, updated_at
+SELECT id, name, hostname, port, username, status, host_key_fingerprint, pinned, owner, shared, created_at, updated_at
 FROM hosts
 WHERE id = ?;`
 
 const insertHostSQL = `
-INSERT INTO hosts (id, name, hostname, port, username, status, host_key_fingerprint, pinned, created_at, updated_at)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
+INSERT INTO hosts (id, name, hostname, port, username, status, host_key_fingerprint, pinned, owner, shared, created_at, updated_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
 
 const trustHostKeySQL = `
 UPDATE hosts
@@ -62,6 +76,11 @@ WHERE id = ?;`
 const setHostPinnedSQL = `
 UPDATE hosts
 SET pinned = ?, updated_at = ?
+WHERE id = ?;`
+
+const setHostSharedSQL = `
+UPDATE hosts
+SET shared = ?, updated_at = ?
 WHERE id = ?;`
 
 const insertAuditEventSQL = `

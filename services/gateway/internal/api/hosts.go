@@ -9,7 +9,7 @@ import (
 )
 
 func (s *Server) handleListHosts(w http.ResponseWriter, r *http.Request) {
-	hosts, err := s.hosts.ListHosts(r.Context())
+	hosts, err := s.listHostsForPrincipal(r)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err)
 		return
@@ -23,6 +23,7 @@ func (s *Server) handleCreateHost(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err)
 		return
 	}
+	input.Owner = principalName(r)
 
 	host, err := s.hosts.CreateHost(r.Context(), input)
 	if err != nil {
@@ -44,6 +45,10 @@ func (s *Server) handlePinHost(w http.ResponseWriter, r *http.Request) {
 	hostID, ok := routeHostAction(r.URL.Path, "/pin")
 	if !ok {
 		writeError(w, http.StatusNotFound, errors.New("route not found"))
+		return
+	}
+	if _, err := s.visibleHost(r, hostID); err != nil {
+		writeError(w, statusForHostAccessError(err), err)
 		return
 	}
 
@@ -70,4 +75,56 @@ func (s *Server) handlePinHost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, host)
+}
+
+type shareHostRequest struct {
+	Shared bool `json:"shared"`
+}
+
+func (s *Server) handleShareHost(w http.ResponseWriter, r *http.Request) {
+	hostID, ok := routeHostAction(r.URL.Path, "/share")
+	if !ok {
+		writeError(w, http.StatusNotFound, errors.New("route not found"))
+		return
+	}
+	if _, err := s.visibleHost(r, hostID); err != nil {
+		writeError(w, statusForHostAccessError(err), err)
+		return
+	}
+
+	var input shareHostRequest
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+	host, err := s.hosts.SetHostShared(r.Context(), hostID, input.Shared)
+	if err != nil {
+		writeError(w, statusForHostAccessError(err), err)
+		return
+	}
+	eventType := "host.unshared"
+	if host.Shared {
+		eventType = "host.shared"
+	}
+	if err := s.logAudit(r.Context(), hoststore.LogAuditEventInput{Type: eventType, HostID: host.ID, Message: eventType}); err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, host)
+}
+
+func (s *Server) listHostsForPrincipal(r *http.Request) ([]hoststore.Host, error) {
+	principal, ok := principalFromContext(r.Context())
+	if !ok || principal.Role == RoleAdmin {
+		return s.hosts.ListHosts(r.Context())
+	}
+	return s.hosts.ListHostsVisibleTo(r.Context(), principal.Name)
+}
+
+func principalName(r *http.Request) string {
+	principal, ok := principalFromContext(r.Context())
+	if !ok {
+		return localDevPrincipal.Name
+	}
+	return principal.Name
 }

@@ -38,6 +38,9 @@ func TestCreateAndListHostsAPI(t *testing.T) {
 	if len(hosts) != 1 {
 		t.Fatalf("expected 1 host, got %d", len(hosts))
 	}
+	if hosts[0].Owner != localDevPrincipal.Name || !hosts[0].Shared {
+		t.Fatalf("expected created host owner/shared fields, got %#v", hosts[0])
+	}
 
 	events, err := server.hosts.ListAuditEvents(testContext(t))
 	if err != nil {
@@ -45,6 +48,44 @@ func TestCreateAndListHostsAPI(t *testing.T) {
 	}
 	if len(events) != 1 || events[0].Type != "host.created" {
 		t.Fatalf("expected host.created audit event, got %#v", events)
+	}
+}
+
+func TestShareHostAPI(t *testing.T) {
+	server, closeServer := newTestServer(t)
+	defer closeServer()
+	host := createTestHost(t, server.hosts)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/hosts/"+host.ID+"/share", bytes.NewBufferString(`{"shared":false}`))
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+	if !bytes.Contains(rec.Body.Bytes(), []byte(`"shared":false`)) {
+		t.Fatalf("expected private response, got %s", rec.Body.String())
+	}
+}
+
+func TestListHostsFiltersPrivateHosts(t *testing.T) {
+	server := newRoleTestServer(t,
+		StaticUser{Name: "owner", Role: RoleViewer, Token: "owner-token"},
+		StaticUser{Name: "reader", Role: RoleViewer, Token: "reader-token"},
+	)
+	privateHost := createOwnedHost(t, server.hosts, "owner", "private")
+	if _, err := server.hosts.SetHostShared(testContext(t), privateHost.ID, false); err != nil {
+		t.Fatalf("SetHostShared failed: %v", err)
+	}
+	createOwnedHost(t, server.hosts, "other", "shared")
+
+	ownerHosts := listHostsWithToken(t, server, "owner-token")
+	if len(ownerHosts) != 2 {
+		t.Fatalf("expected owner to see two hosts, got %d", len(ownerHosts))
+	}
+	readerHosts := listHostsWithToken(t, server, "reader-token")
+	if len(readerHosts) != 1 || !readerHosts[0].Shared {
+		t.Fatalf("expected reader to see only shared host, got %#v", readerHosts)
 	}
 }
 
@@ -63,6 +104,36 @@ func TestPinHostAPI(t *testing.T) {
 	if !bytes.Contains(rec.Body.Bytes(), []byte(`"pinned":true`)) {
 		t.Fatalf("expected pinned response, got %s", rec.Body.String())
 	}
+}
+
+func createOwnedHost(t *testing.T, store *hoststore.Store, owner string, name string) hoststore.Host {
+	t.Helper()
+	host, err := store.CreateHost(testContext(t), hoststore.CreateHostInput{
+		Name:     name,
+		Hostname: name + ".test",
+		Username: "deploy",
+		Owner:    owner,
+	})
+	if err != nil {
+		t.Fatalf("CreateHost failed: %v", err)
+	}
+	return host
+}
+
+func listHostsWithToken(t *testing.T, server *Server, token string) []hoststore.Host {
+	t.Helper()
+	req := httptest.NewRequest(http.MethodGet, "/api/hosts", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	rec := httptest.NewRecorder()
+	server.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+	var hosts []hoststore.Host
+	if err := json.NewDecoder(rec.Body).Decode(&hosts); err != nil {
+		t.Fatalf("decode hosts: %v", err)
+	}
+	return hosts
 }
 
 func newTestServer(t *testing.T) (*Server, func()) {

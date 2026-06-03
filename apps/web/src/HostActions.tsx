@@ -1,13 +1,14 @@
-import { Bot, KeyRound, Pin } from "lucide-react";
+import { Bot, KeyRound, Pin, Users } from "lucide-react";
 import { type Host } from "./api";
 
 type HostActionsProps = {
   host: Host | undefined;
   onTogglePin: () => void;
+  onToggleShare: () => void;
   onTrustHost: () => void;
 };
 
-export function HostActions({ host, onTogglePin, onTrustHost }: HostActionsProps) {
+export function HostActions({ host, onTogglePin, onToggleShare, onTrustHost }: HostActionsProps) {
   return (
     <div className="header-actions">
       <button className="utility-button" type="button" onClick={onTrustHost}>
@@ -17,6 +18,10 @@ export function HostActions({ host, onTogglePin, onTrustHost }: HostActionsProps
       <button className="utility-button" type="button" onClick={onTogglePin}>
         <Pin size={17} aria-hidden="true" />
         {host?.pinned ? "Unpin" : "Pin"}
+      </button>
+      <button className="utility-button" type="button" onClick={onToggleShare}>
+        <Users size={17} aria-hidden="true" />
+        {host?.shared ? "Private" : "Share"}
       </button>
       <button className="utility-button" type="button">
         <Bot size={17} aria-hidden="true" />

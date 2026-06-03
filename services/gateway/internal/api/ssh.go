@@ -41,13 +41,9 @@ func (s *Server) handleSSHProbe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	host, err := s.hosts.GetHost(r.Context(), hostID)
-	if errors.Is(err, hoststore.ErrHostNotFound) {
-		writeError(w, http.StatusNotFound, err)
-		return
-	}
+	host, err := s.visibleHost(r, hostID)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err)
+		writeError(w, statusForHostAccessError(err), err)
 		return
 	}
 
@@ -70,13 +66,9 @@ func (s *Server) handleTrustHostKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	host, err := s.hosts.GetHost(r.Context(), hostID)
-	if errors.Is(err, hoststore.ErrHostNotFound) {
-		writeError(w, http.StatusNotFound, err)
-		return
-	}
+	host, err := s.visibleHost(r, hostID)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err)
+		writeError(w, statusForHostAccessError(err), err)
 		return
 	}
 

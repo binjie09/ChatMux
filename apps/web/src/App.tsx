@@ -9,6 +9,7 @@ import {
   listTmuxSessions,
   saveSessionMetadata,
   setHostPinned,
+  setHostShared,
   terminalWebSocketURL,
   trustHost,
   type Host,
@@ -108,6 +109,20 @@ export function App() {
     }
     try {
       const updated = await setHostPinned(selectedHost.id, !selectedHost.pinned);
+      setHosts((current) => sortHosts(current.map((host) => (host.id === updated.id ? updated : host))));
+      void refreshAuditEvents();
+      setError("");
+    } catch (err) {
+      setError(errorMessage(err));
+    }
+  }
+
+  async function handleToggleShare() {
+    if (!selectedHost) {
+      return;
+    }
+    try {
+      const updated = await setHostShared(selectedHost.id, !selectedHost.shared);
       setHosts((current) => sortHosts(current.map((host) => (host.id === updated.id ? updated : host))));
       void refreshAuditEvents();
       setError("");
@@ -250,7 +265,7 @@ export function App() {
             <h2>{selectedSession?.title || selectedSession?.name || "Terminal"}</h2>
             <SessionMetadataEditor session={selectedSession} onSave={handleSaveSessionMetadata} />
           </div>
-          <HostActions host={selectedHost} onTogglePin={handleTogglePin} onTrustHost={handleTrustHost} />
+          <HostActions host={selectedHost} onTogglePin={handleTogglePin} onToggleShare={handleToggleShare} onTrustHost={handleTrustHost} />
         </header>
 
         <div className="terminal-workspace">
