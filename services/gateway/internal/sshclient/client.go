@@ -23,6 +23,20 @@ type PasswordCredential struct {
 	Password string
 }
 
+type CommandError struct {
+	Command string
+	Output  string
+	Err     error
+}
+
+func (e CommandError) Error() string {
+	return fmt.Sprintf("run ssh command %q: %v: %s", e.Command, e.Err, e.Output)
+}
+
+func (e CommandError) Unwrap() error {
+	return e.Err
+}
+
 type Client struct {
 	dialContext func(context.Context, string, string) (net.Conn, error)
 }
@@ -66,7 +80,7 @@ func (c *Client) Run(ctx context.Context, host HostConfig, credential PasswordCr
 
 	output, err := session.CombinedOutput(command)
 	if err != nil {
-		return nil, fmt.Errorf("run ssh command: %w", err)
+		return nil, CommandError{Command: command, Output: string(output), Err: err}
 	}
 	return output, nil
 }

@@ -24,6 +24,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/hosts", s.handleCreateHost)
 	mux.HandleFunc("POST /api/hosts/{id}/ssh/probe", s.handleSSHProbe)
 	mux.HandleFunc("POST /api/hosts/{id}/ssh/trust", s.handleTrustHostKey)
+	mux.HandleFunc("POST /api/hosts/{id}/tmux/sessions/list", s.handleListTmuxSessions)
 	return withCORS(mux)
 }
 

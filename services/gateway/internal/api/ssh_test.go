@@ -14,10 +14,14 @@ import (
 
 type fakeSSHRunner struct {
 	command string
+	output  string
 }
 
 func (r *fakeSSHRunner) Run(_ context.Context, _ sshclient.HostConfig, _ sshclient.PasswordCredential, command string) ([]byte, error) {
 	r.command = command
+	if r.output != "" {
+		return []byte(r.output), nil
+	}
 	return []byte("muxchat-ok"), nil
 }
 
@@ -78,4 +82,14 @@ func createTestHost(t *testing.T, store *hoststore.Store) hoststore.Host {
 		t.Fatalf("CreateHost failed: %v", err)
 	}
 	return host
+}
+
+func createTrustedTestHost(t *testing.T, server *Server) hoststore.Host {
+	t.Helper()
+	host := createTestHost(t, server.hosts)
+	trusted, err := server.hosts.TrustHostKey(context.Background(), host.ID, "SHA256:test")
+	if err != nil {
+		t.Fatalf("TrustHostKey failed: %v", err)
+	}
+	return trusted
 }
