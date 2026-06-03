@@ -21,13 +21,15 @@ session from the browser.
 - Implement `tmux list-sessions` parsing.
 - Implement session creation with `tmux new-session -d`.
 - Add WebSocket PTY stream for attaching to one tmux session.
-- Add xterm.js terminal component.
+- Add xterm.js native terminal component above the composer.
+- Verify interactive terminal behavior with shells and TUI commands.
 - Show selected session history with `tmux capture-pane`.
 - Send input through `tmux send-keys` or PTY stream.
 
 ## Phase 2: Chat-like Session Experience
 
-Goal: tmux sessions feel like conversations, not just terminal tabs.
+Goal: tmux sessions keep a native terminal as the primary surface while adding
+conversation-like controls and context around it.
 
 - Normalize captured terminal history into transcript chunks.
 - Add session status detection: idle, running, waiting, failed, unknown.

@@ -23,12 +23,41 @@ Remote host
 tmux sessions, windows, panes
 ```
 
+## Terminal-First Interaction
+
+The main interaction area above the composer must be a real terminal, not a
+rendered chat transcript. It should behave like the VS Code integrated terminal
+or vscode-server terminal:
+
+- Full PTY semantics
+- Escape sequence support through xterm.js
+- Interactive TUI compatibility, including vim, top, htop, lazygit, codex, and
+  similar tools
+- Raw keyboard input, resize events, paste, selection, alternate screen, and
+  mouse reporting
+- tmux attach/detach behavior without rewriting terminal output
+
+The chat-like layer is a control and context layer around the terminal. It can
+show command drafts, summaries, status, and captured history, but it must never
+replace the native terminal stream for active interaction.
+
+The default session view should therefore be:
+
+```text
+Native terminal viewport
+------------------------
+Command / assistant composer
+```
+
+Transcript and AI features should be side panels, tabs, overlays, or collapsed
+metadata surfaces. They must not block terminal-native workflows.
+
 ## Client Strategy
 
 ### Web SPA
 
 The Web SPA is the primary implementation target. It owns navigation, host
-management screens, chat-like session views, terminal panes, settings, and
+management screens, native terminal panes, chat-like controls, settings, and
 future AI controls.
 
 ### Mobile Apps
@@ -114,6 +143,7 @@ continuity:
 
 - See what each remote session is doing without attaching.
 - Resume long-running work from any device.
-- Read terminal history as a conversation.
-- Send commands like messages while keeping raw terminal escape-hatch access.
+- Read terminal history as surrounding context.
+- Send commands like messages while keeping the raw terminal as the primary
+  interaction surface.
 - Add AI summarization and command drafting after the tmux model is reliable.
