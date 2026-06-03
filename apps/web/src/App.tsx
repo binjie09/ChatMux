@@ -13,6 +13,7 @@ import {
   TerminalSquare,
 } from "lucide-react";
 import {
+  captureTmuxHistory,
   createHost,
   createTmuxSession,
   createTerminalToken,
@@ -23,6 +24,7 @@ import {
   type Host,
   type TmuxSession,
 } from "./api";
+import { HistoryPanel } from "./HistoryPanel";
 import { HostForm } from "./HostForm";
 import { NativeTerminal, type QueuedTerminalInput } from "./NativeTerminal";
 import "./session-controls.css";
@@ -36,6 +38,8 @@ export function App() {
   const [sshPassword, setSSHPassword] = useState("");
   const [terminalURL, setTerminalURL] = useState("");
   const [composerValue, setComposerValue] = useState("");
+  const [historyText, setHistoryText] = useState("");
+  const [historyQuery, setHistoryQuery] = useState("");
   const [queuedInput, setQueuedInput] = useState<QueuedTerminalInput | null>(null);
   const [showHostForm, setShowHostForm] = useState(false);
   const [error, setError] = useState("");
@@ -79,6 +83,7 @@ export function App() {
       setSessions(nextSessions);
       setSelectedSessionName((current) => current || nextSessions[0]?.name || "");
       setTerminalURL("");
+      setHistoryText("");
       setError("");
     } catch (err) {
       setError(errorMessage(err));
@@ -91,8 +96,10 @@ export function App() {
     }
     try {
       const token = await createTerminalToken(selectedHostId, sessionName, sshPassword);
+      const history = await captureTmuxHistory(selectedHostId, sessionName, sshPassword);
       setSelectedSessionName(sessionName);
       setTerminalURL(terminalWebSocketURL(token));
+      setHistoryText(history);
       setError("");
     } catch (err) {
       setError(errorMessage(err));
@@ -238,7 +245,10 @@ export function App() {
           </div>
         </header>
 
-        <NativeTerminal queuedInput={queuedInput} webSocketURL={terminalURL} />
+        <div className="terminal-workspace">
+          <NativeTerminal queuedInput={queuedInput} webSocketURL={terminalURL} />
+          <HistoryPanel query={historyQuery} text={historyText} onQueryChange={setHistoryQuery} />
+        </div>
 
         <form className="composer" onSubmit={(event) => {
           event.preventDefault();

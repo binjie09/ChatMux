@@ -31,6 +31,10 @@ type TerminalTokenResponse = {
   expiresIn: number;
 };
 
+type TmuxHistoryResponse = {
+  text: string;
+};
+
 export async function listHosts(): Promise<Host[]> {
   return request<Host[]>("/api/hosts");
 }
@@ -69,6 +73,14 @@ export async function createTerminalToken(hostId: string, sessionName: string, p
     body: JSON.stringify({ password }),
   });
   return response.token;
+}
+
+export async function captureTmuxHistory(hostId: string, sessionName: string, password: string): Promise<string> {
+  const response = await request<TmuxHistoryResponse>(`/api/hosts/${hostId}/tmux/sessions/${sessionName}/history`, {
+    method: "POST",
+    body: JSON.stringify({ password }),
+  });
+  return response.text;
 }
 
 export function terminalWebSocketURL(token: string) {

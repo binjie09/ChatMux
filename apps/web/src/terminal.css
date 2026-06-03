@@ -1,3 +1,10 @@
+.terminal-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 320px);
+  gap: 12px;
+  min-height: 0;
+}
+
 .terminal-shell {
   min-height: 0;
   overflow: hidden;
@@ -13,4 +20,14 @@
 
 .terminal-shell .xterm-viewport {
   scrollbar-color: #496256 #101713;
+}
+
+@media (max-width: 900px) {
+  .terminal-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .history-panel {
+    min-height: 180px;
+  }
 }
