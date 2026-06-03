@@ -37,6 +37,28 @@ func (s *Server) handleCreateHost(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, host)
 }
 
+func (s *Server) handleDeleteHost(w http.ResponseWriter, r *http.Request) {
+	hostID, ok := routeHostAction(r.URL.Path, "")
+	if !ok {
+		writeError(w, http.StatusNotFound, errors.New("route not found"))
+		return
+	}
+	host, err := s.visibleHost(r, hostID)
+	if err != nil {
+		writeError(w, statusForHostAccessError(err), err)
+		return
+	}
+	if err := s.hosts.DeleteHost(r.Context(), hostID); err != nil {
+		writeError(w, statusForHostAccessError(err), err)
+		return
+	}
+	if err := s.logAudit(r.Context(), hoststore.LogAuditEventInput{Type: "host.deleted", HostID: host.ID, Message: "deleted host"}); err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
 type pinHostRequest struct {
 	Pinned bool `json:"pinned"`
 }

@@ -83,6 +83,14 @@ UPDATE hosts
 SET shared = ?, updated_at = ?
 WHERE id = ?;`
 
+const deleteHostSQL = `
+DELETE FROM hosts
+WHERE id = ?;`
+
+const deleteSessionMetadataForHostSQL = `
+DELETE FROM session_metadata
+WHERE host_id = ?;`
+
 const insertAuditEventSQL = `
 INSERT INTO audit_events (id, type, host_id, session_name, message, created_at)
 VALUES (?, ?, ?, ?, ?, ?);`

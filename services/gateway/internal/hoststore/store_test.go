@@ -2,6 +2,7 @@ package hoststore
 
 import (
 	"context"
+	"errors"
 	"path/filepath"
 	"testing"
 )
@@ -140,6 +141,43 @@ func TestSetHostShared(t *testing.T) {
 	}
 	if host.Shared {
 		t.Fatal("expected private host")
+	}
+}
+
+func TestDeleteHostRemovesMetadata(t *testing.T) {
+	store := openTestStore(t)
+	defer closeStore(t, store)
+	ctx := context.Background()
+	host, err := store.CreateHost(ctx, CreateHostInput{Name: "delete", Hostname: "delete.test", Username: "deploy"})
+	if err != nil {
+		t.Fatalf("CreateHost failed: %v", err)
+	}
+	if _, err := store.SaveSessionMetadata(ctx, SaveSessionMetadataInput{HostID: host.ID, SessionName: "deploy", Tags: []string{"ops"}}); err != nil {
+		t.Fatalf("SaveSessionMetadata failed: %v", err)
+	}
+
+	if err := store.DeleteHost(ctx, host.ID); err != nil {
+		t.Fatalf("DeleteHost failed: %v", err)
+	}
+	if _, err := store.GetHost(ctx, host.ID); !errors.Is(err, ErrHostNotFound) {
+		t.Fatalf("expected host not found, got %v", err)
+	}
+	items, err := store.ListSessionMetadata(ctx, host.ID)
+	if err != nil {
+		t.Fatalf("ListSessionMetadata failed: %v", err)
+	}
+	if len(items) != 0 {
+		t.Fatalf("expected metadata removal, got %#v", items)
+	}
+}
+
+func TestDeleteHostMissing(t *testing.T) {
+	store := openTestStore(t)
+	defer closeStore(t, store)
+
+	err := store.DeleteHost(context.Background(), "host_missing")
+	if !errors.Is(err, ErrHostNotFound) {
+		t.Fatalf("expected host not found, got %v", err)
 	}
 }
 

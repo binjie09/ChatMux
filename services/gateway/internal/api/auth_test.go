@@ -75,6 +75,7 @@ func TestViewerCanReadButCannotMutate(t *testing.T) {
 	server := newRoleTestServer(t, StaticUser{Name: "read-only", Role: RoleViewer, Token: "viewer-token"})
 	assertAuthStatus(t, server, http.MethodGet, "/api/hosts", nil, "viewer-token", http.StatusOK)
 	assertAuthStatus(t, server, http.MethodPost, "/api/hosts", hostBody(), "viewer-token", http.StatusForbidden)
+	assertAuthStatus(t, server, http.MethodDelete, "/api/hosts/host_1", nil, "viewer-token", http.StatusForbidden)
 }
 
 func TestOperatorCanMutateHosts(t *testing.T) {

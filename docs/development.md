@@ -127,6 +127,7 @@ Useful checks:
 ```bash
 curl http://localhost:8080/healthz
 curl http://localhost:8080/api/hosts
+curl -X DELETE http://localhost:8080/api/hosts/{hostID}
 ```
 
 ## Remote SSH Test Flow

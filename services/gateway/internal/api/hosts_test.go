@@ -106,6 +106,49 @@ func TestPinHostAPI(t *testing.T) {
 	}
 }
 
+func TestDeleteHostAPI(t *testing.T) {
+	server, closeServer := newTestServer(t)
+	defer closeServer()
+	host := createTestHost(t, server.hosts)
+	if _, err := server.hosts.SaveSessionMetadata(testContext(t), hoststore.SaveSessionMetadataInput{
+		HostID: host.ID, SessionName: "deploy", Tags: []string{"ops"},
+	}); err != nil {
+		t.Fatalf("SaveSessionMetadata failed: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodDelete, "/api/hosts/"+host.ID, nil)
+	rec := httptest.NewRecorder()
+	server.Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusNoContent {
+		t.Fatalf("expected 204, got %d: %s", rec.Code, rec.Body.String())
+	}
+	if hosts := listHostsForTest(t, server); len(hosts) != 0 {
+		t.Fatalf("expected deleted host to disappear, got %#v", hosts)
+	}
+	if items, err := server.hosts.ListSessionMetadata(testContext(t), host.ID); err != nil || len(items) != 0 {
+		t.Fatalf("expected metadata removal, got %#v %v", items, err)
+	}
+	assertHostAuditEvent(t, server, "host.deleted")
+}
+
+func TestDeleteHostRequiresVisibility(t *testing.T) {
+	server := newRoleTestServer(t, StaticUser{Name: "ops", Role: RoleOperator, Token: "ops-token"})
+	host := createOwnedHost(t, server.hosts, "owner", "private")
+	if _, err := server.hosts.SetHostShared(testContext(t), host.ID, false); err != nil {
+		t.Fatalf("SetHostShared failed: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodDelete, "/api/hosts/"+host.ID, nil)
+	req.Header.Set("Authorization", "Bearer ops-token")
+	rec := httptest.NewRecorder()
+	server.Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("expected 404, got %d: %s", rec.Code, rec.Body.String())
+	}
+}
+
 func createOwnedHost(t *testing.T, store *hoststore.Store, owner string, name string) hoststore.Host {
 	t.Helper()
 	host, err := store.CreateHost(testContext(t), hoststore.CreateHostInput{
@@ -118,6 +161,21 @@ func createOwnedHost(t *testing.T, store *hoststore.Store, owner string, name st
 		t.Fatalf("CreateHost failed: %v", err)
 	}
 	return host
+}
+
+func listHostsForTest(t *testing.T, server *Server) []hoststore.Host {
+	t.Helper()
+	req := httptest.NewRequest(http.MethodGet, "/api/hosts", nil)
+	rec := httptest.NewRecorder()
+	server.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+	var hosts []hoststore.Host
+	if err := json.NewDecoder(rec.Body).Decode(&hosts); err != nil {
+		t.Fatalf("decode hosts: %v", err)
+	}
+	return hosts
 }
 
 func listHostsWithToken(t *testing.T, server *Server, token string) []hoststore.Host {
@@ -134,6 +192,20 @@ func listHostsWithToken(t *testing.T, server *Server, token string) []hoststore.
 		t.Fatalf("decode hosts: %v", err)
 	}
 	return hosts
+}
+
+func assertHostAuditEvent(t *testing.T, server *Server, eventType string) {
+	t.Helper()
+	events, err := server.hosts.ListAuditEvents(testContext(t))
+	if err != nil {
+		t.Fatalf("ListAuditEvents failed: %v", err)
+	}
+	for _, event := range events {
+		if event.Type == eventType {
+			return
+		}
+	}
+	t.Fatalf("expected audit event %q, got %#v", eventType, events)
 }
 
 func newTestServer(t *testing.T) (*Server, func()) {
