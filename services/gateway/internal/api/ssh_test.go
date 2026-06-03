@@ -140,3 +140,28 @@ func createTrustedTestHost(t *testing.T, server *Server) hoststore.Host {
 	}
 	return trusted
 }
+
+type testCredentialInput struct {
+	hostID    string
+	password  string
+	principal string
+}
+
+func createCredentialTokenForTest(t *testing.T, server *Server, input testCredentialInput) string {
+	t.Helper()
+	password := input.password
+	if password == "" {
+		password = "secret"
+	}
+	principal := input.principal
+	if principal == "" {
+		principal = localDevPrincipal.Name
+	}
+	return server.credentialTokens.Create(credentialToken{
+		HostID: input.hostID, Password: password, Principal: principal,
+	})
+}
+
+func credentialTokenBody(token string) *bytes.Buffer {
+	return bytes.NewBufferString(`{"credentialToken":"` + token + `"}`)
+}

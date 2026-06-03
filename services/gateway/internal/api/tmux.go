@@ -12,13 +12,11 @@ import (
 
 type tmuxListRequest struct {
 	CredentialToken string `json:"credentialToken"`
-	Password        string `json:"password"`
 }
 
 type tmuxCreateRequest struct {
 	CredentialToken string `json:"credentialToken"`
 	Name            string `json:"name"`
-	Password        string `json:"password"`
 }
 
 func (s *Server) handleListTmuxSessions(w http.ResponseWriter, r *http.Request) {
@@ -39,7 +37,7 @@ func (s *Server) handleListTmuxSessions(w http.ResponseWriter, r *http.Request) 
 		writeError(w, statusForHostAccessError(err), err)
 		return
 	}
-	password, err := s.sshPasswordForRequest(r, hostID, input.credential())
+	password, err := s.sshPasswordForRequest(r, hostID, input.CredentialToken)
 	if err != nil {
 		writeError(w, statusForCredentialError(err), err)
 		return
@@ -90,7 +88,7 @@ func (s *Server) handleCreateTmuxSession(w http.ResponseWriter, r *http.Request)
 		writeError(w, statusForHostAccessError(err), err)
 		return
 	}
-	password, err := s.sshPasswordForRequest(r, hostID, input.credential())
+	password, err := s.sshPasswordForRequest(r, hostID, input.CredentialToken)
 	if err != nil {
 		writeError(w, statusForCredentialError(err), err)
 		return
@@ -123,14 +121,6 @@ func (s *Server) handleCreateTmuxSession(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	writeJSON(w, http.StatusCreated, session)
-}
-
-func (r tmuxListRequest) credential() sshCredentialRequest {
-	return sshCredentialRequest{CredentialToken: r.CredentialToken, Password: r.Password}
-}
-
-func (r tmuxCreateRequest) credential() sshCredentialRequest {
-	return sshCredentialRequest{CredentialToken: r.CredentialToken, Password: r.Password}
 }
 
 func (s *Server) runTmuxListCommand(r *http.Request, hostID string, password string, command string) ([]tmux.Session, error) {

@@ -29,8 +29,9 @@ func TestDraftTmuxCommandAPI(t *testing.T) {
 	server.ssh = runner
 	server.drafter = drafter
 	host := createTrustedTestHost(t, server)
+	token := createCredentialTokenForTest(t, server, testCredentialInput{hostID: host.ID})
 
-	body := bytes.NewBufferString(`{"password":"secret","prompt":"show pods"}`)
+	body := bytes.NewBufferString(`{"credentialToken":"` + token + `","prompt":"show pods"}`)
 	req := httptest.NewRequest(http.MethodPost, "/api/hosts/"+host.ID+"/tmux/sessions/deploy/command-draft", body)
 	rec := httptest.NewRecorder()
 
@@ -54,7 +55,7 @@ func TestDraftTmuxCommandRequiresConfiguredDrafter(t *testing.T) {
 	defer closeServer()
 	host := createTrustedTestHost(t, server)
 
-	body := bytes.NewBufferString(`{"password":"secret","prompt":"show pods"}`)
+	body := bytes.NewBufferString(`{"prompt":"show pods"}`)
 	req := httptest.NewRequest(http.MethodPost, "/api/hosts/"+host.ID+"/tmux/sessions/deploy/command-draft", body)
 	rec := httptest.NewRecorder()
 

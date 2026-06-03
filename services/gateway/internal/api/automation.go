@@ -101,14 +101,14 @@ func automationTools() []automationTool {
 		{
 			Name:         automationToolTmuxSessionsList,
 			Description:  "List tmux sessions over SSH",
-			Inputs:       []string{"hostId", "credentialToken", "password"},
+			Inputs:       []string{"hostId", "credentialToken"},
 			RequiredRole: automationToolRequiredRole,
 			SideEffect:   automationToolSideEffectSSHRead,
 		},
 		{
 			Name:         automationToolTmuxHistoryCapture,
 			Description:  "Capture tmux pane history over SSH",
-			Inputs:       []string{"hostId", "sessionName", "credentialToken", "password"},
+			Inputs:       []string{"hostId", "sessionName", "credentialToken"},
 			RequiredRole: automationToolRequiredRole,
 			SideEffect:   automationToolSideEffectSSHRead,
 		},
@@ -207,7 +207,7 @@ func (s *Server) hostCredentialArgs(r *http.Request, args map[string]string) (st
 	if err != nil {
 		return "", "", err
 	}
-	password, err := s.sshPasswordForRequest(r, hostID, automationCredential(args))
+	password, err := s.sshPasswordForRequest(r, hostID, strings.TrimSpace(args["credentialToken"]))
 	if err != nil {
 		return "", "", automationStatus(statusForCredentialError(err), err)
 	}
@@ -231,13 +231,6 @@ func (s *Server) historyCaptureArgs(r *http.Request, args map[string]string) (ho
 		return hoststore.Host{}, "", "", err
 	}
 	return host, password, sessionName, nil
-}
-
-func automationCredential(args map[string]string) sshCredentialRequest {
-	return sshCredentialRequest{
-		CredentialToken: strings.TrimSpace(args["credentialToken"]),
-		Password:        strings.TrimSpace(args["password"]),
-	}
 }
 
 func automationArg(args map[string]string, name string) (string, error) {

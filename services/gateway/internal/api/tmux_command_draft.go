@@ -12,7 +12,6 @@ import (
 
 type tmuxCommandDraftRequest struct {
 	CredentialToken string `json:"credentialToken"`
-	Password        string `json:"password"`
 	Prompt          string `json:"prompt"`
 }
 
@@ -48,7 +47,7 @@ func (s *Server) handleDraftTmuxCommand(w http.ResponseWriter, r *http.Request) 
 		writeError(w, statusForSessionAccessError(err), err)
 		return
 	}
-	password, err := s.sshPasswordForRequest(r, hostID, input.credential())
+	password, err := s.sshPasswordForRequest(r, hostID, input.CredentialToken)
 	if err != nil {
 		writeError(w, statusForCredentialError(err), err)
 		return
@@ -72,17 +71,13 @@ func decodeCommandDraftRequest(r *http.Request) (tmuxCommandDraftRequest, error)
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		return tmuxCommandDraftRequest{}, err
 	}
-	if input.Password == "" && input.CredentialToken == "" {
+	if input.CredentialToken == "" {
 		return tmuxCommandDraftRequest{}, errCredentialRequired
 	}
 	if input.Prompt == "" {
 		return tmuxCommandDraftRequest{}, errEmptyCommandGoal
 	}
 	return input, nil
-}
-
-func (r tmuxCommandDraftRequest) credential() sshCredentialRequest {
-	return sshCredentialRequest{CredentialToken: r.CredentialToken, Password: r.Password}
 }
 
 func (s *Server) draftSessionCommand(input draftSessionCommandInput) (CommandDraft, error) {

@@ -113,10 +113,10 @@ lists available tools, and `POST /api/automation/tools/{name}/run` executes one 
 Tool runs require an operator or admin gateway role and write an
 `automation.tool.ran` audit event. The first tool set includes `hosts.list`,
 `audit.list`, `tmux.sessions.list`, and `tmux.history.capture`. The tmux tools
-accept `credentialToken` values from the SSH credential endpoint. They still
-accept SSH passwords for early local testing, but passwords are not persisted and
-are not written into audit messages. There is intentionally no arbitrary shell
-command tool.
+require `credentialToken` values from the SSH credential endpoint. SSH passwords
+are accepted only by `/ssh/probe` and `/ssh/credentials`; tmux, AI, terminal
+token, and automation request bodies do not accept raw passwords. There is
+intentionally no arbitrary shell command tool.
 
 Android internal testing builds require signing material in environment
 variables: `ANDROID_KEYSTORE_PATH`, `ANDROID_KEYSTORE_PASSWORD`,
@@ -150,10 +150,10 @@ services/gateway/scripts/test-ssh-fixture.sh
 
 ## Remote SSH Test Flow
 
-The gateway currently accepts passwords in request bodies for early local
-testing. Prefer issuing a short-lived credential token once per host connection
-and passing `credentialToken` to tmux, history, summary, command draft, and
-terminal-token endpoints. Do not commit credentials.
+Issue a short-lived credential token once per host connection and pass
+`credentialToken` to tmux, history, summary, command draft, terminal-token, and
+automation endpoints. Raw SSH passwords are accepted only by `/ssh/probe` and
+`/ssh/credentials`. Do not commit credentials.
 
 ```bash
 curl -X POST http://localhost:8080/api/hosts \
@@ -188,5 +188,5 @@ cd services/gateway && go test ./... && go build ./cmd/muxchat-gateway
 1. Add per-session collaborator grants beyond owner/shared visibility.
 2. Add desktop encrypted secret storage for local gateway credentials.
 3. Add deeper terminal recovery semantics for interrupted long-running sessions.
-4. Replace early password request bodies with a safer credential flow.
+4. Add credential token refresh before expiry in the SPA.
 5. Broaden automation tools only through explicit allowlisted capabilities.

@@ -11,7 +11,6 @@ import (
 
 type createTerminalTokenRequest struct {
 	CredentialToken string `json:"credentialToken"`
-	Password        string `json:"password"`
 }
 
 type createTerminalTokenResponse struct {
@@ -44,7 +43,7 @@ func (s *Server) handleCreateTerminalToken(w http.ResponseWriter, r *http.Reques
 		writeError(w, statusForSessionAccessError(err), err)
 		return
 	}
-	password, err := s.sshPasswordForRequest(r, hostID, input.credential())
+	password, err := s.sshPasswordForRequest(r, hostID, input.CredentialToken)
 	if err != nil {
 		writeError(w, statusForCredentialError(err), err)
 		return
@@ -63,8 +62,4 @@ func (s *Server) handleCreateTerminalToken(w http.ResponseWriter, r *http.Reques
 		Token:     id,
 		ExpiresIn: int(terminalTokenTTL.Seconds()),
 	})
-}
-
-func (r createTerminalTokenRequest) credential() sshCredentialRequest {
-	return sshCredentialRequest{CredentialToken: r.CredentialToken, Password: r.Password}
 }

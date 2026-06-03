@@ -37,6 +37,9 @@ func TestListAutomationToolsAPI(t *testing.T) {
 	if !hasAutomationTool(tools, automationToolTmuxHistoryCapture) {
 		t.Fatalf("expected tmux.history.capture tool, got %#v", tools)
 	}
+	if automationToolHasInput(tools, automationToolTmuxSessionsList, "password") {
+		t.Fatalf("tmux.sessions.list should not advertise password input: %#v", tools)
+	}
 }
 
 func TestRunAutomationHostsListAudits(t *testing.T) {
@@ -81,8 +84,9 @@ func TestRunAutomationTmuxHistoryCapture(t *testing.T) {
 	runner := &fakeSSHRunner{output: "$ echo muxchat\nmuxchat history\n"}
 	server.ssh = runner
 	host := createTrustedTestHost(t, server)
+	token := createCredentialTokenForTest(t, server, testCredentialInput{hostID: host.ID})
 
-	body := `{"arguments":{"hostId":"` + host.ID + `","sessionName":"deploy","password":"secret"}}`
+	body := `{"arguments":{"hostId":"` + host.ID + `","sessionName":"deploy","credentialToken":"` + token + `"}}`
 	response := runAutomationTool(t, server, automationToolTmuxHistoryCapture, body)
 
 	var history tmuxHistoryResponse
@@ -107,9 +111,7 @@ func TestRunAutomationTmuxSessionsListAcceptsCredentialToken(t *testing.T) {
 	runner := &fakeSSHRunner{output: "$0\tdeploy\t1\t0\t1710000000\tzsh\t0\t\n"}
 	server.ssh = runner
 	host := createTrustedTestHost(t, server)
-	token := server.credentialTokens.Create(credentialToken{
-		HostID: host.ID, Password: "secret", Principal: "local-dev",
-	})
+	token := createCredentialTokenForTest(t, server, testCredentialInput{hostID: host.ID})
 
 	body := `{"arguments":{"hostId":"` + host.ID + `","credentialToken":"` + token + `"}}`
 	response := runAutomationTool(t, server, automationToolTmuxSessionsList, body)
@@ -130,7 +132,21 @@ func TestRunAutomationTmuxSessionsListRequiresHostID(t *testing.T) {
 	server, closeServer := newTestServer(t)
 	defer closeServer()
 
-	req := httptest.NewRequest(http.MethodPost, "/api/automation/tools/tmux.sessions.list/run", bytes.NewBufferString(`{"arguments":{"password":"secret"}}`))
+	req := httptest.NewRequest(http.MethodPost, "/api/automation/tools/tmux.sessions.list/run", bytes.NewBufferString(`{"arguments":{"credentialToken":"missing"}}`))
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d: %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestRunAutomationTmuxSessionsListRejectsPasswordCredential(t *testing.T) {
+	server, closeServer := newTestServer(t)
+	defer closeServer()
+	host := createTrustedTestHost(t, server)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/automation/tools/tmux.sessions.list/run", bytes.NewBufferString(`{"arguments":{"hostId":"`+host.ID+`","password":"secret"}}`))
 	rec := httptest.NewRecorder()
 
 	server.Handler().ServeHTTP(rec, req)
@@ -147,6 +163,20 @@ func hasAutomationTool(tools []automationTool, name string) bool {
 	for _, tool := range tools {
 		if tool.Name == name {
 			return true
+		}
+	}
+	return false
+}
+
+func automationToolHasInput(tools []automationTool, name string, input string) bool {
+	for _, tool := range tools {
+		if tool.Name != name {
+			continue
+		}
+		for _, candidate := range tool.Inputs {
+			if candidate == input {
+				return true
+			}
 		}
 	}
 	return false

@@ -12,7 +12,6 @@ import (
 
 type tmuxHistoryRequest struct {
 	CredentialToken string `json:"credentialToken"`
-	Password        string `json:"password"`
 }
 
 type tmuxHistoryResponse struct {
@@ -54,7 +53,7 @@ func (s *Server) handleCaptureTmuxHistory(w http.ResponseWriter, r *http.Request
 		writeError(w, statusForSessionAccessError(err), err)
 		return
 	}
-	password, err := s.sshPasswordForRequest(r, hostID, input.credential())
+	password, err := s.sshPasswordForRequest(r, hostID, input.CredentialToken)
 	if err != nil {
 		writeError(w, statusForCredentialError(err), err)
 		return
@@ -96,7 +95,7 @@ func (s *Server) handleSummarizeTmuxHistory(w http.ResponseWriter, r *http.Reque
 		writeError(w, statusForSessionAccessError(err), err)
 		return
 	}
-	password, err := s.sshPasswordForRequest(r, hostID, input.credential())
+	password, err := s.sshPasswordForRequest(r, hostID, input.CredentialToken)
 	if err != nil {
 		writeError(w, statusForCredentialError(err), err)
 		return
@@ -120,7 +119,7 @@ func decodeTmuxHistoryRequest(r *http.Request) (tmuxHistoryRequest, error) {
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		return tmuxHistoryRequest{}, err
 	}
-	if input.Password == "" && input.CredentialToken == "" {
+	if input.CredentialToken == "" {
 		return tmuxHistoryRequest{}, errCredentialRequired
 	}
 	return input, nil
@@ -138,10 +137,6 @@ func (s *Server) summarizeSessionHistory(input summarizeSessionRequest) (Transcr
 	return s.summarizer.Summarize(input.request.Context(), TranscriptSummaryInput{
 		HostName: input.host.Name, SessionName: input.sessionName, Transcript: string(output),
 	})
-}
-
-func (r tmuxHistoryRequest) credential() sshCredentialRequest {
-	return sshCredentialRequest{CredentialToken: r.CredentialToken, Password: r.Password}
 }
 
 func statusForSummaryError(err error) int {

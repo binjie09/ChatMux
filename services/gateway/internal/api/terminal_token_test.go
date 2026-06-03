@@ -12,9 +12,9 @@ func TestCreateTerminalTokenAPI(t *testing.T) {
 	server, closeServer := newTestServer(t)
 	defer closeServer()
 	host := createTrustedTestHost(t, server)
+	credentialID := createCredentialTokenForTest(t, server, testCredentialInput{hostID: host.ID})
 
-	body := bytes.NewBufferString(`{"password":"secret"}`)
-	req := httptest.NewRequest(http.MethodPost, "/api/hosts/"+host.ID+"/tmux/sessions/deploy/terminal-token", body)
+	req := httptest.NewRequest(http.MethodPost, "/api/hosts/"+host.ID+"/tmux/sessions/deploy/terminal-token", credentialTokenBody(credentialID))
 	rec := httptest.NewRecorder()
 
 	server.Handler().ServeHTTP(rec, req)
@@ -26,16 +26,28 @@ func TestCreateTerminalTokenAPI(t *testing.T) {
 	}
 }
 
+func TestCreateTerminalTokenRejectsPasswordBody(t *testing.T) {
+	server, closeServer := newTestServer(t)
+	defer closeServer()
+	host := createTrustedTestHost(t, server)
+
+	body := bytes.NewBufferString(`{"password":"secret"}`)
+	req := httptest.NewRequest(http.MethodPost, "/api/hosts/"+host.ID+"/tmux/sessions/deploy/terminal-token", body)
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d: %s", rec.Code, rec.Body.String())
+	}
+}
+
 func TestCreateTerminalTokenAcceptsCredentialToken(t *testing.T) {
 	server, closeServer := newTestServer(t)
 	defer closeServer()
 	host := createTrustedTestHost(t, server)
-	credentialID := server.credentialTokens.Create(credentialToken{
-		HostID: host.ID, Password: "secret", Principal: "local-dev",
-	})
+	credentialID := createCredentialTokenForTest(t, server, testCredentialInput{hostID: host.ID})
 
-	body := bytes.NewBufferString(`{"credentialToken":"` + credentialID + `"}`)
-	req := httptest.NewRequest(http.MethodPost, "/api/hosts/"+host.ID+"/tmux/sessions/deploy/terminal-token", body)
+	req := httptest.NewRequest(http.MethodPost, "/api/hosts/"+host.ID+"/tmux/sessions/deploy/terminal-token", credentialTokenBody(credentialID))
 	rec := httptest.NewRecorder()
 
 	server.Handler().ServeHTTP(rec, req)

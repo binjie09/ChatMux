@@ -28,9 +28,9 @@ func TestSummarizeTmuxHistoryAPI(t *testing.T) {
 	server.ssh = runner
 	server.summarizer = summarizer
 	host := createTrustedTestHost(t, server)
+	token := createCredentialTokenForTest(t, server, testCredentialInput{hostID: host.ID})
 
-	body := bytes.NewBufferString(`{"password":"secret"}`)
-	req := httptest.NewRequest(http.MethodPost, "/api/hosts/"+host.ID+"/tmux/sessions/deploy/summary", body)
+	req := httptest.NewRequest(http.MethodPost, "/api/hosts/"+host.ID+"/tmux/sessions/deploy/summary", credentialTokenBody(token))
 	rec := httptest.NewRecorder()
 
 	server.Handler().ServeHTTP(rec, req)
@@ -53,7 +53,7 @@ func TestSummarizeTmuxHistoryRequiresConfiguredSummarizer(t *testing.T) {
 	defer closeServer()
 	host := createTrustedTestHost(t, server)
 
-	body := bytes.NewBufferString(`{"password":"secret"}`)
+	body := bytes.NewBufferString(`{}`)
 	req := httptest.NewRequest(http.MethodPost, "/api/hosts/"+host.ID+"/tmux/sessions/deploy/summary", body)
 	rec := httptest.NewRecorder()
 

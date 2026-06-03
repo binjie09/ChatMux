@@ -9,13 +9,12 @@ import (
 )
 
 var (
-	errCredentialRequired = errors.New("password or credentialToken is required")
+	errCredentialRequired = errors.New("credentialToken is required")
 	errCredentialInvalid  = errors.New("credential token is invalid or expired")
 )
 
-type sshCredentialRequest struct {
-	CredentialToken string `json:"credentialToken"`
-	Password        string `json:"password"`
+type createSSHCredentialRequest struct {
+	Password string `json:"password"`
 }
 
 type createSSHCredentialResponse struct {
@@ -33,7 +32,7 @@ func (s *Server) handleCreateSSHCredential(w http.ResponseWriter, r *http.Reques
 		writeError(w, statusForHostAccessError(err), err)
 		return
 	}
-	var input sshCredentialRequest
+	var input createSSHCredentialRequest
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		writeError(w, http.StatusBadRequest, err)
 		return
@@ -54,14 +53,11 @@ func (s *Server) handleCreateSSHCredential(w http.ResponseWriter, r *http.Reques
 	})
 }
 
-func (s *Server) sshPasswordForRequest(r *http.Request, hostID string, credential sshCredentialRequest) (string, error) {
-	if credential.Password != "" {
-		return credential.Password, nil
-	}
-	if credential.CredentialToken == "" {
+func (s *Server) sshPasswordForRequest(r *http.Request, hostID string, credentialToken string) (string, error) {
+	if credentialToken == "" {
 		return "", errCredentialRequired
 	}
-	token, ok := s.credentialTokens.Get(credential.CredentialToken)
+	token, ok := s.credentialTokens.Get(credentialToken)
 	if !ok || token.HostID != hostID || token.Principal != principalName(r) {
 		return "", errCredentialInvalid
 	}
