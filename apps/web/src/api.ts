@@ -36,6 +36,7 @@ export type TmuxSession = {
   tags: string[];
   owner: string;
   shared: boolean;
+  collaborators: string[];
 };
 
 export type AuditEvent = {
@@ -155,10 +156,17 @@ export async function createTmuxSession(hostId: string, credentialToken: string,
   });
 }
 
-export async function saveSessionMetadata(hostId: string, sessionName: string, title: string, tags: string[], shared: boolean): Promise<TmuxSessionMetadata> {
+export type SaveSessionMetadataInput = {
+  title: string;
+  tags: string[];
+  shared: boolean;
+  collaborators: string[];
+};
+
+export async function saveSessionMetadata(hostId: string, sessionName: string, input: SaveSessionMetadataInput): Promise<TmuxSessionMetadata> {
   return request<TmuxSessionMetadata>(`/api/hosts/${hostId}/tmux/sessions/${sessionName}/metadata`, {
     method: "POST",
-    body: JSON.stringify({ shared, tags, title }),
+    body: JSON.stringify(input),
   });
 }
 
@@ -169,6 +177,7 @@ export type TmuxSessionMetadata = {
   tags: string[];
   owner: string;
   shared: boolean;
+  collaborators: string[];
   updatedAt: string;
 };
 

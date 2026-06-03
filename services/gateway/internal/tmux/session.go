@@ -29,16 +29,17 @@ var sessionNamePattern = regexp.MustCompile(`^[A-Za-z0-9_.-]{1,64}$`)
 var ErrInvalidSessionName = errors.New("session name must be 1-64 chars using letters, numbers, underscore, dot, or dash")
 
 type Session struct {
-	ID        string    `json:"id"`
-	Name      string    `json:"name"`
-	Windows   int       `json:"windows"`
-	Attached  bool      `json:"attached"`
-	UpdatedAt time.Time `json:"updatedAt"`
-	Status    string    `json:"status"`
-	Title     string    `json:"title"`
-	Tags      []string  `json:"tags"`
-	Owner     string    `json:"owner"`
-	Shared    bool      `json:"shared"`
+	ID            string    `json:"id"`
+	Name          string    `json:"name"`
+	Windows       int       `json:"windows"`
+	Attached      bool      `json:"attached"`
+	UpdatedAt     time.Time `json:"updatedAt"`
+	Status        string    `json:"status"`
+	Title         string    `json:"title"`
+	Tags          []string  `json:"tags"`
+	Owner         string    `json:"owner"`
+	Shared        bool      `json:"shared"`
+	Collaborators []string  `json:"collaborators"`
 }
 
 func ListSessionsCommand() string {
@@ -126,12 +127,13 @@ func parseSessionLine(line string) (Session, error) {
 		return Session{}, err
 	}
 	return Session{
-		ID:        parts[0],
-		Name:      parts[1],
-		Windows:   windows,
-		Attached:  attached,
-		UpdatedAt: time.Unix(activity, 0).UTC(),
-		Tags:      []string{},
+		ID:            parts[0],
+		Name:          parts[1],
+		Windows:       windows,
+		Attached:      attached,
+		UpdatedAt:     time.Unix(activity, 0).UTC(),
+		Tags:          []string{},
+		Collaborators: []string{},
 		Status: sessionStatus(sessionStatusInput{
 			attached:       attached,
 			currentCommand: parts[5],

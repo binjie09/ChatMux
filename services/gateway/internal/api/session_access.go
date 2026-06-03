@@ -51,7 +51,7 @@ func principalCanAccessSession(r *http.Request, host hoststore.Host, metadata ho
 	if !found {
 		return false
 	}
-	return metadata.Shared || metadata.Owner == principal.Name
+	return metadata.Shared || metadata.Owner == principal.Name || hasSessionCollaborator(metadata, principal.Name)
 }
 
 func principalCanManageSession(r *http.Request, host hoststore.Host, metadata hoststore.SessionMetadata, found bool) bool {
@@ -60,6 +60,15 @@ func principalCanManageSession(r *http.Request, host hoststore.Host, metadata ho
 		return true
 	}
 	return found && metadata.Owner == principal.Name
+}
+
+func hasSessionCollaborator(metadata hoststore.SessionMetadata, principalName string) bool {
+	for _, collaborator := range metadata.Collaborators {
+		if collaborator == principalName {
+			return true
+		}
+	}
+	return false
 }
 
 func requestPrincipal(r *http.Request) Principal {

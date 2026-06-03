@@ -6,6 +6,7 @@ import {
   listTmuxSessions,
   saveSessionMetadata,
   type AuditEvent,
+  type SaveSessionMetadataInput,
   type TranscriptChunk,
   type TmuxSession,
 } from "./api";
@@ -170,15 +171,16 @@ export function App() {
     }
   }
 
-  async function handleSaveSessionMetadata(title: string, tags: string[], shared: boolean) {
+  async function handleSaveSessionMetadata(input: SaveSessionMetadataInput) {
     if (!selectedHostId || !selectedSessionName) {
       return;
     }
     try {
-      const metadata = await saveSessionMetadata(selectedHostId, selectedSessionName, title, tags, shared);
+      const metadata = await saveSessionMetadata(selectedHostId, selectedSessionName, input);
       setSessions((current) => current.map((session) => (
         session.name === metadata.sessionName ? {
           ...session,
+          collaborators: metadata.collaborators,
           owner: metadata.owner,
           shared: metadata.shared,
           tags: metadata.tags,

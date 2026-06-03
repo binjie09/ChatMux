@@ -1,6 +1,6 @@
 .session-metadata {
   display: grid;
-  grid-template-columns: minmax(140px, 220px) minmax(140px, 240px) 104px 34px;
+  grid-template-columns: minmax(120px, 220px) minmax(120px, 220px) minmax(140px, 220px) 104px 34px;
   gap: 8px;
   margin-top: 10px;
 }

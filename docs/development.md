@@ -79,9 +79,10 @@ Hosts are owned by the principal that creates them. Shared hosts are visible to
 all authenticated users; private hosts are visible only to their owner and
 admins. tmux sessions can also carry owner/shared metadata. Host owners and
 admins can see all sessions on a visible host; session owners can see and manage
-their private sessions; other users can see only sessions explicitly marked
-shared. tmux sessions without MuxChat metadata are visible only to the host owner
-and admins.
+their private sessions; other users can see sessions explicitly marked shared or
+sessions where their principal name is listed as a collaborator. Collaborators
+can use the session but cannot edit its metadata or grants. tmux sessions
+without MuxChat metadata are visible only to the host owner and admins.
 Session alerts use local notifications on iOS and Android, and browser
 notifications on the web. When enabled, the SPA polls the selected host's tmux
 sessions every 30 seconds and notifies on status changes.
@@ -193,7 +194,6 @@ cd services/gateway && go test ./... && go build ./cmd/muxchat-gateway
 
 ## Next Implementation Tasks
 
-1. Add per-session collaborator grants beyond owner/shared visibility.
-2. Add desktop encrypted secret storage for local gateway credentials.
-3. Add recoverable credential prompts for background session notifications.
-4. Broaden automation tools only through explicit allowlisted capabilities.
+1. Add desktop encrypted secret storage for local gateway credentials.
+2. Add recoverable credential prompts for background session notifications.
+3. Broaden automation tools only through explicit allowlisted capabilities.
