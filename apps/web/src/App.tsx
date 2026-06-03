@@ -2,11 +2,9 @@ import { useCallback, useEffect, useState } from "react";
 import {
   captureTmuxHistory,
   createTmuxSession,
-  createTerminalToken,
   listAuditEvents,
   listTmuxSessions,
   saveSessionMetadata,
-  terminalWebSocketURL,
   type AuditEvent,
   type TranscriptChunk,
   type TmuxSession,
@@ -24,6 +22,7 @@ import { Sidebar } from "./Sidebar";
 import { useGatewayAccessToken } from "./useGatewayAccessToken";
 import { useHostWorkspace } from "./useHostWorkspace";
 import { useSessionNotifications } from "./useSessionNotifications";
+import { useTerminalConnectionURL } from "./useTerminalConnectionURL";
 import { useSSHCredentialToken } from "./useSSHCredentialToken";
 import { type ConnectionStatus } from "./useTerminalSocket";
 import { errorMessage } from "./view-utils";
@@ -220,14 +219,11 @@ export function App() {
     sshReady: Boolean(selectedHostId && sshCredential.ready),
   });
 
-  const createTerminalWebSocketURL = useCallback(async () => {
-    if (!selectedHostId || !selectedSessionName) {
-      throw new Error("Host and session are required");
-    }
-    const credentialToken = await getSelectedHostCredentialToken();
-    const token = await createTerminalToken(selectedHostId, selectedSessionName, credentialToken);
-    return terminalWebSocketURL(token);
-  }, [getSelectedHostCredentialToken, selectedHostId, selectedSessionName]);
+  const createTerminalWebSocketURL = useTerminalConnectionURL({
+    getCredentialToken: getSelectedHostCredentialToken,
+    hostId: selectedHostId,
+    sessionName: selectedSessionName,
+  });
 
   return (
     <main className="app-shell">

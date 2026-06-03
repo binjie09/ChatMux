@@ -10,7 +10,7 @@ export type TerminalHandlers = {
 };
 
 type TerminalSocketOptions = {
-  connectorRef: MutableRefObject<(() => Promise<string>) | null>;
+  connectorRef: MutableRefObject<((status: ConnectionStatus) => Promise<string>) | null>;
   handlersRef: MutableRefObject<TerminalHandlers>;
   reconnectAttempt: number;
   sessionKey: string;
@@ -89,7 +89,7 @@ async function openTerminalSocket(
 ) {
   options.setStatus(nextStatus);
   try {
-    const socketURL = await options.connectorRef.current?.();
+    const socketURL = await options.connectorRef.current?.(nextStatus);
     if (!isActive() || !socketURL) {
       return null;
     }

@@ -9,6 +9,7 @@ const terminalTokenTTL = 2 * time.Minute
 
 type terminalToken struct {
 	HostID      string
+	Recovering  bool
 	SessionName string
 	Password    string
 	ExpiresAt   time.Time

@@ -11,6 +11,7 @@ import (
 
 type createTerminalTokenRequest struct {
 	CredentialToken string `json:"credentialToken"`
+	Recovering      bool   `json:"recovering"`
 }
 
 type createTerminalTokenResponse struct {
@@ -51,6 +52,7 @@ func (s *Server) handleCreateTerminalToken(w http.ResponseWriter, r *http.Reques
 
 	id := s.terminalTokens.Create(terminalToken{
 		HostID:      hostID,
+		Recovering:  input.Recovering,
 		SessionName: sessionName,
 		Password:    password,
 	})

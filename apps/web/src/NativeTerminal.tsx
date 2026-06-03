@@ -8,7 +8,7 @@ import "@xterm/xterm/css/xterm.css";
 import "./terminal.css";
 
 type NativeTerminalProps = {
-  createWebSocketURL: (() => Promise<string>) | null;
+  createWebSocketURL: ((status: ConnectionStatus) => Promise<string>) | null;
   onConnectionError: (message: string) => void;
   onConnectionReady: (status: ConnectionStatus) => void;
   queuedInput: QueuedTerminalInput | null;

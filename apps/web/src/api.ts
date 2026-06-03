@@ -80,6 +80,11 @@ type TerminalTokenResponse = {
   expiresIn: number;
 };
 
+export type CreateTerminalTokenInput = {
+  credentialToken: string;
+  recovering: boolean;
+};
+
 export async function listHosts(): Promise<Host[]> {
   return request<Host[]>("/api/hosts");
 }
@@ -167,10 +172,10 @@ export type TmuxSessionMetadata = {
   updatedAt: string;
 };
 
-export async function createTerminalToken(hostId: string, sessionName: string, credentialToken: string): Promise<string> {
+export async function createTerminalToken(hostId: string, sessionName: string, input: CreateTerminalTokenInput): Promise<string> {
   const response = await request<TerminalTokenResponse>(`/api/hosts/${hostId}/tmux/sessions/${sessionName}/terminal-token`, {
     method: "POST",
-    body: JSON.stringify({ credentialToken }),
+    body: JSON.stringify(input),
   });
   return response.token;
 }

@@ -63,7 +63,7 @@ func (s *Server) runTerminal(r *http.Request, conn *websocket.Conn, token termin
 		return
 	}
 	defer terminal.Close()
-	if err := s.logAudit(r.Context(), hoststore.LogAuditEventInput{Type: "terminal.connected", HostID: token.HostID, SessionName: token.SessionName, Message: "connected terminal"}); err != nil {
+	if err := s.logAudit(r.Context(), terminalConnectionAuditEvent(token)); err != nil {
 		writeTerminalError(conn, err)
 		return
 	}
@@ -79,6 +79,19 @@ func (s *Server) runTerminal(r *http.Request, conn *websocket.Conn, token termin
 		token:    token,
 	})
 	close(done)
+}
+
+func terminalConnectionAuditEvent(token terminalToken) hoststore.LogAuditEventInput {
+	eventType := "terminal.connected"
+	message := "connected terminal"
+	if token.Recovering {
+		eventType = "terminal.recovered"
+		message = "recovered terminal"
+	}
+	return hoststore.LogAuditEventInput{
+		Type: eventType, HostID: token.HostID, SessionName: token.SessionName,
+		Message: message,
+	}
 }
 
 func (s *Server) openTerminal(r *http.Request, token terminalToken) (*sshclient.Terminal, error) {

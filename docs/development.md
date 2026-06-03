@@ -87,7 +87,8 @@ notifications on the web. When enabled, the SPA polls the selected host's tmux
 sessions every 30 seconds and notifies on status changes.
 When the native terminal WebSocket reconnects from recovery, the SPA captures
 the selected tmux pane history again so the history/context panel reflects the
-current session state.
+current session state. The gateway records those successful recovery attaches as
+`terminal.recovered` audit events.
 Session status is inferred from tmux session attachment plus the active pane
 command and pane exit state: shell panes are idle or waiting, non-shell panes are
 running, and dead panes with non-zero exit status are failed.
@@ -194,6 +195,5 @@ cd services/gateway && go test ./... && go build ./cmd/muxchat-gateway
 
 1. Add per-session collaborator grants beyond owner/shared visibility.
 2. Add desktop encrypted secret storage for local gateway credentials.
-3. Add persisted terminal recovery events to the audit log.
-4. Add recoverable credential prompts for background session notifications.
-5. Broaden automation tools only through explicit allowlisted capabilities.
+3. Add recoverable credential prompts for background session notifications.
+4. Broaden automation tools only through explicit allowlisted capabilities.
