@@ -1,4 +1,4 @@
-const gatewayURL = import.meta.env.VITE_GATEWAY_URL ?? "http://localhost:8080";
+const gatewayURL = import.meta.env.VITE_GATEWAY_URL ?? "";
 
 export type Host = {
   id: string;
@@ -72,7 +72,7 @@ export async function createTerminalToken(hostId: string, sessionName: string, p
 }
 
 export function terminalWebSocketURL(token: string) {
-  const url = new URL(gatewayURL);
+  const url = new URL(gatewayURL || window.location.origin);
   url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
   url.pathname = "/api/terminal";
   url.search = "";
