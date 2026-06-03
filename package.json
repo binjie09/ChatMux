@@ -1,0 +1,14 @@
+{
+  "name": "muxchat",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@10.33.2",
+  "scripts": {
+    "dev": "pnpm --filter @muxchat/web dev",
+    "build": "pnpm --filter @muxchat/web build",
+    "typecheck": "pnpm --filter @muxchat/web typecheck"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}
