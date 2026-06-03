@@ -5,6 +5,7 @@
 - Node.js 24+
 - pnpm 10+
 - Go 1.23+
+- JDK 17+ for Android builds
 - `tmux` installed on SSH hosts used for tmux feature testing
 
 ## Install
@@ -34,7 +35,8 @@ pnpm --filter @muxchat/web desktop:build
 ```
 
 Capacitor generates `ios/` and `android/` under `apps/web` when the add commands
-run. Tauri uses `apps/web/src-tauri`.
+run. The Android project is checked in after generation and uses the shared SPA
+from `apps/web/dist`. Tauri uses `apps/web/src-tauri`.
 
 The desktop commands build a Go gateway sidecar into
 `apps/web/src-tauri/binaries/` before Tauri starts. The generated binary is

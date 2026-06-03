@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">MuxChat</string>
+    <string name="title_activity_main">MuxChat</string>
+    <string name="package_name">com.muxchat.app</string>
+    <string name="custom_url_scheme">com.muxchat.app</string>
+</resources>
