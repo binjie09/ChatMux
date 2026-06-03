@@ -1,12 +1,18 @@
-import { useEffect, useRef } from "react";
+import { type MutableRefObject, useEffect, useRef, useState } from "react";
 import { FitAddon } from "@xterm/addon-fit";
 import { Terminal } from "@xterm/xterm";
+import { RefreshCw } from "lucide-react";
+import { sendTerminalInput, sendTerminalResize, terminalSize } from "./terminal-protocol";
+import { type ConnectionStatus, type TerminalHandlers, useTerminalSocket } from "./useTerminalSocket";
 import "@xterm/xterm/css/xterm.css";
 import "./terminal.css";
 
 type NativeTerminalProps = {
+  createWebSocketURL: (() => Promise<string>) | null;
+  onConnectionError: (message: string) => void;
+  onConnectionReady: () => void;
   queuedInput: QueuedTerminalInput | null;
-  webSocketURL: string;
+  sessionKey: string;
 };
 
 export type QueuedTerminalInput = {
@@ -14,110 +20,165 @@ export type QueuedTerminalInput = {
   text: string;
 };
 
-type TerminalMessage = {
-  type: "output" | "error";
-  data?: string;
+const statusLabel: Record<ConnectionStatus, string> = {
+  idle: "Idle",
+  connecting: "Connecting",
+  connected: "Live",
+  recovering: "Recovering",
+  error: "Disconnected",
 };
 
-export function NativeTerminal({ queuedInput, webSocketURL }: NativeTerminalProps) {
+export function NativeTerminal(props: NativeTerminalProps) {
   const terminalRef = useRef<HTMLDivElement | null>(null);
   const socketRef = useRef<WebSocket | null>(null);
   const terminalInstanceRef = useRef<Terminal | null>(null);
+  const connectorRef = useRef(props.createWebSocketURL);
+  const handlersRef = useRef<TerminalHandlers>(props);
+  const [status, setStatus] = useState<ConnectionStatus>("idle");
+  const [reconnectAttempt, setReconnectAttempt] = useState(0);
+  const reconnecting = status === "connecting" || status === "recovering";
+  const canReconnect = Boolean(props.sessionKey && props.createWebSocketURL && !reconnecting);
 
+  useEffect(() => {
+    connectorRef.current = props.createWebSocketURL;
+  }, [props.createWebSocketURL]);
+
+  useEffect(() => {
+    handlersRef.current = props;
+  }, [props]);
+
+  useTerminalMount(terminalRef, terminalInstanceRef, socketRef);
+  useSessionReset(props.sessionKey, terminalInstanceRef);
+  useTerminalSocket({
+    connectorRef,
+    handlersRef,
+    reconnectAttempt,
+    sessionKey: props.sessionKey,
+    setStatus,
+    socketRef,
+    terminalInstanceRef,
+  });
+  useQueuedInput(props.queuedInput, socketRef);
+
+  function reconnect() {
+    const socket = socketRef.current;
+    socketRef.current = null;
+    socket?.close();
+    setReconnectAttempt((current) => current + 1);
+  }
+
+  return (
+    <div className="terminal-shell" aria-label="Terminal">
+      <div className="terminal-toolbar">
+        <span className={`terminal-connection ${status}`}>{statusLabel[status]}</span>
+        <button type="button" disabled={!canReconnect} onClick={reconnect}>
+          <RefreshCw size={14} aria-hidden="true" />
+          Reconnect
+        </button>
+      </div>
+      <div className="terminal-screen" ref={terminalRef} />
+    </div>
+  );
+}
+
+function useTerminalMount(
+  terminalRef: MutableRefObject<HTMLDivElement | null>,
+  terminalInstanceRef: MutableRefObject<Terminal | null>,
+  socketRef: MutableRefObject<WebSocket | null>,
+) {
   useEffect(() => {
     if (!terminalRef.current) {
       return;
     }
 
-    const terminal = new Terminal({
-      allowProposedApi: false,
-      cursorBlink: true,
-      fontFamily: '"SFMono-Regular", Consolas, "Liberation Mono", monospace',
-      fontSize: 13,
-      theme: {
-        background: "#101713",
-        cursor: "#8fd5b2",
-        foreground: "#e6ece8",
-        selectionBackground: "#355244",
-      },
-    });
-    const fit = new FitAddon();
+    const terminal = createTerminal();
+    const fit = mountTerminal(terminal, terminalRef.current);
     terminalInstanceRef.current = terminal;
-    terminal.loadAddon(fit);
-    terminal.open(terminalRef.current);
-    fit.fit();
-    if (!webSocketURL) {
-      terminal.write("$ ");
-    }
-
-    const socket = webSocketURL ? new WebSocket(webSocketURL) : null;
-    socketRef.current = socket;
-    socket?.addEventListener("open", () => sendResize(socket, terminal.cols, terminal.rows));
-    socket?.addEventListener("message", (event) => writeSocketMessage(terminal, event.data));
-    let lastSize = terminalSize(terminal);
-    const resizeObserver = new ResizeObserver(() => {
-      fit.fit();
-      const nextSize = terminalSize(terminal);
-      if (nextSize.cols === lastSize.cols && nextSize.rows === lastSize.rows) {
-        return;
-      }
-      lastSize = nextSize;
-      if (socket?.readyState === WebSocket.OPEN) {
-        sendResize(socket, nextSize.cols, nextSize.rows);
-      }
-    });
-    resizeObserver.observe(terminalRef.current);
-    const inputDisposable = terminal.onData((data) => {
-      if (socket?.readyState === WebSocket.OPEN) {
-        socket.send(JSON.stringify({ type: "input", data }));
-        return;
-      }
-      terminal.write(data);
-    });
+    const resizeObserver = observeTerminalResize(terminal, fit, terminalRef.current, socketRef);
+    const inputDisposable = bindTerminalInput(terminal, socketRef);
 
     return () => {
-      socket?.close();
+      socketRef.current?.close();
       socketRef.current = null;
       terminalInstanceRef.current = null;
       inputDisposable.dispose();
       resizeObserver.disconnect();
       terminal.dispose();
     };
-  }, [webSocketURL]);
+  }, [socketRef, terminalInstanceRef, terminalRef]);
+}
 
+function createTerminal() {
+  return new Terminal({
+    allowProposedApi: false,
+    cursorBlink: true,
+    fontFamily: '"SFMono-Regular", Consolas, "Liberation Mono", monospace',
+    fontSize: 13,
+    theme: {
+      background: "#101713",
+      cursor: "#8fd5b2",
+      foreground: "#e6ece8",
+      selectionBackground: "#355244",
+    },
+  });
+}
+
+function mountTerminal(terminal: Terminal, container: HTMLDivElement) {
+  const fit = new FitAddon();
+  terminal.loadAddon(fit);
+  terminal.open(container);
+  fit.fit();
+  terminal.write("$ ");
+  return fit;
+}
+
+function observeTerminalResize(
+  terminal: Terminal,
+  fit: FitAddon,
+  container: HTMLDivElement,
+  socketRef: MutableRefObject<WebSocket | null>,
+) {
+  let lastSize = terminalSize(terminal);
+  const resizeObserver = new ResizeObserver(() => {
+    fit.fit();
+    const nextSize = terminalSize(terminal);
+    if (nextSize.cols === lastSize.cols && nextSize.rows === lastSize.rows) {
+      return;
+    }
+    lastSize = nextSize;
+    const socket = socketRef.current;
+    if (socket?.readyState === WebSocket.OPEN) {
+      sendTerminalResize(socket, nextSize.cols, nextSize.rows);
+    }
+  });
+  resizeObserver.observe(container);
+  return resizeObserver;
+}
+
+function bindTerminalInput(terminal: Terminal, socketRef: MutableRefObject<WebSocket | null>) {
+  return terminal.onData((data) => {
+    sendTerminalInput(socketRef.current, data);
+  });
+}
+
+function useSessionReset(sessionKey: string, terminalRef: MutableRefObject<Terminal | null>) {
+  useEffect(() => {
+    const terminal = terminalRef.current;
+    if (!terminal) {
+      return;
+    }
+    terminal.reset();
+    if (!sessionKey) {
+      terminal.write("$ ");
+    }
+  }, [sessionKey, terminalRef]);
+}
+
+function useQueuedInput(queuedInput: QueuedTerminalInput | null, socketRef: MutableRefObject<WebSocket | null>) {
   useEffect(() => {
     if (!queuedInput?.text) {
       return;
     }
-    sendInput(socketRef.current, terminalInstanceRef.current, queuedInput.text + "\n");
-  }, [queuedInput]);
-
-  return (
-    <div className="terminal-shell" aria-label="Terminal">
-      <div className="terminal-screen" ref={terminalRef} />
-    </div>
-  );
-}
-
-function sendResize(socket: WebSocket, cols: number, rows: number) {
-  socket.send(JSON.stringify({ type: "resize", cols, rows }));
-}
-
-function terminalSize(terminal: Terminal) {
-  return { cols: terminal.cols, rows: terminal.rows };
-}
-
-function writeSocketMessage(terminal: Terminal, data: string) {
-  const message = JSON.parse(data) as TerminalMessage;
-  if (message.data) {
-    terminal.write(message.data);
-  }
-}
-
-function sendInput(socket: WebSocket | null, terminal: Terminal | null, data: string) {
-  if (socket?.readyState === WebSocket.OPEN) {
-    socket.send(JSON.stringify({ type: "input", data }));
-    return;
-  }
-  terminal?.write(data);
+    sendTerminalInput(socketRef.current, queuedInput.text + "\n");
+  }, [queuedInput, socketRef]);
 }

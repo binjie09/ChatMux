@@ -16,6 +16,9 @@
 }
 
 .terminal-shell {
+  display: grid;
+  grid-template-rows: 30px minmax(0, 1fr);
+  gap: 8px;
   height: 100%;
   min-height: 0;
   overflow: hidden;
@@ -23,6 +26,61 @@
   border-radius: 8px;
   padding: 10px;
   background: #101713;
+}
+
+.terminal-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+
+.terminal-connection {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #aab5af;
+  font-size: 12px;
+}
+
+.terminal-connection::before {
+  width: 8px;
+  height: 8px;
+  border-radius: 99px;
+  background: #717b75;
+  content: "";
+}
+
+.terminal-connection.connected::before {
+  background: #65ce91;
+}
+
+.terminal-connection.connecting::before,
+.terminal-connection.recovering::before {
+  background: #e0b35a;
+}
+
+.terminal-connection.error::before {
+  background: #ee7567;
+}
+
+.terminal-toolbar button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 28px;
+  border: 1px solid #35463d;
+  border-radius: 8px;
+  padding: 0 10px;
+  color: #dbe7df;
+  background: #18231d;
+  font-size: 12px;
+}
+
+.terminal-toolbar button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
 }
 
 .terminal-screen {

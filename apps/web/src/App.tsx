@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Activity, ChevronRight, KeyRound, Monitor, Plus, Send, Server, ShieldCheck, Smartphone, TerminalSquare } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { Monitor, Plus, Send, Server, ShieldCheck, Smartphone, TerminalSquare } from "lucide-react";
 import {
   captureTmuxHistory,
   createHost,
@@ -20,8 +20,8 @@ import { HistoryPanel } from "./HistoryPanel";
 import { HostActions } from "./HostActions";
 import { HostForm } from "./HostForm";
 import { NativeTerminal, type QueuedTerminalInput } from "./NativeTerminal";
-import "./session-controls.css";
-import { errorMessage, formatTime, sortHosts } from "./view-utils";
+import { SessionList } from "./SessionList";
+import { errorMessage, sortHosts } from "./view-utils";
 
 export function App() {
   const [hosts, setHosts] = useState<Host[]>([]);
@@ -31,7 +31,6 @@ export function App() {
   const [selectedSessionName, setSelectedSessionName] = useState("");
   const [newSessionName, setNewSessionName] = useState("");
   const [sshPassword, setSSHPassword] = useState("");
-  const [terminalURL, setTerminalURL] = useState("");
   const [composerValue, setComposerValue] = useState("");
   const [historyText, setHistoryText] = useState("");
   const [historyQuery, setHistoryQuery] = useState("");
@@ -71,6 +70,13 @@ export function App() {
     void refreshAuditEvents();
   }
 
+  function handleSelectHost(hostId: string) {
+    setSelectedHostId(hostId);
+    setSelectedSessionName("");
+    setSessions([]);
+    setHistoryText("");
+  }
+
   async function handleTrustHost() {
     if (!selectedHostId) {
       return;
@@ -101,8 +107,7 @@ export function App() {
     try {
       const nextSessions = await listTmuxSessions(selectedHostId, sshPassword);
       setSessions(nextSessions);
-      setSelectedSessionName((current) => current || nextSessions[0]?.name || "");
-      setTerminalURL("");
+      setSelectedSessionName("");
       setHistoryText("");
       void refreshAuditEvents();
       setError("");
@@ -115,11 +120,9 @@ export function App() {
     if (!selectedHostId || !sshPassword) {
       return;
     }
+    setSelectedSessionName(sessionName);
     try {
-      const token = await createTerminalToken(selectedHostId, sessionName, sshPassword);
       const history = await captureTmuxHistory(selectedHostId, sessionName, sshPassword);
-      setSelectedSessionName(sessionName);
-      setTerminalURL(terminalWebSocketURL(token));
       setHistoryText(history);
       void refreshAuditEvents();
       setError("");
@@ -145,6 +148,15 @@ export function App() {
 
   const selectedHost = hosts.find((host) => host.id === selectedHostId);
   const selectedSession = sessions.find((session) => session.name === selectedSessionName);
+  const terminalSessionKey = selectedHostId && selectedSessionName ? `${selectedHostId}:${selectedSessionName}` : "";
+
+  const createTerminalWebSocketURL = useCallback(async () => {
+    if (!selectedHostId || !selectedSessionName || !sshPassword) {
+      throw new Error("Host, session, and password are required");
+    }
+    const token = await createTerminalToken(selectedHostId, selectedSessionName, sshPassword);
+    return terminalWebSocketURL(token);
+  }, [selectedHostId, selectedSessionName, sshPassword]);
 
   return (
     <main className="app-shell">
@@ -167,7 +179,7 @@ export function App() {
           <h2>Hosts</h2>
           <div className="host-list">
             {hosts.map((host) => (
-              <button className="host-row" type="button" key={host.id} onClick={() => setSelectedHostId(host.id)}>
+              <button className="host-row" type="button" key={host.id} onClick={() => handleSelectHost(host.id)}>
                 <Server size={18} aria-hidden="true" />
                 <span>
                   <strong>{host.name}</strong>
@@ -197,58 +209,16 @@ export function App() {
         </section>
       </aside>
 
-      <section className="session-list">
-        <header>
-          <div>
-            <p>Remote tmux</p>
-            <h1>Conversations</h1>
-          </div>
-          <button className="icon-button" type="button" aria-label="New session" onClick={() => void handleCreateSession()}>
-            <Plus size={19} aria-hidden="true" />
-          </button>
-        </header>
-
-        <form className="session-auth" onSubmit={(event) => {
-          event.preventDefault();
-          void handleListSessions();
-        }}>
-          <input
-            aria-label="SSH password"
-            placeholder="Password"
-            type="password"
-            value={sshPassword}
-            onChange={(event) => setSSHPassword(event.target.value)}
-          />
-          <button type="submit" aria-label="Connect">
-            <KeyRound size={17} aria-hidden="true" />
-          </button>
-        </form>
-
-        <form className="session-create" onSubmit={(event) => {
-          event.preventDefault();
-          void handleCreateSession();
-        }}>
-          <input
-            aria-label="New session name"
-            placeholder="New session"
-            value={newSessionName}
-            onChange={(event) => setNewSessionName(event.target.value)}
-          />
-        </form>
-
-        {sessions.map((session) => (
-          <button className="session-row" type="button" key={session.id} onClick={() => void handleOpenSession(session.name)}>
-            <Activity size={18} aria-hidden="true" />
-            <span>
-              <strong>{session.name}</strong>
-              <small>{session.windows} windows · {formatTime(session.updatedAt)}</small>
-            </span>
-            <em className={session.status}>{session.status}</em>
-            <ChevronRight size={17} aria-hidden="true" />
-          </button>
-        ))}
-        {sessions.length === 0 ? <p className="session-empty">No sessions</p> : null}
-      </section>
+      <SessionList
+        newSessionName={newSessionName}
+        sessions={sessions}
+        sshPassword={sshPassword}
+        onCreateSession={() => void handleCreateSession()}
+        onListSessions={() => void handleListSessions()}
+        onNewSessionNameChange={setNewSessionName}
+        onOpenSession={(sessionName) => void handleOpenSession(sessionName)}
+        onSSHPasswordChange={setSSHPassword}
+      />
 
       <section className="conversation">
         <header className="conversation-header">
@@ -260,7 +230,16 @@ export function App() {
         </header>
 
         <div className="terminal-workspace">
-          <NativeTerminal queuedInput={queuedInput} webSocketURL={terminalURL} />
+          <NativeTerminal
+            createWebSocketURL={terminalSessionKey ? createTerminalWebSocketURL : null}
+            queuedInput={queuedInput}
+            sessionKey={terminalSessionKey}
+            onConnectionError={setError}
+            onConnectionReady={() => {
+              setError("");
+              void refreshAuditEvents();
+            }}
+          />
           <div className="context-stack">
             <HistoryPanel query={historyQuery} text={historyText} onQueryChange={setHistoryQuery} />
             <AuditPanel events={auditEvents} />
