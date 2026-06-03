@@ -21,6 +21,21 @@ pnpm dev
 
 The SPA runs on `http://localhost:5173` by default.
 
+## Native Shells
+
+The native shells reuse the Web SPA build in `apps/web`.
+
+```bash
+pnpm --filter @muxchat/web mobile:add:ios
+pnpm --filter @muxchat/web mobile:add:android
+pnpm --filter @muxchat/web mobile:sync
+pnpm --filter @muxchat/web desktop:dev
+pnpm --filter @muxchat/web desktop:build
+```
+
+Capacitor generates `ios/` and `android/` under `apps/web` when the add commands
+run. Tauri uses `apps/web/src-tauri`.
+
 ## Run Gateway
 
 ```bash
