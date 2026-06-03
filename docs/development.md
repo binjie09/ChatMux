@@ -118,7 +118,9 @@ are accepted only by `/ssh/probe` and `/ssh/credentials`; tmux, AI, terminal
 token, and automation request bodies do not accept raw passwords. There is
 intentionally no arbitrary shell command tool.
 The SPA keeps credential tokens in memory with their expiry and refreshes them
-before expiry while the SSH password remains in the password field.
+before expiry while the SSH password remains in the password field. The session
+sidebar shows whether a password is needed, a token is ready, a refresh is in
+progress, or the current token has expired.
 
 Android internal testing builds require signing material in environment
 variables: `ANDROID_KEYSTORE_PATH`, `ANDROID_KEYSTORE_PASSWORD`,
@@ -190,5 +192,5 @@ cd services/gateway && go test ./... && go build ./cmd/muxchat-gateway
 1. Add per-session collaborator grants beyond owner/shared visibility.
 2. Add desktop encrypted secret storage for local gateway credentials.
 3. Add deeper terminal recovery semantics for interrupted long-running sessions.
-4. Add user-facing credential expiry and reconnect status.
+4. Add recoverable credential prompts for background session notifications.
 5. Broaden automation tools only through explicit allowlisted capabilities.

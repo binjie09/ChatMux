@@ -220,6 +220,7 @@ export function App() {
       />
 
       <SessionList
+        credentialStatus={sshCredential.status}
         mobileOpen={mobilePanel === "sessions"}
         newSessionName={newSessionName}
         notificationsEnabled={sessionNotifications.enabled}

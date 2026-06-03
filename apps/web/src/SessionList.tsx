@@ -2,9 +2,11 @@ import { Activity, Bell, ChevronRight, KeyRound, Plus } from "lucide-react";
 import { type TmuxSession } from "./api";
 import "./session-controls.css";
 import { type SessionNotificationStatus } from "./useSessionNotifications";
+import { type SSHCredentialStatus } from "./useSSHCredentialToken";
 import { formatTime } from "./view-utils";
 
 type SessionListProps = {
+  credentialStatus: SSHCredentialStatus;
   mobileOpen: boolean;
   newSessionName: string;
   notificationsEnabled: boolean;
@@ -33,6 +35,7 @@ export function SessionList(props: SessionListProps) {
       </header>
 
       <SessionAuth
+        credentialStatus={props.credentialStatus}
         sshPassword={props.sshPassword}
         onListSessions={props.onListSessions}
         onSSHPasswordChange={props.onSSHPasswordChange}
@@ -53,7 +56,7 @@ export function SessionList(props: SessionListProps) {
   );
 }
 
-function SessionAuth(props: Pick<SessionListProps, "sshPassword" | "onListSessions" | "onSSHPasswordChange">) {
+function SessionAuth(props: Pick<SessionListProps, "credentialStatus" | "sshPassword" | "onListSessions" | "onSSHPasswordChange">) {
   return (
     <form className="session-auth" onSubmit={(event) => {
       event.preventDefault();
@@ -69,6 +72,7 @@ function SessionAuth(props: Pick<SessionListProps, "sshPassword" | "onListSessio
       <button type="submit" aria-label="Connect">
         <KeyRound size={17} aria-hidden="true" />
       </button>
+      <small className={`credential-status ${props.credentialStatus.tone}`}>{props.credentialStatus.label}</small>
     </form>
   );
 }
