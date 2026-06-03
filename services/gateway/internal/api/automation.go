@@ -32,6 +32,7 @@ var (
 type automationTool struct {
 	Name         string   `json:"name"`
 	Description  string   `json:"description"`
+	Capabilities []string `json:"capabilities"`
 	Inputs       []string `json:"inputs"`
 	RequiredRole string   `json:"requiredRole"`
 	SideEffect   string   `json:"sideEffect"`
@@ -60,7 +61,7 @@ func (e automationStatusError) Unwrap() error {
 }
 
 func (s *Server) handleListAutomationTools(w http.ResponseWriter, _ *http.Request) {
-	writeJSON(w, http.StatusOK, automationTools())
+	writeJSON(w, http.StatusOK, s.automationTools())
 }
 
 func (s *Server) handleRunAutomationTool(w http.ResponseWriter, r *http.Request) {
@@ -80,39 +81,6 @@ func (s *Server) handleRunAutomationTool(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	writeJSON(w, http.StatusOK, automationRunResponse{Result: result, Tool: toolName})
-}
-
-func automationTools() []automationTool {
-	return []automationTool{
-		{
-			Name:         automationToolHostsList,
-			Description:  "List visible hosts",
-			Inputs:       []string{},
-			RequiredRole: automationToolRequiredRole,
-			SideEffect:   automationToolSideEffectNone,
-		},
-		{
-			Name:         automationToolAuditList,
-			Description:  "List audit events",
-			Inputs:       []string{},
-			RequiredRole: automationToolRequiredRole,
-			SideEffect:   automationToolSideEffectNone,
-		},
-		{
-			Name:         automationToolTmuxSessionsList,
-			Description:  "List tmux sessions over SSH",
-			Inputs:       []string{"hostId", "credentialToken"},
-			RequiredRole: automationToolRequiredRole,
-			SideEffect:   automationToolSideEffectSSHRead,
-		},
-		{
-			Name:         automationToolTmuxHistoryCapture,
-			Description:  "Capture tmux pane history over SSH",
-			Inputs:       []string{"hostId", "sessionName", "credentialToken"},
-			RequiredRole: automationToolRequiredRole,
-			SideEffect:   automationToolSideEffectSSHRead,
-		},
-	}
 }
 
 func routeAutomationToolRun(path string) (string, bool) {
@@ -141,27 +109,24 @@ func decodeAutomationRunRequest(r *http.Request) (map[string]string, error) {
 	return input.Arguments, nil
 }
 
-func (s *Server) runAutomationTool(r *http.Request, name string, args map[string]string) (any, error) {
-	switch name {
-	case automationToolHostsList:
-		return s.runAutomationHostsList(r)
-	case automationToolAuditList:
-		return s.runAutomationAuditList(r)
-	case automationToolTmuxSessionsList:
-		return s.runAutomationTmuxSessionsList(r, args)
-	case automationToolTmuxHistoryCapture:
-		return s.runAutomationTmuxHistoryCapture(r, args)
-	default:
-		return nil, errUnknownAutomationTool
-	}
-}
-
 func (s *Server) runAutomationHostsList(r *http.Request) (any, error) {
 	hosts, err := s.listHostsForPrincipal(r)
 	if err != nil {
 		return nil, automationStatus(http.StatusInternalServerError, err)
 	}
 	return hosts, s.logAutomationRun(r, automationToolHostsList, "", "")
+}
+
+func (s *Server) runAutomationHostsGet(r *http.Request, args map[string]string) (any, error) {
+	hostID, err := automationArg(args, "hostId")
+	if err != nil {
+		return nil, err
+	}
+	host, err := s.visibleHost(r, hostID)
+	if err != nil {
+		return nil, err
+	}
+	return host, s.logAutomationRun(r, automationToolHostsGet, host.ID, "")
 }
 
 func (s *Server) runAutomationAuditList(r *http.Request) (any, error) {

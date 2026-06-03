@@ -63,6 +63,38 @@ func TestCommandPolicyFromEnvRejectsInvalidPattern(t *testing.T) {
 	}
 }
 
+func TestAutomationCapabilitiesFromEnvParsesConfiguredCapabilities(t *testing.T) {
+	t.Setenv("MUXCHAT_AUTOMATION_CAPABILITIES_JSON", `["hosts.read","audit.read"]`)
+
+	capabilities, configured, err := automationCapabilitiesFromEnv()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !configured || len(capabilities) != 2 || capabilities[0] != "hosts.read" || capabilities[1] != "audit.read" {
+		t.Fatalf("unexpected automation capabilities: %#v configured=%v", capabilities, configured)
+	}
+}
+
+func TestAutomationCapabilitiesFromEnvDisabledWithoutConfig(t *testing.T) {
+	capabilities, configured, err := automationCapabilitiesFromEnv()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if configured || capabilities != nil {
+		t.Fatalf("expected no automation capability override, got %#v configured=%v", capabilities, configured)
+	}
+}
+
+func TestAutomationCapabilitiesFromEnvRejectsInvalidJSON(t *testing.T) {
+	t.Setenv("MUXCHAT_AUTOMATION_CAPABILITIES_JSON", `{`)
+
+	_, _, err := automationCapabilitiesFromEnv()
+
+	if err == nil {
+		t.Fatal("expected invalid automation capability JSON")
+	}
+}
+
 func TestTranscriptSummarizerFromEnvDisabledWithoutKey(t *testing.T) {
 	t.Setenv("OPENAI_API_KEY", "")
 

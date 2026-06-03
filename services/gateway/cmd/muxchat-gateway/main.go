@@ -27,6 +27,10 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	capabilities, capabilitiesConfigured, err := automationCapabilitiesFromEnv()
+	if err != nil {
+		log.Fatal(err)
+	}
 	drafter, err := commandDrafterFromEnv()
 	if err != nil {
 		log.Fatal(err)
@@ -36,6 +40,9 @@ func main() {
 		log.Fatal(err)
 	}
 	options := []api.ServerOption{api.WithStaticUsers(users), api.WithCommandPolicy(policy)}
+	if capabilitiesConfigured {
+		options = append(options, api.WithAutomationCapabilities(capabilities))
+	}
 	if drafter != nil {
 		options = append(options, api.WithCommandDrafter(drafter))
 	}
@@ -52,6 +59,18 @@ func main() {
 	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatal(err)
 	}
+}
+
+func automationCapabilitiesFromEnv() ([]string, bool, error) {
+	configured := os.Getenv("MUXCHAT_AUTOMATION_CAPABILITIES_JSON")
+	if configured == "" {
+		return nil, false, nil
+	}
+	capabilities := []string{}
+	if err := json.Unmarshal([]byte(configured), &capabilities); err != nil {
+		return nil, true, err
+	}
+	return capabilities, true, nil
 }
 
 func envOrDefault(key string, fallback string) string {

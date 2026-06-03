@@ -10,14 +10,15 @@ import (
 )
 
 type Server struct {
-	auth             authConfig
-	commandPolicy    commandPolicy
-	credentialTokens *credentialTokenStore
-	drafter          CommandDrafter
-	hosts            *hoststore.Store
-	ssh              sshRunner
-	summarizer       TranscriptSummarizer
-	terminalTokens   *terminalTokenStore
+	auth                   authConfig
+	automationCapabilities map[string]struct{}
+	commandPolicy          commandPolicy
+	credentialTokens       *credentialTokenStore
+	drafter                CommandDrafter
+	hosts                  *hoststore.Store
+	ssh                    sshRunner
+	summarizer             TranscriptSummarizer
+	terminalTokens         *terminalTokenStore
 }
 
 type ServerOption func(*Server)
@@ -43,6 +44,12 @@ func WithCommandPolicy(config CommandPolicyConfig) ServerOption {
 	}
 }
 
+func WithAutomationCapabilities(capabilities []string) ServerOption {
+	return func(s *Server) {
+		s.automationCapabilities = automationCapabilitySet(capabilities)
+	}
+}
+
 func WithCommandDrafter(drafter CommandDrafter) ServerOption {
 	return func(s *Server) {
 		if drafter != nil {
@@ -61,11 +68,12 @@ func WithTranscriptSummarizer(summarizer TranscriptSummarizer) ServerOption {
 
 func NewServer(hosts *hoststore.Store, options ...ServerOption) *Server {
 	server := &Server{
-		commandPolicy:    mustCommandPolicy(CommandPolicyConfig{}),
-		credentialTokens: newCredentialTokenStore(),
-		hosts:            hosts,
-		ssh:              sshclient.NewClient(),
-		terminalTokens:   newTerminalTokenStore(),
+		automationCapabilities: automationCapabilitySet(defaultAutomationCapabilities()),
+		commandPolicy:          mustCommandPolicy(CommandPolicyConfig{}),
+		credentialTokens:       newCredentialTokenStore(),
+		hosts:                  hosts,
+		ssh:                    sshclient.NewClient(),
+		terminalTokens:         newTerminalTokenStore(),
 	}
 	for _, option := range options {
 		option(server)

@@ -120,12 +120,15 @@ only inserts the draft into the composer; the user must still send it explicitly
 Controlled automation exposes only allowlisted gateway tools. `GET /api/automation/tools`
 lists available tools, and `POST /api/automation/tools/{name}/run` executes one tool with an `arguments` object.
 Tool runs require an operator or admin gateway role and write an
-`automation.tool.ran` audit event. The first tool set includes `hosts.list`,
-`audit.list`, `tmux.sessions.list`, and `tmux.history.capture`. The tmux tools
-require `credentialToken` values from the SSH credential endpoint. SSH passwords
-are accepted only by `/ssh/probe` and `/ssh/credentials`; tmux, AI, terminal
-token, and automation request bodies do not accept raw passwords. There is
-intentionally no arbitrary shell command tool.
+`automation.tool.ran` audit event. Tools also declare explicit capabilities such
+as `hosts.read`, `audit.read`, `tmux.sessions.read`, and `tmux.history.read`;
+set `MUXCHAT_AUTOMATION_CAPABILITIES_JSON` to a JSON array to narrow the enabled
+capabilities. The tool set includes `hosts.list`, `hosts.get`, `audit.list`,
+`tmux.sessions.list`, and `tmux.history.capture`. The tmux tools require
+`credentialToken` values from the SSH credential endpoint. SSH passwords are
+accepted only by `/ssh/probe` and `/ssh/credentials`; tmux, AI, terminal token,
+and automation request bodies do not accept raw passwords. There is intentionally
+no arbitrary shell command tool.
 The SPA keeps credential tokens in memory with their expiry and refreshes them
 before expiry while the SSH password remains in the password field. The session
 sidebar shows whether a password is needed, a token is ready, a refresh is in
@@ -198,4 +201,4 @@ cd services/gateway && go test ./... && go build ./cmd/muxchat-gateway
 
 ## Next Implementation Tasks
 
-1. Broaden automation tools only through explicit allowlisted capabilities.
+No open roadmap tasks.
