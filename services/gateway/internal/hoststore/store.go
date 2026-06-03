@@ -20,6 +20,7 @@ type Host struct {
 	Username           string    `json:"username"`
 	Status             string    `json:"status"`
 	HostKeyFingerprint string    `json:"hostKeyFingerprint"`
+	Pinned             bool      `json:"pinned"`
 	CreatedAt          time.Time `json:"createdAt"`
 	UpdatedAt          time.Time `json:"updatedAt"`
 }
@@ -100,10 +101,26 @@ func (s *Store) CreateHost(ctx context.Context, input CreateHostInput) (Host, er
 		UpdatedAt: now,
 	}
 
-	if _, err := s.db.ExecContext(ctx, insertHostSQL, host.ID, host.Name, host.Hostname, host.Port, host.Username, host.Status, host.HostKeyFingerprint, host.CreatedAt, host.UpdatedAt); err != nil {
+	if _, err := s.db.ExecContext(ctx, insertHostSQL, host.ID, host.Name, host.Hostname, host.Port, host.Username, host.Status, host.HostKeyFingerprint, host.Pinned, host.CreatedAt, host.UpdatedAt); err != nil {
 		return Host{}, fmt.Errorf("insert host: %w", err)
 	}
 	return host, nil
+}
+
+func (s *Store) SetHostPinned(ctx context.Context, id string, pinned bool) (Host, error) {
+	now := time.Now().UTC()
+	result, err := s.db.ExecContext(ctx, setHostPinnedSQL, pinned, now, id)
+	if err != nil {
+		return Host{}, fmt.Errorf("set host pinned: %w", err)
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return Host{}, fmt.Errorf("set host pinned affected rows: %w", err)
+	}
+	if affected == 0 {
+		return Host{}, ErrHostNotFound
+	}
+	return s.GetHost(ctx, id)
 }
 
 func (s *Store) TrustHostKey(ctx context.Context, id string, fingerprint string) (Host, error) {
@@ -136,6 +153,15 @@ func (s *Store) migrate(ctx context.Context) error {
 	if !exists {
 		if _, err := s.db.ExecContext(ctx, addHostFingerprintSQL); err != nil {
 			return fmt.Errorf("migrate host fingerprint: %w", err)
+		}
+	}
+	exists, err = s.columnExists(ctx, "hosts", "pinned")
+	if err != nil {
+		return err
+	}
+	if !exists {
+		if _, err := s.db.ExecContext(ctx, addHostPinnedSQL); err != nil {
+			return fmt.Errorf("migrate host pinned: %w", err)
 		}
 	}
 	return nil

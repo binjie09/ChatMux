@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import {
   Activity,
-  Bot,
   ChevronRight,
   KeyRound,
   Monitor,
@@ -19,12 +18,14 @@ import {
   createTerminalToken,
   listHosts,
   listTmuxSessions,
+  setHostPinned,
   terminalWebSocketURL,
   trustHost,
   type Host,
   type TmuxSession,
 } from "./api";
 import { HistoryPanel } from "./HistoryPanel";
+import { HostActions } from "./HostActions";
 import { HostForm } from "./HostForm";
 import { NativeTerminal, type QueuedTerminalInput } from "./NativeTerminal";
 import "./session-controls.css";
@@ -61,7 +62,7 @@ export function App() {
 
   async function handleCreateHost(input: Parameters<typeof createHost>[0]) {
     const host = await createHost(input);
-    setHosts((current) => [host, ...current]);
+    setHosts((current) => sortHosts([host, ...current]));
     setSelectedHostId(host.id);
     setShowHostForm(false);
   }
@@ -72,6 +73,19 @@ export function App() {
     }
     const trusted = await trustHost(selectedHostId);
     setHosts((current) => current.map((host) => (host.id === trusted.id ? trusted : host)));
+  }
+
+  async function handleTogglePin() {
+    if (!selectedHost) {
+      return;
+    }
+    try {
+      const updated = await setHostPinned(selectedHost.id, !selectedHost.pinned);
+      setHosts((current) => sortHosts(current.map((host) => (host.id === updated.id ? updated : host))));
+      setError("");
+    } catch (err) {
+      setError(errorMessage(err));
+    }
   }
 
   async function handleListSessions() {
@@ -233,16 +247,7 @@ export function App() {
             <p>{selectedHost?.name ?? "No host"}</p>
             <h2>{selectedSession?.name ?? "Terminal"}</h2>
           </div>
-          <div className="header-actions">
-            <button className="utility-button" type="button" onClick={handleTrustHost}>
-              <KeyRound size={17} aria-hidden="true" />
-              Trust host
-            </button>
-            <button className="utility-button" type="button">
-              <Bot size={17} aria-hidden="true" />
-              Summarize
-            </button>
-          </div>
+          <HostActions host={selectedHost} onTogglePin={handleTogglePin} onTrustHost={handleTrustHost} />
         </header>
 
         <div className="terminal-workspace">
@@ -283,4 +288,8 @@ function errorMessage(error: unknown) {
 
 function formatTime(value: string) {
   return new Date(value).toLocaleString();
+}
+
+function sortHosts(hosts: Host[]) {
+  return [...hosts].sort((left, right) => Number(right.pinned) - Number(left.pinned));
 }

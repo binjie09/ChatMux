@@ -16,6 +16,7 @@ func scanHost(row hostScanner) (Host, error) {
 		&host.Username,
 		&host.Status,
 		&host.HostKeyFingerprint,
+		&host.Pinned,
 		&host.CreatedAt,
 		&host.UpdatedAt,
 	); err != nil {

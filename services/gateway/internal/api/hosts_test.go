@@ -40,6 +40,23 @@ func TestCreateAndListHostsAPI(t *testing.T) {
 	}
 }
 
+func TestPinHostAPI(t *testing.T) {
+	server, closeServer := newTestServer(t)
+	defer closeServer()
+	host := createTestHost(t, server.hosts)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/hosts/"+host.ID+"/pin", bytes.NewBufferString(`{"pinned":true}`))
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+	if !bytes.Contains(rec.Body.Bytes(), []byte(`"pinned":true`)) {
+		t.Fatalf("expected pinned response, got %s", rec.Body.String())
+	}
+}
+
 func newTestServer(t *testing.T) (*Server, func()) {
 	t.Helper()
 	store, err := hoststore.Open(filepath.Join(t.TempDir(), "muxchat-test.db"))

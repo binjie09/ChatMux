@@ -96,6 +96,28 @@ func TestTrustHostKey(t *testing.T) {
 	}
 }
 
+func TestSetHostPinned(t *testing.T) {
+	store := openTestStore(t)
+	defer closeStore(t, store)
+
+	created, err := store.CreateHost(context.Background(), CreateHostInput{
+		Name:     "pin",
+		Hostname: "example.test",
+		Username: "deploy",
+	})
+	if err != nil {
+		t.Fatalf("CreateHost failed: %v", err)
+	}
+
+	host, err := store.SetHostPinned(context.Background(), created.ID, true)
+	if err != nil {
+		t.Fatalf("SetHostPinned failed: %v", err)
+	}
+	if !host.Pinned {
+		t.Fatal("expected pinned host")
+	}
+}
+
 func TestCreateHostValidatesRequiredFields(t *testing.T) {
 	store := openTestStore(t)
 	defer closeStore(t, store)

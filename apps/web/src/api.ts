@@ -8,6 +8,7 @@ export type Host = {
   username: string;
   status: "offline" | "connecting" | "online" | "error";
   hostKeyFingerprint: string;
+  pinned: boolean;
 };
 
 export type CreateHostInput = {
@@ -51,6 +52,13 @@ export async function trustHost(hostId: string): Promise<Host> {
     method: "POST",
   });
   return response.host;
+}
+
+export async function setHostPinned(hostId: string, pinned: boolean): Promise<Host> {
+  return request<Host>(`/api/hosts/${hostId}/pin`, {
+    method: "POST",
+    body: JSON.stringify({ pinned }),
+  });
 }
 
 export async function listTmuxSessions(hostId: string, password: string): Promise<TmuxSession[]> {
