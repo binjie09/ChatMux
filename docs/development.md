@@ -34,6 +34,8 @@ pnpm --filter @muxchat/web mobile:build:android-internal
 pnpm --filter @muxchat/web mobile:build:ios-testflight
 pnpm --filter @muxchat/web desktop:dev
 pnpm --filter @muxchat/web desktop:build
+pnpm --filter @muxchat/web desktop:build:macos
+pnpm --filter @muxchat/web desktop:build:windows
 ```
 
 Capacitor generates `ios/` and `android/` under `apps/web` when the add commands
@@ -44,6 +46,13 @@ The desktop commands build a Go gateway sidecar into
 `apps/web/src-tauri/binaries/` before Tauri starts. The generated binary is
 ignored by git and is named with the Tauri target triple, for example
 `muxchat-gateway-x86_64-unknown-linux-gnu`.
+Signed desktop release scripts are OS-specific. macOS builds must run on macOS
+with `APPLE_SIGNING_IDENTITY`, or `APPLE_CERTIFICATE` plus
+`APPLE_CERTIFICATE_PASSWORD`; set `MUXCHAT_MACOS_AD_HOC=1` only for local ad-hoc
+artifacts. Windows builds must run on Windows with
+`MUXCHAT_WINDOWS_CERT_THUMBPRINT` for a certificate in the Windows store, or
+`MUXCHAT_WINDOWS_SIGN_COMMAND` for a custom signer. Optional Windows overrides
+are `MUXCHAT_WINDOWS_DIGEST_ALGORITHM` and `MUXCHAT_WINDOWS_TIMESTAMP_URL`.
 
 ## Run Gateway
 

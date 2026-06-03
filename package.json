@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "pnpm --filter @muxchat/web dev",
     "build": "pnpm --filter @muxchat/web build",
+    "desktop:build:macos": "pnpm --filter @muxchat/web desktop:build:macos",
+    "desktop:build:windows": "pnpm --filter @muxchat/web desktop:build:windows",
     "typecheck": "pnpm --filter @muxchat/web typecheck"
   },
   "devDependencies": {
