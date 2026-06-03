@@ -26,6 +26,7 @@ import { SessionMetadataEditor } from "./SessionMetadataEditor";
 import { SessionList } from "./SessionList";
 import { Sidebar } from "./Sidebar";
 import { useGatewayAccessToken } from "./useGatewayAccessToken";
+import { useSessionNotifications } from "./useSessionNotifications";
 import { errorMessage, sortHosts } from "./view-utils";
 
 export function App() {
@@ -189,6 +190,23 @@ export function App() {
   const selectedSession = sessions.find((session) => session.name === selectedSessionName);
   const terminalSessionKey = selectedHostId && selectedSessionName ? `${selectedHostId}:${selectedSessionName}` : "";
 
+  const refreshSelectedSessions = useCallback(async () => {
+    if (!selectedHostId || !sshPassword) {
+      return [];
+    }
+    return listTmuxSessions(selectedHostId, sshPassword);
+  }, [selectedHostId, sshPassword]);
+
+  const sessionNotifications = useSessionNotifications({
+    hostId: selectedHostId,
+    hostName: selectedHost?.name ?? "MuxChat",
+    onError: setError,
+    onSessionsChange: setSessions,
+    refreshSessions: refreshSelectedSessions,
+    sessions,
+    sshReady: Boolean(selectedHostId && sshPassword),
+  });
+
   const createTerminalWebSocketURL = useCallback(async () => {
     if (!selectedHostId || !selectedSessionName || !sshPassword) {
       throw new Error("Host, session, and password are required");
@@ -213,11 +231,14 @@ export function App() {
       <SessionList
         mobileOpen={mobilePanel === "sessions"}
         newSessionName={newSessionName}
+        notificationsEnabled={sessionNotifications.enabled}
+        notificationStatus={sessionNotifications.status}
         sessions={sessions}
         sshPassword={sshPassword}
         onCreateSession={() => void handleCreateSession()}
         onListSessions={() => void handleListSessions()}
         onNewSessionNameChange={setNewSessionName}
+        onNotificationsEnabledChange={(enabled) => void sessionNotifications.setEnabled(enabled)}
         onOpenSession={(sessionName) => void handleOpenSession(sessionName)}
         onSSHPasswordChange={setSSHPassword}
       />

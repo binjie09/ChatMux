@@ -1,16 +1,20 @@
-import { Activity, ChevronRight, KeyRound, Plus } from "lucide-react";
+import { Activity, Bell, ChevronRight, KeyRound, Plus } from "lucide-react";
 import { type TmuxSession } from "./api";
 import "./session-controls.css";
+import { type SessionNotificationStatus } from "./useSessionNotifications";
 import { formatTime } from "./view-utils";
 
 type SessionListProps = {
   mobileOpen: boolean;
   newSessionName: string;
+  notificationsEnabled: boolean;
+  notificationStatus: SessionNotificationStatus;
   sessions: TmuxSession[];
   sshPassword: string;
   onCreateSession: () => void;
   onListSessions: () => void;
   onNewSessionNameChange: (value: string) => void;
+  onNotificationsEnabledChange: (enabled: boolean) => void;
   onOpenSession: (sessionName: string) => void;
   onSSHPasswordChange: (value: string) => void;
 };
@@ -38,6 +42,11 @@ export function SessionList(props: SessionListProps) {
         onCreateSession={props.onCreateSession}
         onNewSessionNameChange={props.onNewSessionNameChange}
       />
+      <SessionNotificationsToggle
+        enabled={props.notificationsEnabled}
+        status={props.notificationStatus}
+        onEnabledChange={props.onNotificationsEnabledChange}
+      />
       {props.sessions.map((session) => <SessionRow key={session.id} session={session} onOpenSession={props.onOpenSession} />)}
       {props.sessions.length === 0 ? <p className="session-empty">No sessions</p> : null}
     </section>
@@ -61,6 +70,33 @@ function SessionAuth(props: Pick<SessionListProps, "sshPassword" | "onListSessio
         <KeyRound size={17} aria-hidden="true" />
       </button>
     </form>
+  );
+}
+
+const notificationStatusLabels: Record<SessionNotificationStatus, string> = {
+  denied: "Denied",
+  enabling: "Enabling",
+  off: "Off",
+  watching: "On",
+};
+
+function SessionNotificationsToggle(props: {
+  enabled: boolean;
+  status: SessionNotificationStatus;
+  onEnabledChange: (enabled: boolean) => void;
+}) {
+  return (
+    <label className="session-notifications">
+      <input
+        checked={props.enabled}
+        disabled={props.status === "enabling"}
+        type="checkbox"
+        onChange={(event) => props.onEnabledChange(event.target.checked)}
+      />
+      <Bell size={16} aria-hidden="true" />
+      <span>Session alerts</span>
+      <small>{notificationStatusLabels[props.status]}</small>
+    </label>
   );
 }
 

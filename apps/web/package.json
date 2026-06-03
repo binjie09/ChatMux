@@ -20,6 +20,7 @@
     "@capacitor/android": "^8.3.4",
     "@capacitor/core": "^8.3.4",
     "@capacitor/ios": "^8.3.4",
+    "@capacitor/local-notifications": "^8.2.0",
     "@vitejs/plugin-react": "^5.1.1",
     "@xterm/addon-fit": "^0.10.0",
     "@xterm/xterm": "^5.5.0",
