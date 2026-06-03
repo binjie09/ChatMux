@@ -10,7 +10,7 @@ import "./terminal.css";
 type NativeTerminalProps = {
   createWebSocketURL: (() => Promise<string>) | null;
   onConnectionError: (message: string) => void;
-  onConnectionReady: () => void;
+  onConnectionReady: (status: ConnectionStatus) => void;
   queuedInput: QueuedTerminalInput | null;
   sessionKey: string;
 };

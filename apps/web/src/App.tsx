@@ -25,6 +25,7 @@ import { useGatewayAccessToken } from "./useGatewayAccessToken";
 import { useHostWorkspace } from "./useHostWorkspace";
 import { useSessionNotifications } from "./useSessionNotifications";
 import { useSSHCredentialToken } from "./useSSHCredentialToken";
+import { type ConnectionStatus } from "./useTerminalSocket";
 import { errorMessage } from "./view-utils";
 
 export function App() {
@@ -114,16 +115,13 @@ export function App() {
     setMobilePanel("terminal");
     try {
       const credentialToken = tokenOverride || await getSelectedHostCredentialToken();
-      const history = await captureTmuxHistory(selectedHostId, sessionName, credentialToken);
-      setHistoryChunks(history.chunks);
-      setHistoryText(history.text);
+      await refreshSessionHistory(sessionName, credentialToken);
       void refreshAuditEvents();
       setError("");
     } catch (err) {
       setError(errorMessage(err));
     }
   }
-
   async function handleCreateSession() {
     if (!selectedHostId || !newSessionName) {
       return;
@@ -143,6 +141,34 @@ export function App() {
   function handleComposerSubmit(data: string) {
     setQueuedInput({ data, id: Date.now() });
     setComposerValue("");
+  }
+  async function refreshSessionHistory(sessionName: string, credentialToken: string) {
+    if (!selectedHostId) {
+      return;
+    }
+    const history = await captureTmuxHistory(selectedHostId, sessionName, credentialToken);
+    setHistoryChunks(history.chunks);
+    setHistoryText(history.text);
+  }
+
+  function handleTerminalConnectionReady(status: ConnectionStatus) {
+    setError("");
+    void refreshAuditEvents();
+    if (status === "recovering") {
+      void refreshRecoveredHistory();
+    }
+  }
+
+  async function refreshRecoveredHistory() {
+    if (!selectedHostId || !selectedSessionName) {
+      return;
+    }
+    try {
+      const credentialToken = await getSelectedHostCredentialToken();
+      await refreshSessionHistory(selectedSessionName, credentialToken);
+    } catch (err) {
+      setError(errorMessage(err));
+    }
   }
 
   async function handleSaveSessionMetadata(title: string, tags: string[], shared: boolean) {
@@ -251,10 +277,7 @@ export function App() {
             queuedInput={queuedInput}
             sessionKey={terminalSessionKey}
             onConnectionError={setError}
-            onConnectionReady={() => {
-              setError("");
-              void refreshAuditEvents();
-            }}
+            onConnectionReady={handleTerminalConnectionReady}
           />
           <div className="context-stack">
             <HistoryPanel chunks={historyChunks} query={historyQuery} summaryTarget={{ getCredentialToken: getSelectedHostCredentialToken, hostId: selectedHostId, sessionName: selectedSessionName, sshReady: sshCredential.ready }} text={historyText} onQueryChange={setHistoryQuery} onSummarized={() => void refreshAuditEvents()} />
