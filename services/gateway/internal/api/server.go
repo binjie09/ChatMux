@@ -5,14 +5,16 @@ import (
 	"time"
 
 	"github.com/muxchat/muxchat/services/gateway/internal/hoststore"
+	"github.com/muxchat/muxchat/services/gateway/internal/sshclient"
 )
 
 type Server struct {
 	hosts *hoststore.Store
+	ssh   sshRunner
 }
 
 func NewServer(hosts *hoststore.Store) *Server {
-	return &Server{hosts: hosts}
+	return &Server{hosts: hosts, ssh: sshclient.NewClient()}
 }
 
 func (s *Server) Handler() http.Handler {
@@ -20,6 +22,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /healthz", s.handleHealth)
 	mux.HandleFunc("GET /api/hosts", s.handleListHosts)
 	mux.HandleFunc("POST /api/hosts", s.handleCreateHost)
+	mux.HandleFunc("POST /api/hosts/{id}/ssh/probe", s.handleSSHProbe)
 	return withCORS(mux)
 }
 

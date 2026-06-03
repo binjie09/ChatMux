@@ -17,6 +17,11 @@ SELECT id, name, hostname, port, username, status, created_at, updated_at
 FROM hosts
 ORDER BY created_at DESC;`
 
+const getHostSQL = `
+SELECT id, name, hostname, port, username, status, created_at, updated_at
+FROM hosts
+WHERE id = ?;`
+
 const insertHostSQL = `
 INSERT INTO hosts (id, name, hostname, port, username, status, created_at, updated_at)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?);`

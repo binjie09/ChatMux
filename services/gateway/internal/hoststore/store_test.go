@@ -52,6 +52,28 @@ func TestCreateHostDefaultsPort(t *testing.T) {
 	}
 }
 
+func TestGetHost(t *testing.T) {
+	store := openTestStore(t)
+	defer closeStore(t, store)
+
+	created, err := store.CreateHost(context.Background(), CreateHostInput{
+		Name:     "lookup",
+		Hostname: "example.test",
+		Username: "deploy",
+	})
+	if err != nil {
+		t.Fatalf("CreateHost failed: %v", err)
+	}
+
+	host, err := store.GetHost(context.Background(), created.ID)
+	if err != nil {
+		t.Fatalf("GetHost failed: %v", err)
+	}
+	if host.ID != created.ID {
+		t.Fatalf("expected id %q, got %q", created.ID, host.ID)
+	}
+}
+
 func TestCreateHostValidatesRequiredFields(t *testing.T) {
 	store := openTestStore(t)
 	defer closeStore(t, store)

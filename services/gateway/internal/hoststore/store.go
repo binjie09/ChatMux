@@ -70,6 +70,18 @@ func (s *Store) ListHosts(ctx context.Context) ([]Host, error) {
 	return hosts, rows.Err()
 }
 
+func (s *Store) GetHost(ctx context.Context, id string) (Host, error) {
+	row := s.db.QueryRowContext(ctx, getHostSQL, id)
+	host, err := scanHost(row)
+	if errors.Is(err, sql.ErrNoRows) {
+		return Host{}, ErrHostNotFound
+	}
+	if err != nil {
+		return Host{}, fmt.Errorf("get host: %w", err)
+	}
+	return host, nil
+}
+
 func (s *Store) CreateHost(ctx context.Context, input CreateHostInput) (Host, error) {
 	if err := validateCreateHost(input); err != nil {
 		return Host{}, err
