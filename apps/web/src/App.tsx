@@ -1,18 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   captureTmuxHistory,
-  createHost,
   createTmuxSession,
   createTerminalToken,
   listAuditEvents,
-  listHosts,
   listTmuxSessions,
   saveSessionMetadata,
-  setHostPinned,
-  setHostShared,
   terminalWebSocketURL,
-  trustHost,
-  type Host,
   type AuditEvent,
   type TranscriptChunk,
   type TmuxSession,
@@ -28,14 +22,13 @@ import { SessionMetadataEditor } from "./SessionMetadataEditor";
 import { SessionList } from "./SessionList";
 import { Sidebar } from "./Sidebar";
 import { useGatewayAccessToken } from "./useGatewayAccessToken";
+import { useHostWorkspace } from "./useHostWorkspace";
 import { useSessionNotifications } from "./useSessionNotifications";
-import { errorMessage, sortHosts } from "./view-utils";
+import { errorMessage } from "./view-utils";
 
 export function App() {
-  const [hosts, setHosts] = useState<Host[]>([]);
   const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([]);
   const [sessions, setSessions] = useState<TmuxSession[]>([]);
-  const [selectedHostId, setSelectedHostId] = useState<string>("");
   const [selectedSessionName, setSelectedSessionName] = useState("");
   const [newSessionName, setNewSessionName] = useState("");
   const [sshPassword, setSSHPassword] = useState("");
@@ -46,9 +39,26 @@ export function App() {
   const [historyQuery, setHistoryQuery] = useState("");
   const [mobilePanel, setMobilePanel] = useState<MobilePanel>("terminal");
   const [queuedInput, setQueuedInput] = useState<QueuedTerminalInput | null>(null);
-  const [showHostForm, setShowHostForm] = useState(false);
   const [error, setError] = useState("");
   const gatewayToken = useGatewayAccessToken(setError);
+  const {
+    handleCreateHost,
+    handleSelectHost,
+    handleTogglePin,
+    handleToggleShare,
+    handleTrustHost,
+    hosts,
+    refreshHosts,
+    selectedHost,
+    selectedHostId,
+    setShowHostForm,
+    showHostForm,
+  } = useHostWorkspace({
+    onAuditRefresh: () => void refreshAuditEvents(),
+    onError: setError,
+    onHostCreated: () => setMobilePanel("sessions"),
+    onHostSelected: clearSelectedSession,
+  });
 
   useEffect(() => {
     if (!gatewayToken.ready) {
@@ -58,17 +68,6 @@ export function App() {
     void refreshAuditEvents();
   }, [gatewayToken.ready]);
 
-  async function refreshHosts() {
-    try {
-      const nextHosts = await listHosts();
-      setHosts(nextHosts);
-      setSelectedHostId((current) => current || nextHosts[0]?.id || "");
-      setError("");
-    } catch (err) {
-      setError(errorMessage(err));
-    }
-  }
-
   async function refreshAuditEvents() {
     try {
       setAuditEvents(await listAuditEvents());
@@ -77,59 +76,12 @@ export function App() {
     }
   }
 
-  async function handleCreateHost(input: Parameters<typeof createHost>[0]) {
-    const host = await createHost(input);
-    setHosts((current) => sortHosts([host, ...current]));
-    setSelectedHostId(host.id);
-    setMobilePanel("sessions");
-    setShowHostForm(false);
-    void refreshAuditEvents();
-  }
-
-  function handleSelectHost(hostId: string) {
-    setSelectedHostId(hostId);
+  function clearSelectedSession() {
     setSelectedSessionName("");
     setSessions([]);
     setHistoryChunks([]);
     setHistoryText("");
     setMobilePanel("sessions");
-  }
-
-  async function handleTrustHost() {
-    if (!selectedHostId) {
-      return;
-    }
-    const trusted = await trustHost(selectedHostId);
-    setHosts((current) => current.map((host) => (host.id === trusted.id ? trusted : host)));
-    void refreshAuditEvents();
-  }
-
-  async function handleTogglePin() {
-    if (!selectedHost) {
-      return;
-    }
-    try {
-      const updated = await setHostPinned(selectedHost.id, !selectedHost.pinned);
-      setHosts((current) => sortHosts(current.map((host) => (host.id === updated.id ? updated : host))));
-      void refreshAuditEvents();
-      setError("");
-    } catch (err) {
-      setError(errorMessage(err));
-    }
-  }
-
-  async function handleToggleShare() {
-    if (!selectedHost) {
-      return;
-    }
-    try {
-      const updated = await setHostShared(selectedHost.id, !selectedHost.shared);
-      setHosts((current) => sortHosts(current.map((host) => (host.id === updated.id ? updated : host))));
-      void refreshAuditEvents();
-      setError("");
-    } catch (err) {
-      setError(errorMessage(err));
-    }
   }
 
   async function handleListSessions() {
@@ -202,7 +154,6 @@ export function App() {
     }
   }
 
-  const selectedHost = hosts.find((host) => host.id === selectedHostId);
   const selectedSession = sessions.find((session) => session.name === selectedSessionName);
   const terminalSessionKey = selectedHostId && selectedSessionName ? `${selectedHostId}:${selectedSessionName}` : "";
   const refreshSelectedSessions = useCallback(async () => {
