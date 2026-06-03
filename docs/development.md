@@ -109,9 +109,10 @@ lists available tools, and `POST /api/automation/tools/{name}/run` executes one 
 Tool runs require an operator or admin gateway role and write an
 `automation.tool.ran` audit event. The first tool set includes `hosts.list`,
 `audit.list`, `tmux.sessions.list`, and `tmux.history.capture`. The tmux tools
-accept SSH passwords in request bodies for early local testing, but passwords are
-not persisted and are not written into audit messages. There is intentionally no
-arbitrary shell command tool.
+accept `credentialToken` values from the SSH credential endpoint. They still
+accept SSH passwords for early local testing, but passwords are not persisted and
+are not written into audit messages. There is intentionally no arbitrary shell
+command tool.
 
 Android internal testing builds require signing material in environment
 variables: `ANDROID_KEYSTORE_PATH`, `ANDROID_KEYSTORE_PASSWORD`,

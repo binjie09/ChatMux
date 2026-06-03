@@ -101,6 +101,31 @@ func TestRunAutomationTmuxHistoryCapture(t *testing.T) {
 	assertAuditEvent(t, server, automationToolRunAuditEvent, "ran automation tool: "+automationToolTmuxHistoryCapture)
 }
 
+func TestRunAutomationTmuxSessionsListAcceptsCredentialToken(t *testing.T) {
+	server, closeServer := newTestServer(t)
+	defer closeServer()
+	runner := &fakeSSHRunner{output: "$0\tdeploy\t1\t0\t1710000000\tzsh\t0\t\n"}
+	server.ssh = runner
+	host := createTrustedTestHost(t, server)
+	token := server.credentialTokens.Create(credentialToken{
+		HostID: host.ID, Password: "secret", Principal: "local-dev",
+	})
+
+	body := `{"arguments":{"hostId":"` + host.ID + `","credentialToken":"` + token + `"}}`
+	response := runAutomationTool(t, server, automationToolTmuxSessionsList, body)
+
+	var sessions []tmuxSessionForAutomationTest
+	if err := json.Unmarshal(response.Result, &sessions); err != nil {
+		t.Fatalf("decode sessions result: %v", err)
+	}
+	if len(sessions) != 1 || sessions[0].Name != "deploy" {
+		t.Fatalf("expected deploy session, got %#v", sessions)
+	}
+	if runner.password != "secret" {
+		t.Fatalf("expected credential token password, got %q", runner.password)
+	}
+}
+
 func TestRunAutomationTmuxSessionsListRequiresHostID(t *testing.T) {
 	server, closeServer := newTestServer(t)
 	defer closeServer()
@@ -112,6 +137,10 @@ func TestRunAutomationTmuxSessionsListRequiresHostID(t *testing.T) {
 	if rec.Code != http.StatusBadRequest {
 		t.Fatalf("expected 400, got %d: %s", rec.Code, rec.Body.String())
 	}
+}
+
+type tmuxSessionForAutomationTest struct {
+	Name string `json:"name"`
 }
 
 func hasAutomationTool(tools []automationTool, name string) bool {

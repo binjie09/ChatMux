@@ -101,14 +101,14 @@ func automationTools() []automationTool {
 		{
 			Name:         automationToolTmuxSessionsList,
 			Description:  "List tmux sessions over SSH",
-			Inputs:       []string{"hostId", "password"},
+			Inputs:       []string{"hostId", "credentialToken", "password"},
 			RequiredRole: automationToolRequiredRole,
 			SideEffect:   automationToolSideEffectSSHRead,
 		},
 		{
 			Name:         automationToolTmuxHistoryCapture,
 			Description:  "Capture tmux pane history over SSH",
-			Inputs:       []string{"hostId", "sessionName", "password"},
+			Inputs:       []string{"hostId", "sessionName", "credentialToken", "password"},
 			RequiredRole: automationToolRequiredRole,
 			SideEffect:   automationToolSideEffectSSHRead,
 		},
@@ -173,7 +173,7 @@ func (s *Server) runAutomationAuditList(r *http.Request) (any, error) {
 }
 
 func (s *Server) runAutomationTmuxSessionsList(r *http.Request, args map[string]string) (any, error) {
-	hostID, password, err := hostPasswordArgs(args)
+	hostID, password, err := s.hostCredentialArgs(r, args)
 	if err != nil {
 		return nil, err
 	}
@@ -202,20 +202,20 @@ func (s *Server) runAutomationTmuxHistoryCapture(r *http.Request, args map[strin
 	return result, s.logAutomationRun(r, automationToolTmuxHistoryCapture, host.ID, sessionName)
 }
 
-func hostPasswordArgs(args map[string]string) (string, string, error) {
+func (s *Server) hostCredentialArgs(r *http.Request, args map[string]string) (string, string, error) {
 	hostID, err := automationArg(args, "hostId")
 	if err != nil {
 		return "", "", err
 	}
-	password, err := automationArg(args, "password")
+	password, err := s.sshPasswordForRequest(r, hostID, automationCredential(args))
 	if err != nil {
-		return "", "", err
+		return "", "", automationStatus(statusForCredentialError(err), err)
 	}
 	return hostID, password, nil
 }
 
 func (s *Server) historyCaptureArgs(r *http.Request, args map[string]string) (hoststore.Host, string, string, error) {
-	hostID, password, err := hostPasswordArgs(args)
+	hostID, password, err := s.hostCredentialArgs(r, args)
 	if err != nil {
 		return hoststore.Host{}, "", "", err
 	}
@@ -225,6 +225,13 @@ func (s *Server) historyCaptureArgs(r *http.Request, args map[string]string) (ho
 	}
 	host, err := s.visibleHost(r, hostID)
 	return host, password, sessionName, err
+}
+
+func automationCredential(args map[string]string) sshCredentialRequest {
+	return sshCredentialRequest{
+		CredentialToken: strings.TrimSpace(args["credentialToken"]),
+		Password:        strings.TrimSpace(args["password"]),
+	}
 }
 
 func automationArg(args map[string]string, name string) (string, error) {
