@@ -68,6 +68,11 @@ export type CommandDraft = {
   risk: "low" | "medium" | "high";
 };
 
+export type SSHCredential = {
+  token: string;
+  expiresIn: number;
+};
+
 type TerminalTokenResponse = {
   token: string;
   expiresIn: number;
@@ -108,6 +113,13 @@ export async function trustHost(hostId: string): Promise<Host> {
   return response.host;
 }
 
+export async function createSSHCredential(hostId: string, password: string): Promise<SSHCredential> {
+  return request<SSHCredential>(`/api/hosts/${hostId}/ssh/credentials`, {
+    method: "POST",
+    body: JSON.stringify({ password }),
+  });
+}
+
 export async function setHostPinned(hostId: string, pinned: boolean): Promise<Host> {
   return request<Host>(`/api/hosts/${hostId}/pin`, {
     method: "POST",
@@ -122,17 +134,17 @@ export async function setHostShared(hostId: string, shared: boolean): Promise<Ho
   });
 }
 
-export async function listTmuxSessions(hostId: string, password: string): Promise<TmuxSession[]> {
+export async function listTmuxSessions(hostId: string, credentialToken: string): Promise<TmuxSession[]> {
   return request<TmuxSession[]>(`/api/hosts/${hostId}/tmux/sessions/list`, {
     method: "POST",
-    body: JSON.stringify({ password }),
+    body: JSON.stringify({ credentialToken }),
   });
 }
 
-export async function createTmuxSession(hostId: string, password: string, name: string): Promise<TmuxSession> {
+export async function createTmuxSession(hostId: string, credentialToken: string, name: string): Promise<TmuxSession> {
   return request<TmuxSession>(`/api/hosts/${hostId}/tmux/sessions`, {
     method: "POST",
-    body: JSON.stringify({ name, password }),
+    body: JSON.stringify({ credentialToken, name }),
   });
 }
 
@@ -151,32 +163,32 @@ export type TmuxSessionMetadata = {
   updatedAt: string;
 };
 
-export async function createTerminalToken(hostId: string, sessionName: string, password: string): Promise<string> {
+export async function createTerminalToken(hostId: string, sessionName: string, credentialToken: string): Promise<string> {
   const response = await request<TerminalTokenResponse>(`/api/hosts/${hostId}/tmux/sessions/${sessionName}/terminal-token`, {
     method: "POST",
-    body: JSON.stringify({ password }),
+    body: JSON.stringify({ credentialToken }),
   });
   return response.token;
 }
 
-export async function captureTmuxHistory(hostId: string, sessionName: string, password: string): Promise<TmuxHistory> {
+export async function captureTmuxHistory(hostId: string, sessionName: string, credentialToken: string): Promise<TmuxHistory> {
   return request<TmuxHistory>(`/api/hosts/${hostId}/tmux/sessions/${sessionName}/history`, {
     method: "POST",
-    body: JSON.stringify({ password }),
+    body: JSON.stringify({ credentialToken }),
   });
 }
 
-export async function summarizeTmuxHistory(hostId: string, sessionName: string, password: string): Promise<TranscriptSummary> {
+export async function summarizeTmuxHistory(hostId: string, sessionName: string, credentialToken: string): Promise<TranscriptSummary> {
   return request<TranscriptSummary>(`/api/hosts/${hostId}/tmux/sessions/${sessionName}/summary`, {
     method: "POST",
-    body: JSON.stringify({ password }),
+    body: JSON.stringify({ credentialToken }),
   });
 }
 
-export async function draftTmuxCommand(hostId: string, sessionName: string, password: string, prompt: string): Promise<CommandDraft> {
+export async function draftTmuxCommand(hostId: string, sessionName: string, credentialToken: string, prompt: string): Promise<CommandDraft> {
   return request<CommandDraft>(`/api/hosts/${hostId}/tmux/sessions/${sessionName}/command-draft`, {
     method: "POST",
-    body: JSON.stringify({ password, prompt }),
+    body: JSON.stringify({ credentialToken, prompt }),
   });
 }
 
