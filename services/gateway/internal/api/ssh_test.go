@@ -21,6 +21,10 @@ func (r *fakeSSHRunner) Run(_ context.Context, _ sshclient.HostConfig, _ sshclie
 	return []byte("muxchat-ok"), nil
 }
 
+func (r *fakeSSHRunner) ScanHostKey(_ context.Context, _ sshclient.HostConfig) (string, error) {
+	return "SHA256:test", nil
+}
+
 func TestSSHProbe(t *testing.T) {
 	server, closeServer := newTestServer(t)
 	defer closeServer()
@@ -41,6 +45,24 @@ func TestSSHProbe(t *testing.T) {
 	}
 	if runner.command != "printf muxchat-ok" {
 		t.Fatalf("unexpected probe command %q", runner.command)
+	}
+}
+
+func TestTrustHostKeyAPI(t *testing.T) {
+	server, closeServer := newTestServer(t)
+	defer closeServer()
+	server.ssh = &fakeSSHRunner{}
+	host := createTestHost(t, server.hosts)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/hosts/"+host.ID+"/ssh/trust", nil)
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), "SHA256:test") {
+		t.Fatalf("expected fingerprint, got %s", rec.Body.String())
 	}
 }
 

@@ -74,6 +74,28 @@ func TestGetHost(t *testing.T) {
 	}
 }
 
+func TestTrustHostKey(t *testing.T) {
+	store := openTestStore(t)
+	defer closeStore(t, store)
+
+	created, err := store.CreateHost(context.Background(), CreateHostInput{
+		Name:     "trust",
+		Hostname: "example.test",
+		Username: "deploy",
+	})
+	if err != nil {
+		t.Fatalf("CreateHost failed: %v", err)
+	}
+
+	host, err := store.TrustHostKey(context.Background(), created.ID, "SHA256:abc")
+	if err != nil {
+		t.Fatalf("TrustHostKey failed: %v", err)
+	}
+	if host.HostKeyFingerprint != "SHA256:abc" {
+		t.Fatalf("expected fingerprint, got %q", host.HostKeyFingerprint)
+	}
+}
+
 func TestCreateHostValidatesRequiredFields(t *testing.T) {
 	store := openTestStore(t)
 	defer closeStore(t, store)

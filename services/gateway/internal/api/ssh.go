@@ -19,9 +19,14 @@ type sshProbeResponse struct {
 	Output string `json:"output"`
 }
 
+type trustHostKeyResponse struct {
+	Fingerprint string         `json:"fingerprint"`
+	Host        hoststore.Host `json:"host"`
+}
+
 func (s *Server) handleSSHProbe(w http.ResponseWriter, r *http.Request) {
-	hostID := strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, "/api/hosts/"), "/ssh/probe")
-	if hostID == "" || hostID == r.URL.Path {
+	hostID, ok := routeHostAction(r.URL.Path, "/ssh/probe")
+	if !ok {
 		writeError(w, http.StatusNotFound, errors.New("route not found"))
 		return
 	}
@@ -54,10 +59,49 @@ func (s *Server) handleSSHProbe(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, sshProbeResponse{OK: true, Output: string(output)})
 }
 
+func (s *Server) handleTrustHostKey(w http.ResponseWriter, r *http.Request) {
+	hostID, ok := routeHostAction(r.URL.Path, "/ssh/trust")
+	if !ok {
+		writeError(w, http.StatusNotFound, errors.New("route not found"))
+		return
+	}
+
+	host, err := s.hosts.GetHost(r.Context(), hostID)
+	if errors.Is(err, hoststore.ErrHostNotFound) {
+		writeError(w, http.StatusNotFound, err)
+		return
+	}
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	fingerprint, err := s.ssh.ScanHostKey(r.Context(), hostToSSHConfig(host))
+	if err != nil {
+		writeError(w, http.StatusBadGateway, err)
+		return
+	}
+	trusted, err := s.hosts.TrustHostKey(r.Context(), host.ID, fingerprint)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, trustHostKeyResponse{Fingerprint: fingerprint, Host: trusted})
+}
+
 func hostToSSHConfig(host hoststore.Host) sshclient.HostConfig {
 	return sshclient.HostConfig{
-		Hostname: host.Hostname,
-		Port:     host.Port,
-		Username: host.Username,
+		Hostname:           host.Hostname,
+		Port:               host.Port,
+		Username:           host.Username,
+		HostKeyFingerprint: host.HostKeyFingerprint,
 	}
+}
+
+func routeHostAction(path string, suffix string) (string, bool) {
+	hostID := strings.TrimSuffix(strings.TrimPrefix(path, "/api/hosts/"), suffix)
+	if hostID == "" || hostID == path {
+		return "", false
+	}
+	return hostID, true
 }

@@ -2,6 +2,7 @@ package sshclient
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"time"
@@ -12,9 +13,10 @@ import (
 const connectTimeout = 10 * time.Second
 
 type HostConfig struct {
-	Hostname string
-	Port     int
-	Username string
+	Hostname           string
+	Port               int
+	Username           string
+	HostKeyFingerprint string
 }
 
 type PasswordCredential struct {
@@ -31,10 +33,14 @@ func NewClient() *Client {
 }
 
 func (c *Client) Run(ctx context.Context, host HostConfig, credential PasswordCredential, command string) ([]byte, error) {
+	if host.HostKeyFingerprint == "" {
+		return nil, errors.New("host key is not trusted")
+	}
+
 	config := ssh.ClientConfig{
 		User:            host.Username,
 		Auth:            []ssh.AuthMethod{ssh.Password(credential.Password)},
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+		HostKeyCallback: verifyHostKey(host.HostKeyFingerprint),
 		Timeout:         connectTimeout,
 	}
 
@@ -63,4 +69,41 @@ func (c *Client) Run(ctx context.Context, host HostConfig, credential PasswordCr
 		return nil, fmt.Errorf("run ssh command: %w", err)
 	}
 	return output, nil
+}
+
+func (c *Client) ScanHostKey(ctx context.Context, host HostConfig) (string, error) {
+	addr := fmt.Sprintf("%s:%d", host.Hostname, host.Port)
+	conn, err := c.dialContext(ctx, "tcp", addr)
+	if err != nil {
+		return "", fmt.Errorf("dial ssh: %w", err)
+	}
+	defer conn.Close()
+
+	var fingerprint string
+	config := ssh.ClientConfig{
+		User: host.Username,
+		HostKeyCallback: func(_ string, _ net.Addr, key ssh.PublicKey) error {
+			fingerprint = ssh.FingerprintSHA256(key)
+			return nil
+		},
+		Timeout: connectTimeout,
+	}
+	sshConn, _, _, err := ssh.NewClientConn(conn, addr, &config)
+	if err == nil {
+		defer sshConn.Close()
+	}
+	if fingerprint == "" {
+		return "", fmt.Errorf("scan ssh host key: %w", err)
+	}
+	return fingerprint, nil
+}
+
+func verifyHostKey(expected string) ssh.HostKeyCallback {
+	return func(_ string, _ net.Addr, key ssh.PublicKey) error {
+		actual := ssh.FingerprintSHA256(key)
+		if actual != expected {
+			return fmt.Errorf("host key mismatch: expected %s got %s", expected, actual)
+		}
+		return nil
+	}
 }
