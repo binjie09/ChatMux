@@ -56,6 +56,10 @@ func (s *Server) handleSSHProbe(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadGateway, err)
 		return
 	}
+	if err := s.logAudit(r.Context(), hoststore.LogAuditEventInput{Type: "ssh.probed", HostID: host.ID, Message: "probed ssh connection"}); err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
 	writeJSON(w, http.StatusOK, sshProbeResponse{OK: true, Output: string(output)})
 }
 
@@ -83,6 +87,10 @@ func (s *Server) handleTrustHostKey(w http.ResponseWriter, r *http.Request) {
 	}
 	trusted, err := s.hosts.TrustHostKey(r.Context(), host.ID, fingerprint)
 	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	if err := s.logAudit(r.Context(), hoststore.LogAuditEventInput{Type: "ssh.host_key.trusted", HostID: host.ID, Message: "trusted ssh host key"}); err != nil {
 		writeError(w, http.StatusInternalServerError, err)
 		return
 	}

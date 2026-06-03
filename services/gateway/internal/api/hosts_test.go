@@ -38,6 +38,14 @@ func TestCreateAndListHostsAPI(t *testing.T) {
 	if len(hosts) != 1 {
 		t.Fatalf("expected 1 host, got %d", len(hosts))
 	}
+
+	events, err := server.hosts.ListAuditEvents(testContext(t))
+	if err != nil {
+		t.Fatalf("ListAuditEvents failed: %v", err)
+	}
+	if len(events) != 1 || events[0].Type != "host.created" {
+		t.Fatalf("expected host.created audit event, got %#v", events)
+	}
 }
 
 func TestPinHostAPI(t *testing.T) {

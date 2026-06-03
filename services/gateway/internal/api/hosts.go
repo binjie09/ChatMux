@@ -29,6 +29,10 @@ func (s *Server) handleCreateHost(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err)
 		return
 	}
+	if err := s.logAudit(r.Context(), hoststore.LogAuditEventInput{Type: "host.created", HostID: host.ID, Message: "created host"}); err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
 	writeJSON(w, http.StatusCreated, host)
 }
 
@@ -54,6 +58,14 @@ func (s *Server) handlePinHost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	eventType := "host.unpinned"
+	if host.Pinned {
+		eventType = "host.pinned"
+	}
+	if err := s.logAudit(r.Context(), hoststore.LogAuditEventInput{Type: eventType, HostID: host.ID, Message: eventType}); err != nil {
 		writeError(w, http.StatusInternalServerError, err)
 		return
 	}

@@ -54,6 +54,10 @@ func (s *Server) runTerminal(r *http.Request, conn *websocket.Conn, token termin
 		return
 	}
 	defer terminal.Close()
+	if err := s.logAudit(r.Context(), hoststore.LogAuditEventInput{Type: "terminal.connected", HostID: token.HostID, SessionName: token.SessionName, Message: "connected terminal"}); err != nil {
+		writeTerminalError(conn, err)
+		return
+	}
 
 	done := make(chan struct{})
 	writer := &terminalWriter{conn: conn}

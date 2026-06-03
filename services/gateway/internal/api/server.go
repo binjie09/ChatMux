@@ -25,6 +25,7 @@ func NewServer(hosts *hoststore.Store) *Server {
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", s.handleHealth)
+	mux.HandleFunc("GET /api/audit-events", s.handleListAuditEvents)
 	mux.HandleFunc("GET /api/hosts", s.handleListHosts)
 	mux.HandleFunc("POST /api/hosts", s.handleCreateHost)
 	mux.HandleFunc("POST /api/hosts/{id}/pin", s.handlePinHost)

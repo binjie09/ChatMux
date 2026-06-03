@@ -146,6 +146,9 @@ func (s *Store) migrate(ctx context.Context) error {
 	if _, err := s.db.ExecContext(ctx, createHostsTableSQL); err != nil {
 		return fmt.Errorf("migrate hosts table: %w", err)
 	}
+	if _, err := s.db.ExecContext(ctx, createAuditEventsTableSQL); err != nil {
+		return fmt.Errorf("migrate audit events table: %w", err)
+	}
 	exists, err := s.columnExists(ctx, "hosts", "host_key_fingerprint")
 	if err != nil {
 		return err

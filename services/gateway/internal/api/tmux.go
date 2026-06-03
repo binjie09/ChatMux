@@ -64,6 +64,10 @@ func (s *Server) handleListTmuxSessions(w http.ResponseWriter, r *http.Request) 
 		writeError(w, http.StatusBadGateway, err)
 		return
 	}
+	if err := s.logAudit(r.Context(), hoststore.LogAuditEventInput{Type: "tmux.sessions.listed", HostID: hostID, Message: "listed tmux sessions"}); err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
 	writeJSON(w, http.StatusOK, sessions)
 }
 
@@ -99,6 +103,10 @@ func (s *Server) handleCreateTmuxSession(w http.ResponseWriter, r *http.Request)
 		writeError(w, http.StatusBadGateway, err)
 		return
 	}
+	if err := s.logAudit(r.Context(), hoststore.LogAuditEventInput{Type: "tmux.session.created", HostID: hostID, SessionName: session.Name, Message: "created tmux session"}); err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
 	writeJSON(w, http.StatusCreated, session)
 }
 
@@ -127,6 +135,10 @@ func (s *Server) handleCaptureTmuxHistory(w http.ResponseWriter, r *http.Request
 	output, err := s.runTmuxCommand(r, hostID, input.Password, command)
 	if err != nil {
 		writeError(w, http.StatusBadGateway, err)
+		return
+	}
+	if err := s.logAudit(r.Context(), hoststore.LogAuditEventInput{Type: "tmux.history.captured", HostID: hostID, SessionName: sessionName, Message: "captured tmux history"}); err != nil {
+		writeError(w, http.StatusInternalServerError, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, tmuxHistoryResponse{Text: string(output)})

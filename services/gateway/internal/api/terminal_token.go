@@ -48,6 +48,10 @@ func (s *Server) handleCreateTerminalToken(w http.ResponseWriter, r *http.Reques
 		SessionName: sessionName,
 		Password:    input.Password,
 	})
+	if err := s.logAudit(r.Context(), hoststore.LogAuditEventInput{Type: "terminal.token.created", HostID: hostID, SessionName: sessionName, Message: "created terminal token"}); err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
 	writeJSON(w, http.StatusCreated, createTerminalTokenResponse{
 		Token:     id,
 		ExpiresIn: int(terminalTokenTTL.Seconds()),

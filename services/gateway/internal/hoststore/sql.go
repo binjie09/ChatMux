@@ -14,6 +14,16 @@ CREATE TABLE IF NOT EXISTS hosts (
 	updated_at TIMESTAMP NOT NULL
 );`
 
+const createAuditEventsTableSQL = `
+CREATE TABLE IF NOT EXISTS audit_events (
+	id TEXT PRIMARY KEY,
+	type TEXT NOT NULL,
+	host_id TEXT NOT NULL DEFAULT '',
+	session_name TEXT NOT NULL DEFAULT '',
+	message TEXT NOT NULL DEFAULT '',
+	created_at TIMESTAMP NOT NULL
+);`
+
 const addHostFingerprintSQL = `
 ALTER TABLE hosts ADD COLUMN host_key_fingerprint TEXT NOT NULL DEFAULT '';`
 
@@ -43,3 +53,13 @@ const setHostPinnedSQL = `
 UPDATE hosts
 SET pinned = ?, updated_at = ?
 WHERE id = ?;`
+
+const insertAuditEventSQL = `
+INSERT INTO audit_events (id, type, host_id, session_name, message, created_at)
+VALUES (?, ?, ?, ?, ?, ?);`
+
+const listAuditEventsSQL = `
+SELECT id, type, host_id, session_name, message, created_at
+FROM audit_events
+ORDER BY created_at DESC
+LIMIT 200;`
