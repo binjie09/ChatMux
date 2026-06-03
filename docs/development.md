@@ -35,8 +35,8 @@ pnpm --filter @muxchat/web desktop:build
 ```
 
 Capacitor generates `ios/` and `android/` under `apps/web` when the add commands
-run. The Android project is checked in after generation and uses the shared SPA
-from `apps/web/dist`. Tauri uses `apps/web/src-tauri`.
+run. The iOS and Android projects are checked in after generation and use the
+shared SPA from `apps/web/dist`. Tauri uses `apps/web/src-tauri`.
 
 The desktop commands build a Go gateway sidecar into
 `apps/web/src-tauri/binaries/` before Tauri starts. The generated binary is
