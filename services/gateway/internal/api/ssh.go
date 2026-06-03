@@ -105,3 +105,12 @@ func routeHostAction(path string, suffix string) (string, bool) {
 	}
 	return hostID, true
 }
+
+func routeHostSessionAction(path string, suffix string) (string, string, bool) {
+	trimmed := strings.TrimSuffix(strings.TrimPrefix(path, "/api/hosts/"), suffix)
+	parts := strings.Split(trimmed, "/tmux/sessions/")
+	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+		return "", "", false
+	}
+	return parts[0], parts[1], true
+}

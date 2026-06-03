@@ -29,6 +29,10 @@ func (r *fakeSSHRunner) ScanHostKey(_ context.Context, _ sshclient.HostConfig) (
 	return "SHA256:test", nil
 }
 
+func (r *fakeSSHRunner) StartTerminal(_ context.Context, _ sshclient.HostConfig, _ sshclient.PasswordCredential, _ string, _ sshclient.TerminalSize) (*sshclient.Terminal, error) {
+	return nil, nil
+}
+
 func TestSSHProbe(t *testing.T) {
 	server, closeServer := newTestServer(t)
 	defer closeServer()

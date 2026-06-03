@@ -34,6 +34,22 @@ func CreateSessionCommand(name string) (string, error) {
 	return loginShellCommand(command), nil
 }
 
+func AttachSessionCommand(name string) (string, error) {
+	if err := ValidateSessionName(name); err != nil {
+		return "", err
+	}
+	command := tmuxPrelude() + "exec \"$TMUX_BIN\" attach-session -t " + name
+	return loginShellCommand(command), nil
+}
+
+func KillSessionCommand(name string) (string, error) {
+	if err := ValidateSessionName(name); err != nil {
+		return "", err
+	}
+	command := tmuxPrelude() + "\"$TMUX_BIN\" kill-session -t " + name
+	return loginShellCommand(command), nil
+}
+
 func ValidateSessionName(name string) error {
 	if !sessionNamePattern.MatchString(name) {
 		return errors.New("session name must be 1-64 chars using letters, numbers, underscore, dot, or dash")

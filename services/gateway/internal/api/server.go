@@ -9,12 +9,17 @@ import (
 )
 
 type Server struct {
-	hosts *hoststore.Store
-	ssh   sshRunner
+	hosts          *hoststore.Store
+	ssh            sshRunner
+	terminalTokens *terminalTokenStore
 }
 
 func NewServer(hosts *hoststore.Store) *Server {
-	return &Server{hosts: hosts, ssh: sshclient.NewClient()}
+	return &Server{
+		hosts:          hosts,
+		ssh:            sshclient.NewClient(),
+		terminalTokens: newTerminalTokenStore(),
+	}
 }
 
 func (s *Server) Handler() http.Handler {
@@ -26,6 +31,8 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/hosts/{id}/ssh/trust", s.handleTrustHostKey)
 	mux.HandleFunc("POST /api/hosts/{id}/tmux/sessions/list", s.handleListTmuxSessions)
 	mux.HandleFunc("POST /api/hosts/{id}/tmux/sessions", s.handleCreateTmuxSession)
+	mux.HandleFunc("POST /api/hosts/{id}/tmux/sessions/{name}/terminal-token", s.handleCreateTerminalToken)
+	mux.HandleFunc("GET /api/terminal", s.handleTerminalWebSocket)
 	return withCORS(mux)
 }
 

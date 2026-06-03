@@ -54,3 +54,23 @@ func TestCreateSessionCommand(t *testing.T) {
 		t.Fatalf("expected login shell wrapper, got %q", command)
 	}
 }
+
+func TestAttachSessionCommand(t *testing.T) {
+	command, err := AttachSessionCommand("deploy_1")
+	if err != nil {
+		t.Fatalf("AttachSessionCommand failed: %v", err)
+	}
+	if !strings.Contains(command, "attach-session -t deploy_1") {
+		t.Fatalf("expected attach command, got %q", command)
+	}
+}
+
+func TestKillSessionCommand(t *testing.T) {
+	command, err := KillSessionCommand("deploy_1")
+	if err != nil {
+		t.Fatalf("KillSessionCommand failed: %v", err)
+	}
+	if !strings.Contains(command, "kill-session -t deploy_1") {
+		t.Fatalf("expected kill command, got %q", command)
+	}
+}

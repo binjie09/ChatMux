@@ -51,25 +51,10 @@ func (c *Client) Run(ctx context.Context, host HostConfig, credential PasswordCr
 		return nil, errors.New("host key is not trusted")
 	}
 
-	config := ssh.ClientConfig{
-		User:            host.Username,
-		Auth:            []ssh.AuthMethod{ssh.Password(credential.Password)},
-		HostKeyCallback: verifyHostKey(host.HostKeyFingerprint),
-		Timeout:         connectTimeout,
-	}
-
-	addr := fmt.Sprintf("%s:%d", host.Hostname, host.Port)
-	conn, err := c.dialContext(ctx, "tcp", addr)
+	client, err := c.connect(ctx, host, credential)
 	if err != nil {
-		return nil, fmt.Errorf("dial ssh: %w", err)
+		return nil, err
 	}
-	defer conn.Close()
-
-	sshConn, channels, requests, err := ssh.NewClientConn(conn, addr, &config)
-	if err != nil {
-		return nil, fmt.Errorf("handshake ssh: %w", err)
-	}
-	client := ssh.NewClient(sshConn, channels, requests)
 	defer client.Close()
 
 	session, err := client.NewSession()
@@ -83,6 +68,16 @@ func (c *Client) Run(ctx context.Context, host HostConfig, credential PasswordCr
 		return nil, CommandError{Command: command, Output: string(output), Err: err}
 	}
 	return output, nil
+}
+
+func (c *Client) connect(ctx context.Context, host HostConfig, credential PasswordCredential) (*ssh.Client, error) {
+	config := ssh.ClientConfig{
+		User:            host.Username,
+		Auth:            []ssh.AuthMethod{ssh.Password(credential.Password)},
+		HostKeyCallback: verifyHostKey(host.HostKeyFingerprint),
+		Timeout:         connectTimeout,
+	}
+	return c.dialSSH(ctx, host, &config)
 }
 
 func (c *Client) ScanHostKey(ctx context.Context, host HostConfig) (string, error) {
@@ -110,6 +105,21 @@ func (c *Client) ScanHostKey(ctx context.Context, host HostConfig) (string, erro
 		return "", fmt.Errorf("scan ssh host key: %w", err)
 	}
 	return fingerprint, nil
+}
+
+func (c *Client) dialSSH(ctx context.Context, host HostConfig, config *ssh.ClientConfig) (*ssh.Client, error) {
+	addr := fmt.Sprintf("%s:%d", host.Hostname, host.Port)
+	conn, err := c.dialContext(ctx, "tcp", addr)
+	if err != nil {
+		return nil, fmt.Errorf("dial ssh: %w", err)
+	}
+
+	sshConn, channels, requests, err := ssh.NewClientConn(conn, addr, config)
+	if err != nil {
+		_ = conn.Close()
+		return nil, fmt.Errorf("handshake ssh: %w", err)
+	}
+	return ssh.NewClient(sshConn, channels, requests), nil
 }
 
 func verifyHostKey(expected string) ssh.HostKeyCallback {
