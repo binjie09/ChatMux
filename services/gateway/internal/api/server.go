@@ -10,17 +10,26 @@ import (
 )
 
 type Server struct {
-	gatewayAccessToken string
-	hosts              *hoststore.Store
-	ssh                sshRunner
-	terminalTokens     *terminalTokenStore
+	auth           authConfig
+	hosts          *hoststore.Store
+	ssh            sshRunner
+	terminalTokens *terminalTokenStore
 }
 
 type ServerOption func(*Server)
 
 func WithGatewayAccessToken(token string) ServerOption {
 	return func(s *Server) {
-		s.gatewayAccessToken = strings.TrimSpace(token)
+		if strings.TrimSpace(token) == "" {
+			return
+		}
+		s.auth.AddStaticUsers([]StaticUser{{Name: "gateway", Role: RoleAdmin, Token: token}})
+	}
+}
+
+func WithStaticUsers(users []StaticUser) ServerOption {
+	return func(s *Server) {
+		s.auth.AddStaticUsers(users)
 	}
 }
 
@@ -39,6 +48,7 @@ func NewServer(hosts *hoststore.Store, options ...ServerOption) *Server {
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", s.handleHealth)
+	mux.HandleFunc("GET /api/me", s.handleMe)
 	mux.HandleFunc("GET /api/audit-events", s.handleListAuditEvents)
 	mux.HandleFunc("GET /api/hosts", s.handleListHosts)
 	mux.HandleFunc("POST /api/hosts", s.handleCreateHost)
