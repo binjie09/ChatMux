@@ -5,6 +5,7 @@
 - Node.js 24+
 - pnpm 10+
 - Go 1.23+
+- Rust 1.85+ for Tauri desktop builds
 - JDK 21+ for Android builds
 - `tmux` installed on SSH hosts used for tmux feature testing
 
@@ -72,9 +73,10 @@ static users, for example `[{"name":"ops","role":"operator","token":"..."}]`.
 Roles are `viewer`, `operator`, and `admin`; viewers can call read APIs, while
 operators and admins can mutate hosts and tmux sessions. The SPA can store a
 gateway token from the sidebar; iOS uses Keychain, Android uses Android Keystore
-backed storage, and the web fallback is only for local development. When
-biometric unlock is enabled, the stored token is loaded only after Face ID,
-Touch ID, Android biometrics, or device credentials succeed.
+backed storage, Tauri desktop uses the operating system credential store, and
+the web fallback is only for local development. When biometric unlock is enabled
+on mobile, the stored token is loaded only after Face ID, Touch ID, Android
+biometrics, or device credentials succeed.
 Hosts are owned by the principal that creates them. Shared hosts are visible to
 all authenticated users; private hosts are visible only to their owner and
 admins. tmux sessions can also carry owner/shared metadata. Host owners and
@@ -194,6 +196,5 @@ cd services/gateway && go test ./... && go build ./cmd/muxchat-gateway
 
 ## Next Implementation Tasks
 
-1. Add desktop encrypted secret storage for local gateway credentials.
-2. Add recoverable credential prompts for background session notifications.
-3. Broaden automation tools only through explicit allowlisted capabilities.
+1. Add recoverable credential prompts for background session notifications.
+2. Broaden automation tools only through explicit allowlisted capabilities.
