@@ -1,0 +1,61 @@
+.pwa-install-prompt {
+  display: grid;
+  gap: 12px;
+  border: 1px solid #33433a;
+  border-radius: 8px;
+  padding: 12px;
+  background: #202b25;
+  color: #f7f2e8;
+}
+
+.pwa-install-prompt strong,
+.pwa-install-prompt span {
+  display: block;
+}
+
+.pwa-install-prompt span {
+  margin-top: 3px;
+  color: #b8c2bc;
+  font-size: 13px;
+}
+
+.pwa-install-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.pwa-install-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid #46564d;
+  border-radius: 8px;
+  min-height: 34px;
+  color: #f7f2e8;
+  background: #17201b;
+}
+
+.pwa-install-actions button:first-child {
+  flex: 1;
+  border-color: #8fd5b2;
+  color: #0d1712;
+  background: #8fd5b2;
+  font-weight: 700;
+}
+
+.pwa-install-actions button:last-child {
+  width: 34px;
+}
+
+@media (max-width: 980px) {
+  .pwa-install-prompt {
+    display: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .sidebar.mobile-open .pwa-install-prompt {
+    display: grid;
+  }
+}

@@ -1,16 +1,11 @@
 import { invoke } from "@tauri-apps/api/core";
-
-type TauriWindow = Window & {
-  __TAURI__?: unknown;
-  __TAURI_INTERNALS__?: unknown;
-};
+import { isDesktopShell } from "./runtime-platform";
 
 export function hasDesktopSecureStorage() {
   if (typeof window === "undefined") {
     return false;
   }
-  const tauriWindow = window as TauriWindow;
-  return Boolean(tauriWindow.__TAURI__ || tauriWindow.__TAURI_INTERNALS__);
+  return isDesktopShell();
 }
 
 export async function loadDesktopGatewayAccessToken() {

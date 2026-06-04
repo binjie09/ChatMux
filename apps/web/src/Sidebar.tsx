@@ -3,7 +3,9 @@ import { KeyRound, Monitor, Pencil, Plus, Server, ShieldCheck, Smartphone, Termi
 import { type CreateHostInput, type Host } from "./api";
 import { GatewayTokenControl } from "./GatewayTokenControl";
 import { HostForm } from "./HostForm";
+import { PWAInstallPrompt } from "./PWAInstallPrompt";
 import { type GatewayTokenState } from "./useGatewayAccessToken";
+import { type PWAInstallPromptState } from "./usePWAInstallPrompt";
 import "./sidebar-host-actions.css";
 
 type SidebarProps = {
@@ -11,6 +13,7 @@ type SidebarProps = {
   hosts: Host[];
   gatewayToken: GatewayTokenState;
   mobileOpen: boolean;
+  pwaInstallPrompt: PWAInstallPromptState;
   selectedHostId: string;
   showHostForm: boolean;
   onCreateHost: (input: CreateHostInput) => Promise<void>;
@@ -54,6 +57,8 @@ export function Sidebar(props: SidebarProps) {
         </div>
         {props.error ? <p className="sidebar-error">{props.error}</p> : null}
       </section>
+
+      <PWAInstallPrompt installPrompt={props.pwaInstallPrompt} />
 
       <section className="platforms">
         <h2>Targets</h2>

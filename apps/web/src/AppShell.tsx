@@ -15,6 +15,7 @@ import { type QueuedTerminalInput } from "./NativeTerminal";
 import { SessionList } from "./SessionList";
 import { Sidebar } from "./Sidebar";
 import { type GatewayTokenState } from "./useGatewayAccessToken";
+import { usePWAInstallPrompt } from "./usePWAInstallPrompt";
 import { type SessionNotificationStatus } from "./useSessionNotifications";
 import { type SSHCredentialStatus } from "./useSSHCredentialToken";
 import { type ConnectionStatus } from "./useTerminalSocket";
@@ -86,6 +87,8 @@ type AppShellProps = {
 };
 
 export function AppShell(props: AppShellProps) {
+  const pwaInstallPrompt = usePWAInstallPrompt();
+
   if (!props.gatewayToken.ready) {
     return <GatewayUnlockPage error={props.error} tokenState={props.gatewayToken} />;
   }
@@ -97,6 +100,7 @@ export function AppShell(props: AppShellProps) {
         gatewayToken={props.gatewayToken}
         hosts={props.hosts}
         mobileOpen={props.mobilePanel === "hosts"}
+        pwaInstallPrompt={pwaInstallPrompt}
         selectedHostId={props.selectedHost?.id ?? ""}
         showHostForm={props.showHostForm}
         onCreateHost={props.onCreateHost}
