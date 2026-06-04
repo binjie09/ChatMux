@@ -87,7 +87,7 @@ func CapturePaneCommandWithOptions(name string, options CapturePaneOptions) (str
 	lines := normalizeCapturePaneLines(options.Lines)
 	ansiFlag := ""
 	if options.PreserveANSI {
-		ansiFlag = " -e"
+		ansiFlag = " -e -C"
 	}
 	command := tmuxPrelude() + "\"$TMUX_BIN\" capture-pane -p" + ansiFlag + " -t " + name + " -S -" + strconv.Itoa(lines)
 	return loginShellCommand(command), nil

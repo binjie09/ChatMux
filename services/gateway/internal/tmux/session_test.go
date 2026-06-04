@@ -131,7 +131,7 @@ func TestCapturePaneCommandWithOptions(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CapturePaneCommandWithOptions failed: %v", err)
 	}
-	if !strings.Contains(command, "capture-pane -p -e -t deploy_1 -S -800") {
+	if !strings.Contains(command, "capture-pane -p -e -C -t deploy_1 -S -800") {
 		t.Fatalf("expected capture command with ANSI history, got %q", command)
 	}
 }

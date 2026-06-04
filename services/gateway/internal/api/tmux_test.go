@@ -178,7 +178,7 @@ func TestCaptureTmuxHistoryAPIWithScrollbackOptions(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
 	}
-	if !strings.Contains(runner.command, "capture-pane -p -e -t deploy -S -800") {
+	if !strings.Contains(runner.command, "capture-pane -p -e -C -t deploy -S -800") {
 		t.Fatalf("expected ANSI capture command, got %q", runner.command)
 	}
 }

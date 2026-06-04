@@ -48,16 +48,39 @@ export function terminalScrollbackLinesFromText(text: string, source: Terminal, 
   const parser = new Terminal({
     allowProposedApi: false,
     cols: source.cols,
+    convertEol: true,
     rows: source.rows,
     scrollback,
     theme: source.options.theme,
   });
+  const normalizedText = unescapeTmuxControlSequences(text).replace(/\r?\n/g, "\r\n");
   return new Promise<ScrollbackLine[]>((resolve) => {
-    parser.write(text, () => {
+    parser.write(normalizedText, () => {
       const lines = terminalScrollbackLines(parser);
       parser.dispose();
       resolve(lines);
     });
+  });
+}
+
+function unescapeTmuxControlSequences(text: string) {
+  return text.replace(/\\(033|e|E|n|r|t|\\)/g, (_, sequence: string) => {
+    switch (sequence) {
+      case "033":
+      case "e":
+      case "E":
+        return "\x1b";
+      case "n":
+        return "\n";
+      case "r":
+        return "\r";
+      case "t":
+        return "\t";
+      case "\\":
+        return "\\";
+      default:
+        return sequence;
+    }
   });
 }
 

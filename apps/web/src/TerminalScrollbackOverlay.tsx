@@ -69,6 +69,9 @@ export function TerminalScrollbackOverlay({ loadEarlier, terminal }: TerminalScr
         overlay.scrollTop = overlay.scrollHeight - previousScrollHeight + previousScrollTop;
         loadingRef.current = false;
         setLoading(false);
+        if (overlay.scrollTop <= topLoadThresholdPx && !exhaustedRef.current) {
+          void loadEarlierHistory();
+        }
       });
     } catch (error) {
       loadingRef.current = false;
@@ -85,7 +88,14 @@ export function TerminalScrollbackOverlay({ loadEarlier, terminal }: TerminalScr
   }
 
   return (
-    <div className="terminal-scrollback-overlay" ref={overlayRef} aria-label="Scrollable terminal output" onScroll={handleScroll}>
+    <div
+      className="terminal-scrollback-overlay"
+      ref={overlayRef}
+      aria-label="Scrollable terminal output"
+      onScroll={handleScroll}
+      onTouchEnd={handleScroll}
+      onWheel={handleScroll}
+    >
       {loading ? <div className="terminal-scrollback-loading">Loading earlier output...</div> : null}
       {loadError ? <div className="terminal-scrollback-error">{loadError}</div> : null}
       {lines.length ? lines.map((line) => <ScrollbackRow key={line.key} line={line} />) : <div>No terminal output yet.</div>}
