@@ -7,7 +7,8 @@
   background: #202b25;
 }
 
-.host-form input {
+.host-form input,
+.host-form textarea {
   min-width: 0;
   border: 1px solid #405146;
   border-radius: 6px;
@@ -16,8 +17,53 @@
   background: #17201b;
 }
 
-.host-form input::placeholder {
+.host-form textarea {
+  min-height: 118px;
+  resize: vertical;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.host-form input::placeholder,
+.host-form textarea::placeholder {
   color: #8c9891;
+}
+
+.host-auth-method {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.host-auth-method button {
+  height: 32px;
+  border: 1px solid #405146;
+  border-radius: 6px;
+  color: #cdd6d0;
+  background: #17201b;
+}
+
+.host-auth-method button.selected {
+  border-color: #8fd5b2;
+  color: #102018;
+  background: #8fd5b2;
+}
+
+.host-form-clear-credential {
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr);
+  align-items: center;
+  gap: 7px;
+  color: #c5ccc8;
+  font-size: 12px;
+}
+
+.host-form-clear-credential input {
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  accent-color: #8fd5b2;
 }
 
 .host-form-actions {

@@ -1,14 +1,24 @@
 {
-  "name": "muxchat",
+  "name": "chatmux",
   "version": "0.1.0",
+  "description": "Self-hosted SSH and tmux workspace client.",
   "private": true,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/binjie09/ChatMux.git"
+  },
+  "bugs": {
+    "url": "https://github.com/binjie09/ChatMux/issues"
+  },
+  "homepage": "https://github.com/binjie09/ChatMux#readme",
   "packageManager": "pnpm@10.33.2",
   "scripts": {
-    "dev": "pnpm --filter @muxchat/web dev",
-    "build": "pnpm --filter @muxchat/web build",
-    "desktop:build:macos": "pnpm --filter @muxchat/web desktop:build:macos",
-    "desktop:build:windows": "pnpm --filter @muxchat/web desktop:build:windows",
-    "typecheck": "pnpm --filter @muxchat/web typecheck"
+    "dev": "pnpm --filter @chatmux/web dev",
+    "build": "pnpm --filter @chatmux/web build",
+    "desktop:build:macos": "pnpm --filter @chatmux/web desktop:build:macos",
+    "desktop:build:windows": "pnpm --filter @chatmux/web desktop:build:windows",
+    "typecheck": "pnpm --filter @chatmux/web typecheck"
   },
   "devDependencies": {
     "typescript": "^5.9.3"

@@ -9,11 +9,11 @@ Usage:
   build-desktop-windows.sh [--check] [x86_64-pc-windows-msvc|aarch64-pc-windows-msvc]
 
 Signing:
-  Set MUXCHAT_WINDOWS_CERT_THUMBPRINT for a certificate in the Windows store.
-  Optional: MUXCHAT_WINDOWS_DIGEST_ALGORITHM, MUXCHAT_WINDOWS_TIMESTAMP_URL.
-  Or set MUXCHAT_WINDOWS_SIGN_COMMAND to use a custom signing command.
+  Set CHATMUX_WINDOWS_CERT_THUMBPRINT for a certificate in the Windows store.
+  Optional: CHATMUX_WINDOWS_DIGEST_ALGORITHM, CHATMUX_WINDOWS_TIMESTAMP_URL.
+  Or set CHATMUX_WINDOWS_SIGN_COMMAND to use a custom signing command.
 Updates:
-  Set MUXCHAT_CREATE_UPDATER_ARTIFACTS=1 and TAURI_SIGNING_PRIVATE_KEY to
+  Set CHATMUX_CREATE_UPDATER_ARTIFACTS=1 and TAURI_SIGNING_PRIVATE_KEY to
   generate updater archives and .sig files during the Tauri build.
 USAGE
 }
@@ -40,11 +40,11 @@ validate_target() {
 }
 
 validate_signing() {
-  if [[ -n "${MUXCHAT_WINDOWS_SIGN_COMMAND:-}" ]]; then
+  if [[ -n "${CHATMUX_WINDOWS_SIGN_COMMAND:-}" ]]; then
     return
   fi
-  if [[ -z "${MUXCHAT_WINDOWS_CERT_THUMBPRINT:-}" ]]; then
-    echo "Set MUXCHAT_WINDOWS_CERT_THUMBPRINT or MUXCHAT_WINDOWS_SIGN_COMMAND" >&2
+  if [[ -z "${CHATMUX_WINDOWS_CERT_THUMBPRINT:-}" ]]; then
+    echo "Set CHATMUX_WINDOWS_CERT_THUMBPRINT or CHATMUX_WINDOWS_SIGN_COMMAND" >&2
     exit 2
   fi
 }
@@ -54,13 +54,13 @@ write_signing_config() {
   node - "$config_path" <<'NODE'
 const fs = require("fs");
 const [configPath] = process.argv.slice(2);
-const signCommand = process.env.MUXCHAT_WINDOWS_SIGN_COMMAND;
+const signCommand = process.env.CHATMUX_WINDOWS_SIGN_COMMAND;
 const windows = signCommand ? {
   signCommand,
 } : {
-  certificateThumbprint: process.env.MUXCHAT_WINDOWS_CERT_THUMBPRINT,
-  digestAlgorithm: process.env.MUXCHAT_WINDOWS_DIGEST_ALGORITHM || "sha256",
-  timestampUrl: process.env.MUXCHAT_WINDOWS_TIMESTAMP_URL || "http://timestamp.digicert.com",
+  certificateThumbprint: process.env.CHATMUX_WINDOWS_CERT_THUMBPRINT,
+  digestAlgorithm: process.env.CHATMUX_WINDOWS_DIGEST_ALGORITHM || "sha256",
+  timestampUrl: process.env.CHATMUX_WINDOWS_TIMESTAMP_URL || "http://timestamp.digicert.com",
 };
 fs.writeFileSync(configPath, JSON.stringify({ bundle: { windows } }, null, 2));
 NODE
@@ -78,7 +78,7 @@ JSON
 }
 
 configure_updater_artifacts() {
-  if [[ "${MUXCHAT_CREATE_UPDATER_ARTIFACTS:-}" != "1" ]]; then
+  if [[ "${CHATMUX_CREATE_UPDATER_ARTIFACTS:-}" != "1" ]]; then
     return
   fi
   if [[ -z "${TAURI_SIGNING_PRIVATE_KEY:-}" ]]; then
@@ -86,7 +86,7 @@ configure_updater_artifacts() {
     exit 2
   fi
   local config_path
-  config_path="$(mktemp "${TMPDIR:-/tmp}/muxchat-tauri-updater.XXXXXX.json")"
+  config_path="$(mktemp "${TMPDIR:-/tmp}/chatmux-tauri-updater.XXXXXX.json")"
   temp_configs+=("$config_path")
   write_updater_config "$config_path"
   tauri_config_args+=(--config "$config_path")
@@ -149,13 +149,13 @@ configure_updater_artifacts
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 web_dir="$(cd "${script_dir}/.." && pwd)"
 repo_root="$(cd "${web_dir}/../.." && pwd)"
-config_path="$(mktemp "${TMPDIR:-/tmp}/muxchat-tauri-windows.XXXXXX.json")"
+config_path="$(mktemp "${TMPDIR:-/tmp}/chatmux-tauri-windows.XXXXXX.json")"
 temp_configs+=("$config_path")
 write_signing_config "$config_path"
 tauri_config_args+=(--config "$config_path")
 
 cd "${repo_root}"
-TAURI_TARGET_TRIPLE="$target" pnpm --filter @muxchat/web desktop:sidecar "$target"
+TAURI_TARGET_TRIPLE="$target" pnpm --filter @chatmux/web desktop:sidecar "$target"
 
 cd "${web_dir}"
 pnpm exec tauri build --target "$target" "${tauri_config_args[@]}" --ci

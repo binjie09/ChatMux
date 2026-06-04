@@ -5,8 +5,8 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/muxchat/muxchat/services/gateway/internal/hoststore"
-	"github.com/muxchat/muxchat/services/gateway/internal/tmux"
+	"github.com/chatmux/chatmux/services/gateway/internal/hoststore"
+	"github.com/chatmux/chatmux/services/gateway/internal/tmux"
 )
 
 type saveSessionMetadataRequest struct {

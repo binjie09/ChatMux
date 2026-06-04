@@ -17,6 +17,10 @@ func (s *Store) migrate(ctx context.Context) error {
 	}
 	hostColumns := []tableColumnMigration{
 		{column: "host_key_fingerprint", sql: addHostFingerprintSQL, label: "host fingerprint"},
+		{column: "ssh_auth_method", sql: addHostSSHAuthMethodSQL, label: "host ssh auth method"},
+		{column: "ssh_password", sql: addHostSSHPasswordSQL, label: "host ssh password"},
+		{column: "ssh_private_key", sql: addHostSSHPrivateKeySQL, label: "host ssh private key"},
+		{column: "ssh_private_key_passphrase", sql: addHostSSHPrivateKeyPassphraseSQL, label: "host ssh private key passphrase"},
 		{column: "pinned", sql: addHostPinnedSQL, label: "host pinned"},
 		{column: "owner", sql: addHostOwnerSQL, label: "host owner"},
 		{column: "shared", sql: addHostSharedSQL, label: "host shared"},

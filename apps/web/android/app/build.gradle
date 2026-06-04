@@ -1,18 +1,18 @@
 apply plugin: 'com.android.application'
 
-def muxchatSigningEnv = [
+def chatmuxSigningEnv = [
     storeFile: System.getenv("ANDROID_KEYSTORE_PATH"),
     storePassword: System.getenv("ANDROID_KEYSTORE_PASSWORD"),
     keyAlias: System.getenv("ANDROID_KEY_ALIAS"),
     keyPassword: System.getenv("ANDROID_KEY_PASSWORD"),
 ]
-def muxchatReleaseSigningReady = muxchatSigningEnv.values().every { value -> value != null && value.trim() }
+def chatmuxReleaseSigningReady = chatmuxSigningEnv.values().every { value -> value != null && value.trim() }
 
 android {
-    namespace = "com.muxchat.app"
+    namespace = "com.chatmux.app"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.muxchat.app"
+        applicationId "com.chatmux.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
@@ -26,11 +26,11 @@ android {
     }
     signingConfigs {
         release {
-            if (muxchatReleaseSigningReady) {
-                storeFile file(muxchatSigningEnv.storeFile)
-                storePassword muxchatSigningEnv.storePassword
-                keyAlias muxchatSigningEnv.keyAlias
-                keyPassword muxchatSigningEnv.keyPassword
+            if (chatmuxReleaseSigningReady) {
+                storeFile file(chatmuxSigningEnv.storeFile)
+                storePassword chatmuxSigningEnv.storePassword
+                keyAlias chatmuxSigningEnv.keyAlias
+                keyPassword chatmuxSigningEnv.keyPassword
             }
         }
     }
@@ -38,7 +38,7 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-            if (muxchatReleaseSigningReady) {
+            if (chatmuxReleaseSigningReady) {
                 signingConfig signingConfigs.release
             }
         }

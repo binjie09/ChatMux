@@ -8,8 +8,8 @@ export type SessionStatusChange = {
   session: TmuxSession;
 };
 
-const notificationChannelId = "muxchat-session-status";
-const notificationGroupId = "muxchat-session-updates";
+const notificationChannelId = "chatmux-session-status";
+const notificationGroupId = "chatmux-session-updates";
 const notificationHashMultiplier = 31;
 const notificationIdBase = 1000;
 const notificationIdModulo = 1_000_000_000;
@@ -56,7 +56,7 @@ async function createAndroidNotificationChannel() {
     return;
   }
   await LocalNotifications.createChannel({
-    description: "MuxChat tmux session state changes",
+    description: "ChatMux tmux session state changes",
     id: notificationChannelId,
     importance: notificationImportanceDefault,
     name: "Session updates",

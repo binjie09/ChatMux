@@ -12,6 +12,11 @@ import (
 
 const defaultSSHPort = 22
 
+const (
+	SSHAuthMethodPassword   = "password"
+	SSHAuthMethodPrivateKey = "private_key"
+)
+
 type Host struct {
 	ID                 string    `json:"id"`
 	Name               string    `json:"name"`
@@ -20,6 +25,12 @@ type Host struct {
 	Username           string    `json:"username"`
 	Status             string    `json:"status"`
 	HostKeyFingerprint string    `json:"hostKeyFingerprint"`
+	SSHAuthMethod      string    `json:"sshAuthMethod"`
+	SSHPassword        string    `json:"-"`
+	SSHPrivateKey      string    `json:"-"`
+	SSHKeyPassphrase   string    `json:"-"`
+	HasPassword        bool      `json:"hasPassword"`
+	HasCredential      bool      `json:"hasCredential"`
 	Pinned             bool      `json:"pinned"`
 	Owner              string    `json:"owner"`
 	Shared             bool      `json:"shared"`
@@ -28,11 +39,15 @@ type Host struct {
 }
 
 type CreateHostInput struct {
-	Name     string `json:"name"`
-	Hostname string `json:"hostname"`
-	Port     int    `json:"port"`
-	Username string `json:"username"`
-	Owner    string `json:"-"`
+	Name                 string `json:"name"`
+	Hostname             string `json:"hostname"`
+	Password             string `json:"password"`
+	Port                 int    `json:"port"`
+	PrivateKey           string `json:"privateKey"`
+	PrivateKeyPassphrase string `json:"privateKeyPassphrase"`
+	SSHAuthMethod        string `json:"sshAuthMethod"`
+	Username             string `json:"username"`
+	Owner                string `json:"-"`
 }
 
 type Store struct {
@@ -112,19 +127,24 @@ func (s *Store) CreateHost(ctx context.Context, input CreateHostInput) (Host, er
 
 	now := time.Now().UTC()
 	host := Host{
-		ID:        newHostID(),
-		Name:      input.Name,
-		Hostname:  input.Hostname,
-		Port:      normalizePort(input.Port),
-		Username:  input.Username,
-		Status:    "offline",
-		Owner:     normalizeOwner(input.Owner),
-		Shared:    true,
-		CreatedAt: now,
-		UpdatedAt: now,
+		ID:               newHostID(),
+		Name:             input.Name,
+		Hostname:         input.Hostname,
+		SSHAuthMethod:    normalizeSSHAuthMethod(input.SSHAuthMethod),
+		SSHPassword:      input.Password,
+		SSHPrivateKey:    input.PrivateKey,
+		SSHKeyPassphrase: input.PrivateKeyPassphrase,
+		Port:             normalizePort(input.Port),
+		Username:         input.Username,
+		Status:           "offline",
+		Owner:            normalizeOwner(input.Owner),
+		Shared:           true,
+		CreatedAt:        now,
+		UpdatedAt:        now,
 	}
+	host = normalizeHostCredential(host)
 
-	if _, err := s.db.ExecContext(ctx, insertHostSQL, host.ID, host.Name, host.Hostname, host.Port, host.Username, host.Status, host.HostKeyFingerprint, host.Pinned, host.Owner, host.Shared, host.CreatedAt, host.UpdatedAt); err != nil {
+	if _, err := s.db.ExecContext(ctx, insertHostSQL, host.ID, host.Name, host.Hostname, host.Port, host.Username, host.Status, host.HostKeyFingerprint, host.SSHAuthMethod, host.SSHPassword, host.SSHPrivateKey, host.SSHKeyPassphrase, host.Pinned, host.Owner, host.Shared, host.CreatedAt, host.UpdatedAt); err != nil {
 		return Host{}, fmt.Errorf("insert host: %w", err)
 	}
 	return host, nil
@@ -191,6 +211,8 @@ func validateCreateHost(input CreateHostInput) error {
 		return errors.New("username is required")
 	case input.Port < 0 || input.Port > 65535:
 		return errors.New("port must be between 0 and 65535")
+	case !validSSHAuthMethod(input.SSHAuthMethod):
+		return errors.New("sshAuthMethod must be password or private_key")
 	default:
 		return nil
 	}
@@ -208,4 +230,36 @@ func normalizeOwner(owner string) string {
 		return "local-dev"
 	}
 	return owner
+}
+
+func validSSHAuthMethod(method string) bool {
+	return method == "" || method == SSHAuthMethodPassword || method == SSHAuthMethodPrivateKey
+}
+
+func normalizeSSHAuthMethod(method string) string {
+	if method == "" {
+		return SSHAuthMethodPassword
+	}
+	return method
+}
+
+func normalizeHostCredential(host Host) Host {
+	host.SSHAuthMethod = normalizeSSHAuthMethod(host.SSHAuthMethod)
+	if host.SSHAuthMethod == SSHAuthMethodPassword {
+		host.SSHPrivateKey = ""
+		host.SSHKeyPassphrase = ""
+	}
+	if host.SSHAuthMethod == SSHAuthMethodPrivateKey {
+		host.SSHPassword = ""
+	}
+	host.HasPassword = host.SSHPassword != ""
+	host.HasCredential = hostHasCredential(host)
+	return host
+}
+
+func hostHasCredential(host Host) bool {
+	if host.SSHAuthMethod == SSHAuthMethodPrivateKey {
+		return host.SSHPrivateKey != ""
+	}
+	return host.SSHPassword != ""
 }

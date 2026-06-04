@@ -22,7 +22,7 @@ type Terminal struct {
 	stderr  io.Reader
 }
 
-func (c *Client) StartTerminal(ctx context.Context, host HostConfig, credential PasswordCredential, command string, size TerminalSize) (*Terminal, error) {
+func (c *Client) StartTerminal(ctx context.Context, host HostConfig, credential Credential, command string, size TerminalSize) (*Terminal, error) {
 	if host.HostKeyFingerprint == "" {
 		return nil, errors.New("host key is not trusted")
 	}

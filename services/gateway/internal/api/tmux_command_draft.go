@@ -5,9 +5,9 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/muxchat/muxchat/services/gateway/internal/hoststore"
-	"github.com/muxchat/muxchat/services/gateway/internal/sshclient"
-	"github.com/muxchat/muxchat/services/gateway/internal/tmux"
+	"github.com/chatmux/chatmux/services/gateway/internal/hoststore"
+	"github.com/chatmux/chatmux/services/gateway/internal/sshclient"
+	"github.com/chatmux/chatmux/services/gateway/internal/tmux"
 )
 
 type tmuxCommandDraftRequest struct {
@@ -17,7 +17,7 @@ type tmuxCommandDraftRequest struct {
 
 type draftSessionCommandInput struct {
 	host        hoststore.Host
-	password    string
+	credential  sshclient.Credential
 	prompt      string
 	request     *http.Request
 	sessionName string
@@ -47,13 +47,13 @@ func (s *Server) handleDraftTmuxCommand(w http.ResponseWriter, r *http.Request) 
 		writeError(w, statusForSessionAccessError(err), err)
 		return
 	}
-	password, err := s.sshPasswordForRequest(r, hostID, input.CredentialToken)
+	credential, err := s.sshCredentialForRequest(r, hostID, input.CredentialToken)
 	if err != nil {
 		writeError(w, statusForCredentialError(err), err)
 		return
 	}
 	draft, err := s.draftSessionCommand(draftSessionCommandInput{
-		host: host, password: password, prompt: input.Prompt, request: r, sessionName: sessionName,
+		host: host, credential: credential, prompt: input.Prompt, request: r, sessionName: sessionName,
 	})
 	if err != nil {
 		writeError(w, statusForDraftError(err), err)
@@ -85,7 +85,7 @@ func (s *Server) draftSessionCommand(input draftSessionCommandInput) (CommandDra
 	if err != nil {
 		return CommandDraft{}, err
 	}
-	output, err := s.ssh.Run(input.request.Context(), hostToSSHConfig(input.host), sshclient.PasswordCredential{Password: input.password}, command)
+	output, err := s.ssh.Run(input.request.Context(), hostToSSHConfig(input.host), input.credential, command)
 	if err != nil {
 		return CommandDraft{}, err
 	}

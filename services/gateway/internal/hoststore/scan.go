@@ -16,6 +16,10 @@ func scanHost(row hostScanner) (Host, error) {
 		&host.Username,
 		&host.Status,
 		&host.HostKeyFingerprint,
+		&host.SSHAuthMethod,
+		&host.SSHPassword,
+		&host.SSHPrivateKey,
+		&host.SSHKeyPassphrase,
 		&host.Pinned,
 		&host.Owner,
 		&host.Shared,
@@ -24,7 +28,7 @@ func scanHost(row hostScanner) (Host, error) {
 	); err != nil {
 		return Host{}, err
 	}
-	return host, nil
+	return normalizeHostCredential(host), nil
 }
 
 var _ hostScanner = (*sql.Row)(nil)

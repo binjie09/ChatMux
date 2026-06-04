@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/muxchat/muxchat/services/gateway/internal/hoststore"
+	"github.com/chatmux/chatmux/services/gateway/internal/hoststore"
 )
 
 func TestListAuditEventsAPI(t *testing.T) {

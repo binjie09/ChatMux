@@ -8,9 +8,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/muxchat/muxchat/services/gateway/internal/hoststore"
-	"github.com/muxchat/muxchat/services/gateway/internal/sshclient"
-	"github.com/muxchat/muxchat/services/gateway/internal/tmux"
+	"github.com/chatmux/chatmux/services/gateway/internal/hoststore"
+	"github.com/chatmux/chatmux/services/gateway/internal/sshclient"
+	"github.com/chatmux/chatmux/services/gateway/internal/tmux"
 )
 
 const (
@@ -138,11 +138,11 @@ func (s *Server) runAutomationAuditList(r *http.Request) (any, error) {
 }
 
 func (s *Server) runAutomationTmuxSessionsList(r *http.Request, args map[string]string) (any, error) {
-	hostID, password, err := s.hostCredentialArgs(r, args)
+	hostID, credential, err := s.hostCredentialArgs(r, args)
 	if err != nil {
 		return nil, err
 	}
-	sessions, err := s.runTmuxListCommand(r, hostID, password, tmux.ListSessionsCommand())
+	sessions, err := s.runTmuxListCommand(r, hostID, credential, tmux.ListSessionsCommand())
 	if err != nil {
 		return nil, statusWrappedTmuxError(err)
 	}
@@ -150,7 +150,7 @@ func (s *Server) runAutomationTmuxSessionsList(r *http.Request, args map[string]
 }
 
 func (s *Server) runAutomationTmuxHistoryCapture(r *http.Request, args map[string]string) (any, error) {
-	host, password, sessionName, err := s.historyCaptureArgs(r, args)
+	host, credential, sessionName, err := s.historyCaptureArgs(r, args)
 	if err != nil {
 		return nil, err
 	}
@@ -158,7 +158,7 @@ func (s *Server) runAutomationTmuxHistoryCapture(r *http.Request, args map[strin
 	if err != nil {
 		return nil, err
 	}
-	output, err := s.ssh.Run(r.Context(), hostToSSHConfig(host), sshclient.PasswordCredential{Password: password}, command)
+	output, err := s.ssh.Run(r.Context(), hostToSSHConfig(host), credential, command)
 	if err != nil {
 		return nil, automationStatus(http.StatusBadGateway, err)
 	}
@@ -167,35 +167,35 @@ func (s *Server) runAutomationTmuxHistoryCapture(r *http.Request, args map[strin
 	return result, s.logAutomationRun(r, automationToolTmuxHistoryCapture, host.ID, sessionName)
 }
 
-func (s *Server) hostCredentialArgs(r *http.Request, args map[string]string) (string, string, error) {
+func (s *Server) hostCredentialArgs(r *http.Request, args map[string]string) (string, sshclient.Credential, error) {
 	hostID, err := automationArg(args, "hostId")
 	if err != nil {
-		return "", "", err
+		return "", sshclient.Credential{}, err
 	}
-	password, err := s.sshPasswordForRequest(r, hostID, strings.TrimSpace(args["credentialToken"]))
+	credential, err := s.sshCredentialForRequest(r, hostID, strings.TrimSpace(args["credentialToken"]))
 	if err != nil {
-		return "", "", automationStatus(statusForCredentialError(err), err)
+		return "", sshclient.Credential{}, automationStatus(statusForCredentialError(err), err)
 	}
-	return hostID, password, nil
+	return hostID, credential, nil
 }
 
-func (s *Server) historyCaptureArgs(r *http.Request, args map[string]string) (hoststore.Host, string, string, error) {
-	hostID, password, err := s.hostCredentialArgs(r, args)
+func (s *Server) historyCaptureArgs(r *http.Request, args map[string]string) (hoststore.Host, sshclient.Credential, string, error) {
+	hostID, credential, err := s.hostCredentialArgs(r, args)
 	if err != nil {
-		return hoststore.Host{}, "", "", err
+		return hoststore.Host{}, sshclient.Credential{}, "", err
 	}
 	sessionName, err := automationArg(args, "sessionName")
 	if err != nil {
-		return hoststore.Host{}, "", "", err
+		return hoststore.Host{}, sshclient.Credential{}, "", err
 	}
 	host, err := s.visibleHost(r, hostID)
 	if err != nil {
-		return hoststore.Host{}, "", "", err
+		return hoststore.Host{}, sshclient.Credential{}, "", err
 	}
 	if err := s.visibleSession(r, host, sessionName); err != nil {
-		return hoststore.Host{}, "", "", err
+		return hoststore.Host{}, sshclient.Credential{}, "", err
 	}
-	return host, password, sessionName, nil
+	return host, credential, sessionName, nil
 }
 
 func automationArg(args map[string]string, name string) (string, error) {

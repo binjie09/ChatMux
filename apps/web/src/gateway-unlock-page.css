@@ -1,0 +1,50 @@
+.gateway-unlock-page {
+  display: grid;
+  place-items: center;
+  min-width: 320px;
+  min-height: 100vh;
+  padding: 24px;
+  background: #f6f3ec;
+}
+
+.gateway-unlock-panel {
+  display: grid;
+  gap: 18px;
+  width: min(420px, 100%);
+  border: 1px solid #d8d0c0;
+  border-radius: 8px;
+  padding: 22px;
+  background: #17201b;
+  color: #f7f2e8;
+}
+
+.gateway-unlock-panel > header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.gateway-unlock-panel > header svg {
+  width: 34px;
+  height: 34px;
+  color: #8fd5b2;
+}
+
+.gateway-unlock-panel strong,
+.gateway-unlock-panel span {
+  display: block;
+}
+
+.gateway-unlock-panel span {
+  margin-top: 3px;
+  color: #9fa9a3;
+  font-size: 13px;
+}
+
+.gateway-unlock-error {
+  margin: 0;
+  color: #f2a397;
+  font-size: 12px;
+  line-height: 1.45;
+  word-break: break-word;
+}

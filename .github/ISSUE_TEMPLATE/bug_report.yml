@@ -1,0 +1,52 @@
+name: Bug report
+description: Report a reproducible ChatMux problem
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        请先确认日志、截图和描述中没有真实 SSH 密码、私钥、Gateway Token、OpenAI API Key、服务器公网 IP 或敏感终端输出。
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      description: ChatMux version, commit hash, or branch.
+    validations:
+      required: true
+  - type: dropdown
+    id: deployment
+    attributes:
+      label: Deployment
+      options:
+        - Web self-host
+        - Local development
+        - Tauri desktop
+        - Capacitor iOS
+        - Capacitor Android
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Provide the smallest reproducible flow.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Sanitized logs
+      description: Optional. Redact secrets, hostnames, IPs, usernames, and sensitive terminal output.

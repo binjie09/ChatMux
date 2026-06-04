@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/muxchat/muxchat/services/gateway/internal/hoststore"
+	"github.com/chatmux/chatmux/services/gateway/internal/hoststore"
 )
 
 type automationRunTestResponse struct {
@@ -127,7 +127,7 @@ func TestRunAutomationRequiresOperatorRole(t *testing.T) {
 func TestRunAutomationTmuxHistoryCapture(t *testing.T) {
 	server, closeServer := newTestServer(t)
 	defer closeServer()
-	runner := &fakeSSHRunner{output: "$ echo muxchat\nmuxchat history\n"}
+	runner := &fakeSSHRunner{output: "$ echo chatmux\nchatmux history\n"}
 	server.ssh = runner
 	host := createTrustedTestHost(t, server)
 	token := createCredentialTokenForTest(t, server, testCredentialInput{hostID: host.ID})
@@ -139,7 +139,7 @@ func TestRunAutomationTmuxHistoryCapture(t *testing.T) {
 	if err := json.Unmarshal(response.Result, &history); err != nil {
 		t.Fatalf("decode history result: %v", err)
 	}
-	if !strings.Contains(history.Text, "muxchat history") || len(history.Chunks) == 0 {
+	if !strings.Contains(history.Text, "chatmux history") || len(history.Chunks) == 0 {
 		t.Fatalf("expected normalized history, got %#v", history)
 	}
 	if !strings.Contains(runner.command, "capture-pane -p -t deploy -S -200") {
@@ -187,7 +187,7 @@ func TestRunAutomationTmuxSessionsListRequiresHostID(t *testing.T) {
 	}
 }
 
-func TestRunAutomationTmuxSessionsListRejectsPasswordCredential(t *testing.T) {
+func TestRunAutomationTmuxSessionsListRejectsRawCredential(t *testing.T) {
 	server, closeServer := newTestServer(t)
 	defer closeServer()
 	host := createTrustedTestHost(t, server)

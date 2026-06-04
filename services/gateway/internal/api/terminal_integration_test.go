@@ -11,15 +11,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/chatmux/chatmux/services/gateway/internal/hoststore"
+	"github.com/chatmux/chatmux/services/gateway/internal/sshclient"
+	"github.com/chatmux/chatmux/services/gateway/internal/tmux"
 	"github.com/gorilla/websocket"
-	"github.com/muxchat/muxchat/services/gateway/internal/hoststore"
-	"github.com/muxchat/muxchat/services/gateway/internal/sshclient"
-	"github.com/muxchat/muxchat/services/gateway/internal/tmux"
 )
 
 func TestIntegrationTerminalWebSocket(t *testing.T) {
 	env := readTerminalIntegrationEnv(t)
-	store, err := hoststore.Open(filepath.Join(t.TempDir(), "muxchat-terminal.db"))
+	store, err := hoststore.Open(filepath.Join(t.TempDir(), "chatmux-terminal.db"))
 	if err != nil {
 		t.Fatalf("Open failed: %v", err)
 	}
@@ -30,7 +30,7 @@ func TestIntegrationTerminalWebSocket(t *testing.T) {
 	client := sshclient.NewClient()
 	trustIntegrationHost(t, store, client, host, env)
 
-	sessionName := "muxchat-ws-" + strconv.FormatInt(time.Now().Unix(), 10)
+	sessionName := "chatmux-ws-" + strconv.FormatInt(time.Now().Unix(), 10)
 	createIntegrationSession(t, client, host, env, sessionName)
 	defer killIntegrationSession(t, client, host, env, sessionName)
 
@@ -39,13 +39,13 @@ func TestIntegrationTerminalWebSocket(t *testing.T) {
 	token := server.terminalTokens.Create(terminalToken{
 		HostID:      host.ID,
 		SessionName: sessionName,
-		Password:    env.Password,
+		Credential:  sshclient.Credential{Kind: sshclient.CredentialKindPassword, Password: env.Password},
 	})
 
 	conn := dialIntegrationTerminal(t, httpServer.URL, token)
 	defer conn.Close()
-	writeTerminalInputForTest(t, conn, "printf muxchat-terminal-ok\\n")
-	waitForTerminalOutput(t, conn, "muxchat-terminal-ok")
+	writeTerminalInputForTest(t, conn, "printf chatmux-terminal-ok\\n")
+	waitForTerminalOutput(t, conn, "chatmux-terminal-ok")
 }
 
 type terminalIntegrationEnv struct {
@@ -57,11 +57,11 @@ type terminalIntegrationEnv struct {
 
 func readTerminalIntegrationEnv(t *testing.T) terminalIntegrationEnv {
 	t.Helper()
-	host := os.Getenv("MUXCHAT_TEST_SSH_HOST")
-	user := os.Getenv("MUXCHAT_TEST_SSH_USER")
-	password := os.Getenv("MUXCHAT_TEST_SSH_PASSWORD")
+	host := os.Getenv("CHATMUX_TEST_SSH_HOST")
+	user := os.Getenv("CHATMUX_TEST_SSH_USER")
+	password := os.Getenv("CHATMUX_TEST_SSH_PASSWORD")
 	if host == "" || user == "" || password == "" {
-		t.Skip("set MUXCHAT_TEST_SSH_HOST, MUXCHAT_TEST_SSH_USER, and MUXCHAT_TEST_SSH_PASSWORD")
+		t.Skip("set CHATMUX_TEST_SSH_HOST, CHATMUX_TEST_SSH_USER, and CHATMUX_TEST_SSH_PASSWORD")
 	}
 	return terminalIntegrationEnv{
 		Host:     host,
@@ -73,13 +73,13 @@ func readTerminalIntegrationEnv(t *testing.T) terminalIntegrationEnv {
 
 func testIntegrationPort(t *testing.T) int {
 	t.Helper()
-	value := os.Getenv("MUXCHAT_TEST_SSH_PORT")
+	value := os.Getenv("CHATMUX_TEST_SSH_PORT")
 	if value == "" {
 		return 22
 	}
 	port, err := strconv.Atoi(value)
 	if err != nil {
-		t.Fatalf("invalid MUXCHAT_TEST_SSH_PORT: %v", err)
+		t.Fatalf("invalid CHATMUX_TEST_SSH_PORT: %v", err)
 	}
 	return port
 }
@@ -135,7 +135,7 @@ func runIntegrationCommand(t *testing.T, client *sshclient.Client, host hoststor
 	}
 	config := hostToSSHConfig(host)
 	config.HostKeyFingerprint = trusted
-	_, err = client.Run(context.Background(), config, sshclient.PasswordCredential{Password: env.Password}, command)
+	_, err = client.Run(context.Background(), config, sshclient.Credential{Kind: sshclient.CredentialKindPassword, Password: env.Password}, command)
 	if err != nil {
 		t.Fatalf("Run failed: %v", err)
 	}

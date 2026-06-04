@@ -3,8 +3,8 @@
 import type { CapacitorConfig } from "@capacitor/cli";
 
 const config: CapacitorConfig = {
-  appId: "com.muxchat.app",
-  appName: "MuxChat",
+  appId: "com.chatmux.app",
+  appName: "ChatMux",
   webDir: "dist",
   server: {
     androidScheme: "https",

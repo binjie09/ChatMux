@@ -5,9 +5,9 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/muxchat/muxchat/services/gateway/internal/hoststore"
-	"github.com/muxchat/muxchat/services/gateway/internal/sshclient"
-	"github.com/muxchat/muxchat/services/gateway/internal/tmux"
+	"github.com/chatmux/chatmux/services/gateway/internal/hoststore"
+	"github.com/chatmux/chatmux/services/gateway/internal/sshclient"
+	"github.com/chatmux/chatmux/services/gateway/internal/tmux"
 )
 
 type tmuxListRequest struct {
@@ -37,13 +37,13 @@ func (s *Server) handleListTmuxSessions(w http.ResponseWriter, r *http.Request) 
 		writeError(w, statusForHostAccessError(err), err)
 		return
 	}
-	password, err := s.sshPasswordForRequest(r, hostID, input.CredentialToken)
+	credential, err := s.sshCredentialForRequest(r, hostID, input.CredentialToken)
 	if err != nil {
 		writeError(w, statusForCredentialError(err), err)
 		return
 	}
 
-	output, err := s.ssh.Run(r.Context(), hostToSSHConfig(host), sshclient.PasswordCredential{Password: password}, tmux.ListSessionsCommand())
+	output, err := s.ssh.Run(r.Context(), hostToSSHConfig(host), credential, tmux.ListSessionsCommand())
 	if err != nil {
 		writeError(w, http.StatusBadGateway, err)
 		return
@@ -88,12 +88,12 @@ func (s *Server) handleCreateTmuxSession(w http.ResponseWriter, r *http.Request)
 		writeError(w, statusForHostAccessError(err), err)
 		return
 	}
-	password, err := s.sshPasswordForRequest(r, hostID, input.CredentialToken)
+	credential, err := s.sshCredentialForRequest(r, hostID, input.CredentialToken)
 	if err != nil {
 		writeError(w, statusForCredentialError(err), err)
 		return
 	}
-	output, err := s.ssh.Run(r.Context(), hostToSSHConfig(host), sshclient.PasswordCredential{Password: password}, command)
+	output, err := s.ssh.Run(r.Context(), hostToSSHConfig(host), credential, command)
 	if err != nil {
 		writeError(w, http.StatusBadGateway, err)
 		return
@@ -123,12 +123,12 @@ func (s *Server) handleCreateTmuxSession(w http.ResponseWriter, r *http.Request)
 	writeJSON(w, http.StatusCreated, session)
 }
 
-func (s *Server) runTmuxListCommand(r *http.Request, hostID string, password string, command string) ([]tmux.Session, error) {
+func (s *Server) runTmuxListCommand(r *http.Request, hostID string, credential sshclient.Credential, command string) ([]tmux.Session, error) {
 	host, err := s.visibleHost(r, hostID)
 	if err != nil {
 		return nil, err
 	}
-	output, err := s.runTmuxCommand(r, hostID, password, command)
+	output, err := s.runTmuxCommand(r, hostID, credential, command)
 	if err != nil {
 		return nil, err
 	}
@@ -139,12 +139,12 @@ func (s *Server) runTmuxListCommand(r *http.Request, hostID string, password str
 	return s.applyVisibleSessionMetadata(r, host, sessions)
 }
 
-func (s *Server) runTmuxCommand(r *http.Request, hostID string, password string, command string) ([]byte, error) {
+func (s *Server) runTmuxCommand(r *http.Request, hostID string, credential sshclient.Credential, command string) ([]byte, error) {
 	host, err := s.visibleHost(r, hostID)
 	if err != nil {
 		return nil, err
 	}
-	return s.ssh.Run(r.Context(), hostToSSHConfig(host), sshclient.PasswordCredential{Password: password}, command)
+	return s.ssh.Run(r.Context(), hostToSSHConfig(host), credential, command)
 }
 
 func findSessionByName(sessions []tmux.Session, name string) (tmux.Session, error) {

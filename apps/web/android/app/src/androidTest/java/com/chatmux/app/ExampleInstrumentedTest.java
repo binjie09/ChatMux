@@ -1,4 +1,4 @@
-package com.muxchat.app;
+package com.chatmux.app;
 
 import static org.junit.Assert.assertEquals;
 
@@ -13,6 +13,6 @@ public class ExampleInstrumentedTest {
     @Test
     public void useAppContext() {
         Context appContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
-        assertEquals("com.muxchat.app", appContext.getPackageName());
+        assertEquals("com.chatmux.app", appContext.getPackageName());
     }
 }

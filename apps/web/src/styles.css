@@ -86,7 +86,7 @@ button {
 
 .host-row {
   display: grid;
-  grid-template-columns: 20px 1fr 10px;
+  grid-template-columns: 20px minmax(0, 1fr) 16px 10px;
   align-items: center;
   gap: 10px;
   width: 100%;
@@ -96,6 +96,14 @@ button {
   color: inherit;
   background: #202b25;
   text-align: left;
+}
+
+.host-credential-icon {
+  color: #5b665f;
+}
+
+.host-credential-icon.saved {
+  color: #8fd5b2;
 }
 
 .status-dot {
@@ -216,6 +224,10 @@ button {
   .host-row {
     grid-template-columns: 1fr;
     justify-items: center;
+  }
+
+  .host-credential-icon {
+    display: none;
   }
 }
 

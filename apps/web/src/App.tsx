@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   captureTmuxHistory,
   createTmuxSession,
@@ -20,6 +20,7 @@ import { NativeTerminal, type QueuedTerminalInput } from "./NativeTerminal";
 import { SessionMetadataEditor } from "./SessionMetadataEditor";
 import { SessionList } from "./SessionList";
 import { Sidebar } from "./Sidebar";
+import { GatewayUnlockPage } from "./GatewayUnlockPage";
 import { useGatewayAccessToken } from "./useGatewayAccessToken";
 import { useHostWorkspace } from "./useHostWorkspace";
 import { useSessionNotifications } from "./useSessionNotifications";
@@ -41,8 +42,8 @@ export function App() {
   const [mobilePanel, setMobilePanel] = useState<MobilePanel>("terminal");
   const [queuedInput, setQueuedInput] = useState<QueuedTerminalInput | null>(null);
   const [error, setError] = useState("");
+  const autoConnectedHostRef = useRef("");
   const gatewayToken = useGatewayAccessToken(setError);
-  const sshCredential = useSSHCredentialToken();
   const {
     handleCreateHost,
     handleDeleteHost,
@@ -63,6 +64,12 @@ export function App() {
     onHostCreated: () => setMobilePanel("sessions"),
     onHostSelected: clearSelectedSession,
   });
+  const sshCredential = useSSHCredentialToken(Boolean(selectedHost?.hasCredential));
+
+  useEffect(() => {
+    sshCredential.resetCredential();
+    autoConnectedHostRef.current = "";
+  }, [selectedHostId, selectedHost?.hasCredential, sshCredential.resetCredential]);
 
   useEffect(() => {
     if (!gatewayToken.ready) {
@@ -71,6 +78,18 @@ export function App() {
     void refreshHosts();
     void refreshAuditEvents();
   }, [gatewayToken.ready]);
+
+  useEffect(() => {
+    if (!gatewayToken.ready || !selectedHostId || !selectedHost?.hasCredential) {
+      return;
+    }
+    const autoConnectKey = `${selectedHostId}:${selectedHost.updatedAt}:${selectedHost.hasCredential}`;
+    if (autoConnectedHostRef.current === autoConnectKey) {
+      return;
+    }
+    autoConnectedHostRef.current = autoConnectKey;
+    void handleListSessions();
+  }, [gatewayToken.ready, selectedHost?.hasCredential, selectedHost?.updatedAt, selectedHostId]);
 
   async function refreshAuditEvents() {
     try {
@@ -213,7 +232,7 @@ export function App() {
 
   const sessionNotifications = useSessionNotifications({
     hostId: selectedHostId,
-    hostName: selectedHost?.name ?? "MuxChat",
+    hostName: selectedHost?.name ?? "ChatMux",
     onError: setError,
     onSessionsChange: setSessions,
     refreshSessions: refreshSelectedSessions,
@@ -226,6 +245,10 @@ export function App() {
     hostId: selectedHostId,
     sessionName: selectedSessionName,
   });
+
+  if (!gatewayToken.ready) {
+    return <GatewayUnlockPage error={error} tokenState={gatewayToken} />;
+  }
 
   return (
     <main className="app-shell">
@@ -249,14 +272,12 @@ export function App() {
         newSessionName={newSessionName}
         notificationsEnabled={sessionNotifications.enabled}
         notificationStatus={sessionNotifications.status}
+        selectedSessionName={selectedSessionName}
         sessions={sessions}
-        sshPassword={sshCredential.sshPassword}
         onCreateSession={() => void handleCreateSession()}
-        onListSessions={() => void handleListSessions()}
         onNewSessionNameChange={setNewSessionName}
         onNotificationsEnabledChange={(enabled) => void sessionNotifications.setEnabled(enabled)}
         onOpenSession={(sessionName) => void handleOpenSession(sessionName)}
-        onSSHPasswordChange={sshCredential.setSSHPassword}
       />
 
       <section className="conversation">

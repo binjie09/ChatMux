@@ -1,10 +1,10 @@
 [package]
-name = "muxchat"
+name = "chatmux"
 version = "0.1.0"
-description = "MuxChat desktop shell"
-authors = ["MuxChat"]
-license = ""
-repository = ""
+description = "ChatMux desktop shell"
+authors = ["ChatMux"]
+license = "MIT"
+repository = "https://github.com/binjie09/ChatMux"
 edition = "2021"
 
 [build-dependencies]

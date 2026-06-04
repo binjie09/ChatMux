@@ -26,12 +26,12 @@ case "$target_triple" in
 esac
 
 out_dir="$repo_root/apps/web/src-tauri/binaries"
-out_file="$out_dir/muxchat-gateway-$target_triple$extension"
+out_file="$out_dir/chatmux-gateway-$target_triple$extension"
 mkdir -p "$out_dir"
 
 (
   cd "$repo_root/services/gateway"
-  GOOS="$goos" GOARCH="$goarch" go build -o "$out_file" ./cmd/muxchat-gateway
+  GOOS="$goos" GOARCH="$goarch" go build -o "$out_file" ./cmd/chatmux-gateway
 )
 
 echo "$out_file"

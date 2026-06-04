@@ -10,10 +10,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/muxchat/muxchat/services/gateway/internal/hoststore"
+	"github.com/chatmux/chatmux/services/gateway/internal/hoststore"
 )
 
-func TestGatewayAccessTokenIsOptional(t *testing.T) {
+func TestServerAllowsUnauthenticatedTestMode(t *testing.T) {
 	server := newAuthTestServer(t, "")
 	rec := httptest.NewRecorder()
 
@@ -98,7 +98,7 @@ func TestGatewayAccessTokenAllowsPublicRoutes(t *testing.T) {
 
 func newAuthTestServer(t *testing.T, token string) *Server {
 	t.Helper()
-	store, err := hoststore.Open(filepath.Join(t.TempDir(), "muxchat-auth.db"))
+	store, err := hoststore.Open(filepath.Join(t.TempDir(), "chatmux-auth.db"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -112,7 +112,7 @@ func newAuthTestServer(t *testing.T, token string) *Server {
 
 func newRoleTestServer(t *testing.T, users ...StaticUser) *Server {
 	t.Helper()
-	store, err := hoststore.Open(filepath.Join(t.TempDir(), "muxchat-rbac.db"))
+	store, err := hoststore.Open(filepath.Join(t.TempDir(), "chatmux-rbac.db"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -139,5 +139,5 @@ func assertAuthStatus(t *testing.T, server *Server, method string, path string, 
 }
 
 func hostBody() *bytes.Buffer {
-	return bytes.NewBufferString(`{"name":"local-dev","hostname":"127.0.0.1","port":22001,"username":"muxchat"}`)
+	return bytes.NewBufferString(`{"name":"local-dev","hostname":"127.0.0.1","port":22001,"username":"chatmux"}`)
 }

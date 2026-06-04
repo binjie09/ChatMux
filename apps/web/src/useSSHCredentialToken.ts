@@ -12,22 +12,22 @@ export type SSHCredentialStatus = {
 
 type SSHCredentialState = {
   expiresAt: number;
+  hostId: string;
   token: string;
 };
 
 type CredentialStatusInput = {
   credential: SSHCredentialState;
-  hasPassword: boolean;
+  hasCredential: boolean;
   now: number;
   refreshing: boolean;
 };
 
-const emptyCredential: SSHCredentialState = { expiresAt: 0, token: "" };
+const emptyCredential: SSHCredentialState = { expiresAt: 0, hostId: "", token: "" };
 
-export function useSSHCredentialToken() {
+export function useSSHCredentialToken(hasCredential: boolean) {
   const [credential, setCredential] = useState<SSHCredentialState>(emptyCredential);
   const [refreshing, setRefreshing] = useState(false);
-  const [sshPassword, setSSHPasswordState] = useState("");
   const [statusNow, setStatusNow] = useState(Date.now());
 
   useEffect(() => {
@@ -42,67 +42,61 @@ export function useSSHCredentialToken() {
     setCredential(emptyCredential);
   }, []);
 
-  const setSSHPassword = useCallback((value: string) => {
-    setSSHPasswordState(value);
-    setCredential(emptyCredential);
-  }, []);
-
   const ensureSSHCredentialToken = useCallback(async (hostId: string) => {
-    if (!hostId || !sshPassword) {
-      throw new Error("Host and password are required");
+    if (!hostId || !hasCredential) {
+      throw new Error("SSH credential is required");
     }
-    if (credentialIsFresh(credential, Date.now())) {
+    if (credentialIsFresh(credential, hostId, Date.now())) {
       return credential.token;
     }
     try {
       setRefreshing(true);
       const now = Date.now();
-      const nextCredential = await createSSHCredential(hostId, sshPassword);
-      const nextState = credentialStateFromResponse(nextCredential, now);
+      const nextCredential = await createSSHCredential(hostId);
+      const nextState = credentialStateFromResponse(nextCredential, hostId, now);
       setCredential(nextState);
       setStatusNow(now);
       return nextState.token;
     } finally {
       setRefreshing(false);
     }
-  }, [credential, sshPassword]);
+  }, [credential, hasCredential]);
 
   return {
     credentialToken: credential.token,
     ensureSSHCredentialToken,
-    ready: Boolean(sshPassword),
+    ready: hasCredential,
     resetCredential,
-    setSSHPassword,
-    sshPassword,
     status: credentialStatus({
       credential,
-      hasPassword: Boolean(sshPassword),
+      hasCredential,
       now: statusNow,
       refreshing,
     }),
   };
 }
 
-function credentialIsFresh(credential: SSHCredentialState, now: number) {
-  return Boolean(credential.token && credential.expiresAt - now > credentialRefreshBufferMs);
+function credentialIsFresh(credential: SSHCredentialState, hostId: string, now: number) {
+  return Boolean(credential.hostId === hostId && credential.token && credential.expiresAt - now > credentialRefreshBufferMs);
 }
 
-function credentialStateFromResponse(credential: SSHCredential, now: number): SSHCredentialState {
+function credentialStateFromResponse(credential: SSHCredential, hostId: string, now: number): SSHCredentialState {
   return {
     expiresAt: now + credential.expiresIn * 1000,
+    hostId,
     token: credential.token,
   };
 }
 
 function credentialStatus(input: CredentialStatusInput): SSHCredentialStatus {
   if (input.refreshing) {
-    return { label: "Refreshing", tone: "refreshing" };
+    return { label: "Connecting", tone: "refreshing" };
   }
-  if (!input.hasPassword) {
-    return { label: "Password needed", tone: "empty" };
+  if (!input.hasCredential) {
+    return { label: "Save SSH credential", tone: "empty" };
   }
   if (!input.credential.token) {
-    return { label: "Ready to connect", tone: "empty" };
+    return { label: "Connecting", tone: "empty" };
   }
   if (input.credential.expiresAt <= input.now) {
     return { label: "Expired", tone: "expired" };

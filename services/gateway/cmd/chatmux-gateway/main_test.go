@@ -3,11 +3,11 @@ package main
 import (
 	"testing"
 
-	"github.com/muxchat/muxchat/services/gateway/internal/api"
+	"github.com/chatmux/chatmux/services/gateway/internal/api"
 )
 
 func TestStaticUsersFromEnvIncludesGatewayToken(t *testing.T) {
-	t.Setenv("MUXCHAT_GATEWAY_TOKEN", "admin-token")
+	t.Setenv("CHATMUX_GATEWAY_TOKEN", "admin-token")
 
 	users, err := staticUsersFromEnv()
 	if err != nil {
@@ -18,20 +18,30 @@ func TestStaticUsersFromEnvIncludesGatewayToken(t *testing.T) {
 	}
 }
 
+func TestStaticUsersFromEnvRequiresGatewayToken(t *testing.T) {
+	_, err := staticUsersFromEnv()
+
+	if err == nil {
+		t.Fatal("expected required gateway token error")
+	}
+}
+
 func TestStaticUsersFromEnvParsesConfiguredUsers(t *testing.T) {
-	t.Setenv("MUXCHAT_USERS_JSON", `[{"name":"ops","role":"operator","token":"ops-token"}]`)
+	t.Setenv("CHATMUX_GATEWAY_TOKEN", "admin-token")
+	t.Setenv("CHATMUX_USERS_JSON", `[{"name":"ops","role":"operator","token":"ops-token"}]`)
 
 	users, err := staticUsersFromEnv()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(users) != 1 || users[0].Name != "ops" || users[0].Role != api.RoleOperator {
+	if len(users) != 2 || users[1].Name != "ops" || users[1].Role != api.RoleOperator {
 		t.Fatalf("unexpected users: %#v", users)
 	}
 }
 
 func TestStaticUsersFromEnvRejectsInvalidRole(t *testing.T) {
-	t.Setenv("MUXCHAT_USERS_JSON", `[{"name":"ops","role":"owner","token":"ops-token"}]`)
+	t.Setenv("CHATMUX_GATEWAY_TOKEN", "admin-token")
+	t.Setenv("CHATMUX_USERS_JSON", `[{"name":"ops","role":"owner","token":"ops-token"}]`)
 
 	_, err := staticUsersFromEnv()
 
@@ -41,8 +51,8 @@ func TestStaticUsersFromEnvRejectsInvalidRole(t *testing.T) {
 }
 
 func TestCommandPolicyFromEnvParsesPatterns(t *testing.T) {
-	t.Setenv("MUXCHAT_COMMAND_POLICY_MODE", "enforce")
-	t.Setenv("MUXCHAT_COMMAND_DENY_PATTERNS_JSON", `["^rm\\s+-rf"]`)
+	t.Setenv("CHATMUX_COMMAND_POLICY_MODE", "enforce")
+	t.Setenv("CHATMUX_COMMAND_DENY_PATTERNS_JSON", `["^rm\\s+-rf"]`)
 
 	config, err := commandPolicyFromEnv()
 	if err != nil {
@@ -54,7 +64,7 @@ func TestCommandPolicyFromEnvParsesPatterns(t *testing.T) {
 }
 
 func TestCommandPolicyFromEnvRejectsInvalidPattern(t *testing.T) {
-	t.Setenv("MUXCHAT_COMMAND_DENY_PATTERNS_JSON", `["["]`)
+	t.Setenv("CHATMUX_COMMAND_DENY_PATTERNS_JSON", `["["]`)
 
 	_, err := commandPolicyFromEnv()
 
@@ -64,7 +74,7 @@ func TestCommandPolicyFromEnvRejectsInvalidPattern(t *testing.T) {
 }
 
 func TestAutomationCapabilitiesFromEnvParsesConfiguredCapabilities(t *testing.T) {
-	t.Setenv("MUXCHAT_AUTOMATION_CAPABILITIES_JSON", `["hosts.read","audit.read"]`)
+	t.Setenv("CHATMUX_AUTOMATION_CAPABILITIES_JSON", `["hosts.read","audit.read"]`)
 
 	capabilities, configured, err := automationCapabilitiesFromEnv()
 	if err != nil {
@@ -86,7 +96,7 @@ func TestAutomationCapabilitiesFromEnvDisabledWithoutConfig(t *testing.T) {
 }
 
 func TestAutomationCapabilitiesFromEnvRejectsInvalidJSON(t *testing.T) {
-	t.Setenv("MUXCHAT_AUTOMATION_CAPABILITIES_JSON", `{`)
+	t.Setenv("CHATMUX_AUTOMATION_CAPABILITIES_JSON", `{`)
 
 	_, _, err := automationCapabilitiesFromEnv()
 

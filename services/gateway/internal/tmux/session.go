@@ -10,6 +10,7 @@ import (
 )
 
 const listSessionFormat = "#{session_id}\t#{session_name}\t#{session_windows}\t#{session_attached}\t#{session_activity}\t#{pane_current_command}\t#{pane_dead}\t#{pane_dead_status}"
+const terminalOverridesClipboardSlot = "terminal-overrides[900]"
 
 const (
 	SessionStatusFailed  = "failed"
@@ -58,7 +59,7 @@ func AttachSessionCommand(name string) (string, error) {
 	if err := ValidateSessionName(name); err != nil {
 		return "", err
 	}
-	command := tmuxPrelude() + "exec \"$TMUX_BIN\" attach-session -t " + name
+	command := tmuxPrelude() + tmuxClipboardPrelude() + "exec \"$TMUX_BIN\" attach-session -t " + name
 	return loginShellCommand(command), nil
 }
 
@@ -226,9 +227,15 @@ func loginShellCommand(command string) string {
 }
 
 func tmuxPrelude() string {
-	return "TMUX_BIN=\"${MUXCHAT_TMUX_BIN:-$(command -v tmux || true)}\"; " +
+	return "TMUX_BIN=\"${CHATMUX_TMUX_BIN:-$(command -v tmux || true)}\"; " +
 		"if [ -z \"$TMUX_BIN\" ] && [ -x \"$HOME/.local/bin/tmux\" ]; then TMUX_BIN=\"$HOME/.local/bin/tmux\"; fi; " +
-		"if [ -z \"$TMUX_BIN\" ]; then echo 'tmux not found in PATH, MUXCHAT_TMUX_BIN, or $HOME/.local/bin' >&2; exit 127; fi; "
+		"if [ -z \"$TMUX_BIN\" ]; then echo 'tmux not found in PATH, CHATMUX_TMUX_BIN, or $HOME/.local/bin' >&2; exit 127; fi; "
+}
+
+func tmuxClipboardPrelude() string {
+	msCapability := "xterm*:Ms=\\E]52;%p1%s;%p2%s\\007"
+	return "\"$TMUX_BIN\" set-option -sq set-clipboard external; " +
+		"\"$TMUX_BIN\" set-option -sq " + shellQuote(terminalOverridesClipboardSlot) + " " + shellQuote(msCapability) + "; "
 }
 
 func shellQuote(value string) string {

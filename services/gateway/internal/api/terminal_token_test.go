@@ -7,6 +7,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/chatmux/chatmux/services/gateway/internal/sshclient"
 )
 
 func TestCreateTerminalTokenAPI(t *testing.T) {
@@ -102,7 +104,10 @@ func TestTerminalConnectionAuditEventUsesRecoveryType(t *testing.T) {
 
 func TestTerminalTokenIsSingleUse(t *testing.T) {
 	store := newTerminalTokenStore()
-	id := store.Create(terminalToken{HostID: "host", SessionName: "session", Password: "secret"})
+	id := store.Create(terminalToken{
+		HostID: "host", SessionName: "session",
+		Credential: sshclient.Credential{Kind: sshclient.CredentialKindPassword, Password: "secret"},
+	})
 	if _, ok := store.Consume(id); !ok {
 		t.Fatal("expected token to be consumed")
 	}

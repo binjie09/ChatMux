@@ -3,15 +3,17 @@ package api
 import (
 	"sync"
 	"time"
+
+	"github.com/chatmux/chatmux/services/gateway/internal/sshclient"
 )
 
 const credentialTokenTTL = 30 * time.Minute
 
 type credentialToken struct {
-	HostID    string
-	Password  string
-	Principal string
-	ExpiresAt time.Time
+	Credential sshclient.Credential
+	HostID     string
+	Principal  string
+	ExpiresAt  time.Time
 }
 
 type credentialTokenStore struct {

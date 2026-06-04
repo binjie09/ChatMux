@@ -5,7 +5,7 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/muxchat/muxchat/services/gateway/internal/hoststore"
+	"github.com/chatmux/chatmux/services/gateway/internal/hoststore"
 )
 
 func (s *Server) handleListHosts(w http.ResponseWriter, r *http.Request) {

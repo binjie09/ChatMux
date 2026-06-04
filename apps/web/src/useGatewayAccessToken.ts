@@ -70,7 +70,7 @@ export function useGatewayAccessToken(onError: (message: string) => void): Gatew
     biometricEnabled,
     clearToken,
     hasToken,
-    ready: status !== "loading" && status !== "locked",
+    ready: status === "stored",
     saveToken,
     setBiometricUnlock,
     status,

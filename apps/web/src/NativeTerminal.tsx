@@ -2,6 +2,7 @@ import { type MutableRefObject, useEffect, useRef, useState } from "react";
 import { FitAddon } from "@xterm/addon-fit";
 import { Terminal } from "@xterm/xterm";
 import { ArrowDown, ArrowUp, RefreshCw } from "lucide-react";
+import { bindTerminalClipboard } from "./terminal-clipboard";
 import { sendTerminalInput, sendTerminalResize, terminalSize } from "./terminal-protocol";
 import { type ConnectionStatus, type TerminalHandlers, useTerminalSocket } from "./useTerminalSocket";
 import "@xterm/xterm/css/xterm.css";
@@ -56,7 +57,7 @@ export function NativeTerminal(props: NativeTerminalProps) {
     handlersRef.current = props;
   }, [props]);
 
-  useTerminalMount(terminalRef, terminalInstanceRef, socketRef);
+  useTerminalMount(terminalRef, terminalInstanceRef, socketRef, handlersRef);
   useSessionReset(props.sessionKey, terminalInstanceRef);
   useTerminalSocket({
     connectorRef,
@@ -128,6 +129,7 @@ function useTerminalMount(
   terminalRef: MutableRefObject<HTMLDivElement | null>,
   terminalInstanceRef: MutableRefObject<Terminal | null>,
   socketRef: MutableRefObject<WebSocket | null>,
+  handlersRef: MutableRefObject<TerminalHandlers>,
 ) {
   useEffect(() => {
     if (!terminalRef.current) {
@@ -138,17 +140,21 @@ function useTerminalMount(
     const fit = mountTerminal(terminal, terminalRef.current);
     terminalInstanceRef.current = terminal;
     const resizeObserver = observeTerminalResize(terminal, fit, terminalRef.current, socketRef);
+    const clipboardDisposable = bindTerminalClipboard(terminal, {
+      onError: (message) => handlersRef.current.onConnectionError(message),
+    });
     const inputDisposable = bindTerminalInput(terminal, socketRef);
 
     return () => {
       socketRef.current?.close();
       socketRef.current = null;
       terminalInstanceRef.current = null;
+      clipboardDisposable.dispose();
       inputDisposable.dispose();
       resizeObserver.disconnect();
       terminal.dispose();
     };
-  }, [socketRef, terminalInstanceRef, terminalRef]);
+  }, [handlersRef, socketRef, terminalInstanceRef, terminalRef]);
 }
 
 function createTerminal() {

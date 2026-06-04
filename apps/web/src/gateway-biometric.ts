@@ -30,7 +30,7 @@ export async function authenticateGatewayTokenUnlock() {
     androidBiometryStrength: AndroidBiometryStrength.weak,
     androidConfirmationRequired: false,
     androidSubtitle: "Unlock stored gateway token",
-    androidTitle: "Unlock MuxChat",
+    androidTitle: "Unlock ChatMux",
     cancelTitle: "Cancel",
     iosFallbackTitle: "Use passcode",
     reason: "Unlock stored gateway token",

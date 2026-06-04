@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/muxchat/muxchat/services/gateway/internal/hoststore"
+	"github.com/chatmux/chatmux/services/gateway/internal/hoststore"
 )
 
 func TestListTmuxSessionsFiltersPrivateSessions(t *testing.T) {
@@ -90,7 +90,7 @@ func TestCaptureTmuxHistoryRequiresSessionVisibility(t *testing.T) {
 		StaticUser{Name: "owner", Role: RoleOperator, Token: "owner-token"},
 		StaticUser{Name: "teammate", Role: RoleOperator, Token: "teammate-token"},
 	)
-	runner := &fakeSSHRunner{output: "$ echo muxchat\n"}
+	runner := &fakeSSHRunner{output: "$ echo chatmux\n"}
 	server.ssh = runner
 	host := createOwnedHost(t, server.hosts, "owner", "shared-host")
 	saveSessionAccess(t, server, sessionAccessInput{hostID: host.ID, owner: "owner", sessionName: "private"})
@@ -114,7 +114,7 @@ func TestCaptureTmuxHistoryAllowsCollaboratorGrant(t *testing.T) {
 		StaticUser{Name: "owner", Role: RoleOperator, Token: "owner-token"},
 		StaticUser{Name: "teammate", Role: RoleOperator, Token: "teammate-token"},
 	)
-	runner := &fakeSSHRunner{output: "$ echo muxchat\n"}
+	runner := &fakeSSHRunner{output: "$ echo chatmux\n"}
 	server.ssh = runner
 	host := createOwnedHost(t, server.hosts, "owner", "shared-host")
 	saveSessionAccess(t, server, sessionAccessInput{

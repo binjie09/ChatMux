@@ -62,7 +62,7 @@ Goal: iOS and Android apps share the same SPA.
 
 ## Phase 5: Team and AI Features
 
-Goal: make MuxChat useful for teams and AI-assisted operations.
+Goal: make ChatMux useful for teams and AI-assisted operations.
 
 - Multi-user auth and RBAC.
 - Shared hosts and shared sessions.

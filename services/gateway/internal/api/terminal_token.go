@@ -5,8 +5,8 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/muxchat/muxchat/services/gateway/internal/hoststore"
-	"github.com/muxchat/muxchat/services/gateway/internal/tmux"
+	"github.com/chatmux/chatmux/services/gateway/internal/hoststore"
+	"github.com/chatmux/chatmux/services/gateway/internal/tmux"
 )
 
 type createTerminalTokenRequest struct {
@@ -44,7 +44,7 @@ func (s *Server) handleCreateTerminalToken(w http.ResponseWriter, r *http.Reques
 		writeError(w, statusForSessionAccessError(err), err)
 		return
 	}
-	password, err := s.sshPasswordForRequest(r, hostID, input.CredentialToken)
+	credential, err := s.sshCredentialForRequest(r, hostID, input.CredentialToken)
 	if err != nil {
 		writeError(w, statusForCredentialError(err), err)
 		return
@@ -54,7 +54,7 @@ func (s *Server) handleCreateTerminalToken(w http.ResponseWriter, r *http.Reques
 		HostID:      hostID,
 		Recovering:  input.Recovering,
 		SessionName: sessionName,
-		Password:    password,
+		Credential:  credential,
 	})
 	if err := s.logAudit(r.Context(), hoststore.LogAuditEventInput{Type: "terminal.token.created", HostID: hostID, SessionName: sessionName, Message: "created terminal token"}); err != nil {
 		writeError(w, http.StatusInternalServerError, err)

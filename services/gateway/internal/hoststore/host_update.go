@@ -8,10 +8,14 @@ import (
 )
 
 type UpdateHostInput struct {
-	Hostname *string `json:"hostname"`
-	Name     *string `json:"name"`
-	Port     *int    `json:"port"`
-	Username *string `json:"username"`
+	Hostname             *string `json:"hostname"`
+	Name                 *string `json:"name"`
+	Password             *string `json:"password"`
+	Port                 *int    `json:"port"`
+	PrivateKey           *string `json:"privateKey"`
+	PrivateKeyPassphrase *string `json:"privateKeyPassphrase"`
+	SSHAuthMethod        *string `json:"sshAuthMethod"`
+	Username             *string `json:"username"`
 }
 
 func (s *Store) UpdateHost(ctx context.Context, id string, input UpdateHostInput) (Host, error) {
@@ -24,13 +28,14 @@ func (s *Store) UpdateHost(ctx context.Context, id string, input UpdateHostInput
 	}
 	host = applyHostUpdate(host, input)
 	if err := validateCreateHost(CreateHostInput{
-		Name: host.Name, Hostname: host.Hostname, Port: host.Port, Username: host.Username,
+		Name: host.Name, Hostname: host.Hostname, Port: host.Port, SSHAuthMethod: host.SSHAuthMethod, Username: host.Username,
 	}); err != nil {
 		return Host{}, err
 	}
 	host.Port = normalizePort(host.Port)
+	host = normalizeHostCredential(host)
 	host.UpdatedAt = time.Now().UTC()
-	result, err := s.db.ExecContext(ctx, updateHostSQL, host.Name, host.Hostname, host.Port, host.Username, host.UpdatedAt, id)
+	result, err := s.db.ExecContext(ctx, updateHostSQL, host.Name, host.Hostname, host.Port, host.Username, host.SSHAuthMethod, host.SSHPassword, host.SSHPrivateKey, host.SSHKeyPassphrase, host.UpdatedAt, id)
 	if err != nil {
 		return Host{}, fmt.Errorf("update host: %w", err)
 	}
@@ -45,7 +50,7 @@ func (s *Store) UpdateHost(ctx context.Context, id string, input UpdateHostInput
 }
 
 func hasHostUpdate(input UpdateHostInput) bool {
-	return input.Name != nil || input.Hostname != nil || input.Port != nil || input.Username != nil
+	return input.Name != nil || input.Hostname != nil || input.Password != nil || input.Port != nil || input.PrivateKey != nil || input.PrivateKeyPassphrase != nil || input.SSHAuthMethod != nil || input.Username != nil
 }
 
 func applyHostUpdate(host Host, input UpdateHostInput) Host {
@@ -54,6 +59,18 @@ func applyHostUpdate(host Host, input UpdateHostInput) Host {
 	}
 	if input.Hostname != nil {
 		host.Hostname = *input.Hostname
+	}
+	if input.Password != nil {
+		host.SSHPassword = *input.Password
+	}
+	if input.PrivateKey != nil {
+		host.SSHPrivateKey = *input.PrivateKey
+	}
+	if input.PrivateKeyPassphrase != nil {
+		host.SSHKeyPassphrase = *input.PrivateKeyPassphrase
+	}
+	if input.SSHAuthMethod != nil {
+		host.SSHAuthMethod = *input.SSHAuthMethod
 	}
 	if input.Port != nil {
 		host.Port = *input.Port

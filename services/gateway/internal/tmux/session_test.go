@@ -98,6 +98,12 @@ func TestAttachSessionCommand(t *testing.T) {
 	if !strings.Contains(command, "attach-session -t deploy_1") {
 		t.Fatalf("expected attach command, got %q", command)
 	}
+	if !strings.Contains(command, "set-clipboard external") {
+		t.Fatalf("expected clipboard synchronization option, got %q", command)
+	}
+	if !strings.Contains(command, "terminal-overrides[900]") || !strings.Contains(command, `]52;%p1%s;%p2%s`) {
+		t.Fatalf("expected OSC 52 terminal capability, got %q", command)
+	}
 }
 
 func TestKillSessionCommand(t *testing.T) {

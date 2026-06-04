@@ -5,7 +5,7 @@ use keyring::Entry;
 use tauri::{Manager, Runtime};
 use tauri_plugin_shell::{process::CommandChild, ShellExt};
 
-const KEYRING_SERVICE: &str = "site.binjie.muxchat";
+const KEYRING_SERVICE: &str = "site.binjie.chatmux";
 const GATEWAY_TOKEN_ACCOUNT: &str = "gateway-access-token";
 
 struct GatewaySidecar(Mutex<Option<CommandChild>>);
@@ -30,7 +30,7 @@ fn main() {
         ])
         .setup(start_gateway_sidecar)
         .run(tauri::generate_context!())
-        .expect("failed to run muxchat desktop app");
+        .expect("failed to run chatmux desktop app");
 }
 
 #[tauri::command]
@@ -71,13 +71,13 @@ fn start_gateway_sidecar<R: Runtime>(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let app_data_dir = app.path().app_data_dir()?;
     fs::create_dir_all(&app_data_dir)?;
-    let db_path = app_data_dir.join("muxchat.db");
+    let db_path = app_data_dir.join("chatmux.db");
     let db_value = db_path.to_string_lossy().to_string();
     let (mut events, child) = app
         .shell()
-        .sidecar("muxchat-gateway")?
-        .env("MUXCHAT_ADDR", "127.0.0.1:19327")
-        .env("MUXCHAT_DB", db_value)
+        .sidecar("chatmux-gateway")?
+        .env("CHATMUX_ADDR", "127.0.0.1:19327")
+        .env("CHATMUX_DB", db_value)
         .spawn()?;
 
     app.manage(GatewaySidecar(Mutex::new(Some(child))));

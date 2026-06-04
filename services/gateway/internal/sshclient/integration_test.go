@@ -8,11 +8,11 @@ import (
 )
 
 func TestIntegrationRunRemoteDiagnostic(t *testing.T) {
-	host := os.Getenv("MUXCHAT_TEST_SSH_HOST")
-	user := os.Getenv("MUXCHAT_TEST_SSH_USER")
-	password := os.Getenv("MUXCHAT_TEST_SSH_PASSWORD")
+	host := os.Getenv("CHATMUX_TEST_SSH_HOST")
+	user := os.Getenv("CHATMUX_TEST_SSH_USER")
+	password := os.Getenv("CHATMUX_TEST_SSH_PASSWORD")
 	if host == "" || user == "" || password == "" {
-		t.Skip("set MUXCHAT_TEST_SSH_HOST, MUXCHAT_TEST_SSH_USER, and MUXCHAT_TEST_SSH_PASSWORD")
+		t.Skip("set CHATMUX_TEST_SSH_HOST, CHATMUX_TEST_SSH_USER, and CHATMUX_TEST_SSH_PASSWORD")
 	}
 
 	port := testSSHPort(t)
@@ -24,7 +24,7 @@ func TestIntegrationRunRemoteDiagnostic(t *testing.T) {
 	}
 
 	config.HostKeyFingerprint = fingerprint
-	output, err := client.Run(context.Background(), config, PasswordCredential{Password: password}, remoteDiagnosticCommand())
+	output, err := client.Run(context.Background(), config, Credential{Kind: CredentialKindPassword, Password: password}, remoteDiagnosticCommand())
 	if err != nil {
 		t.Fatalf("Run failed: %v", err)
 	}
@@ -33,19 +33,19 @@ func TestIntegrationRunRemoteDiagnostic(t *testing.T) {
 
 func testSSHPort(t *testing.T) int {
 	t.Helper()
-	value := os.Getenv("MUXCHAT_TEST_SSH_PORT")
+	value := os.Getenv("CHATMUX_TEST_SSH_PORT")
 	if value == "" {
 		return 22
 	}
 	port, err := strconv.Atoi(value)
 	if err != nil {
-		t.Fatalf("invalid MUXCHAT_TEST_SSH_PORT: %v", err)
+		t.Fatalf("invalid CHATMUX_TEST_SSH_PORT: %v", err)
 	}
 	return port
 }
 
 func remoteDiagnosticCommand() string {
-	command := os.Getenv("MUXCHAT_TEST_SSH_COMMAND")
+	command := os.Getenv("CHATMUX_TEST_SSH_COMMAND")
 	if command != "" {
 		return command
 	}

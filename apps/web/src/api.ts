@@ -3,6 +3,8 @@ const gatewayURL = import.meta.env.VITE_GATEWAY_URL ?? defaultGatewayURL();
 
 let gatewayAccessToken = "";
 
+export type SSHAuthMethod = "password" | "private_key";
+
 export type Host = {
   id: string;
   name: string;
@@ -11,15 +13,23 @@ export type Host = {
   username: string;
   status: "offline" | "connecting" | "online" | "error";
   hostKeyFingerprint: string;
+  sshAuthMethod: SSHAuthMethod;
+  hasPassword: boolean;
+  hasCredential: boolean;
   pinned: boolean;
   owner: string;
   shared: boolean;
+  updatedAt: string;
 };
 
 export type CreateHostInput = {
   name: string;
   hostname: string;
+  password?: string;
+  privateKey?: string;
+  privateKeyPassphrase?: string;
   port: number;
+  sshAuthMethod: SSHAuthMethod;
   username: string;
 };
 
@@ -121,10 +131,10 @@ export async function trustHost(hostId: string): Promise<Host> {
   return response.host;
 }
 
-export async function createSSHCredential(hostId: string, password: string): Promise<SSHCredential> {
+export async function createSSHCredential(hostId: string): Promise<SSHCredential> {
   return request<SSHCredential>(`/api/hosts/${hostId}/ssh/credentials`, {
     method: "POST",
-    body: JSON.stringify({ password }),
+    body: JSON.stringify({}),
   });
 }
 

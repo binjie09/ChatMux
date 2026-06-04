@@ -6,16 +6,17 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
+	"strings"
 	"testing"
 
-	"github.com/muxchat/muxchat/services/gateway/internal/hoststore"
+	"github.com/chatmux/chatmux/services/gateway/internal/hoststore"
 )
 
 func TestCreateAndListHostsAPI(t *testing.T) {
 	server, closeServer := newTestServer(t)
 	defer closeServer()
 
-	body := bytes.NewBufferString(`{"name":"local-dev","hostname":"192.168.1.14","port":22001,"username":"binjie09"}`)
+	body := bytes.NewBufferString(`{"name":"local-dev","hostname":"192.168.1.14","port":22001,"username":"binjie09","password":"secret"}`)
 	createReq := httptest.NewRequest(http.MethodPost, "/api/hosts", body)
 	createRec := httptest.NewRecorder()
 
@@ -40,6 +41,9 @@ func TestCreateAndListHostsAPI(t *testing.T) {
 	}
 	if hosts[0].Owner != localDevPrincipal.Name || !hosts[0].Shared {
 		t.Fatalf("expected created host owner/shared fields, got %#v", hosts[0])
+	}
+	if !hosts[0].HasPassword || strings.Contains(listRec.Body.String(), "secret") {
+		t.Fatalf("expected password flag without secret exposure, got %s", listRec.Body.String())
 	}
 
 	events, err := server.hosts.ListAuditEvents(testContext(t))
@@ -266,7 +270,7 @@ func assertHostAuditEvent(t *testing.T, server *Server, eventType string) {
 
 func newTestServer(t *testing.T) (*Server, func()) {
 	t.Helper()
-	store, err := hoststore.Open(filepath.Join(t.TempDir(), "muxchat-test.db"))
+	store, err := hoststore.Open(filepath.Join(t.TempDir(), "chatmux-test.db"))
 	if err != nil {
 		t.Fatalf("Open failed: %v", err)
 	}

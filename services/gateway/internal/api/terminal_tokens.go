@@ -3,6 +3,8 @@ package api
 import (
 	"sync"
 	"time"
+
+	"github.com/chatmux/chatmux/services/gateway/internal/sshclient"
 )
 
 const terminalTokenTTL = 2 * time.Minute
@@ -11,7 +13,7 @@ type terminalToken struct {
 	HostID      string
 	Recovering  bool
 	SessionName string
-	Password    string
+	Credential  sshclient.Credential
 	ExpiresAt   time.Time
 }
 

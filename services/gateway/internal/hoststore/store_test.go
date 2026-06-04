@@ -2,8 +2,10 @@ package hoststore
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -36,6 +38,57 @@ func TestCreateAndListHosts(t *testing.T) {
 	}
 	if hosts[0].Owner != "local-dev" || !hosts[0].Shared {
 		t.Fatalf("expected default owner/shared, got %#v", hosts[0])
+	}
+}
+
+func TestCreateHostStoresPasswordWithoutJSONExposure(t *testing.T) {
+	store := openTestStore(t)
+	defer closeStore(t, store)
+
+	created, err := store.CreateHost(context.Background(), CreateHostInput{
+		Name: "secure", Hostname: "secure.test", Username: "deploy", Password: "secret",
+	})
+	if err != nil {
+		t.Fatalf("CreateHost failed: %v", err)
+	}
+	if created.SSHPassword != "secret" || !created.HasPassword {
+		t.Fatalf("expected stored password flag, got %#v", created)
+	}
+	if created.SSHAuthMethod != SSHAuthMethodPassword || !created.HasCredential {
+		t.Fatalf("expected password credential flag, got %#v", created)
+	}
+	payload, err := json.Marshal(created)
+	if err != nil {
+		t.Fatalf("marshal host: %v", err)
+	}
+	if strings.Contains(string(payload), "secret") || strings.Contains(string(payload), "sshPassword") {
+		t.Fatalf("expected password to stay out of JSON, got %s", string(payload))
+	}
+}
+
+func TestCreateHostStoresPrivateKeyWithoutJSONExposure(t *testing.T) {
+	store := openTestStore(t)
+	defer closeStore(t, store)
+
+	created, err := store.CreateHost(context.Background(), CreateHostInput{
+		Name: "key", Hostname: "key.test", Username: "deploy",
+		SSHAuthMethod: SSHAuthMethodPrivateKey, PrivateKey: "private-key", PrivateKeyPassphrase: "passphrase",
+	})
+	if err != nil {
+		t.Fatalf("CreateHost failed: %v", err)
+	}
+	if created.SSHAuthMethod != SSHAuthMethodPrivateKey || !created.HasCredential || created.HasPassword {
+		t.Fatalf("expected private key credential flag, got %#v", created)
+	}
+	if created.SSHPrivateKey != "private-key" || created.SSHKeyPassphrase != "passphrase" {
+		t.Fatalf("expected stored private key, got %#v", created)
+	}
+	payload, err := json.Marshal(created)
+	if err != nil {
+		t.Fatalf("marshal host: %v", err)
+	}
+	if strings.Contains(string(payload), "private-key") || strings.Contains(string(payload), "passphrase") {
+		t.Fatalf("expected private key to stay out of JSON, got %s", string(payload))
 	}
 }
 
@@ -148,7 +201,7 @@ func TestUpdateHost(t *testing.T) {
 	store := openTestStore(t)
 	defer closeStore(t, store)
 	ctx := context.Background()
-	created, err := store.CreateHost(ctx, CreateHostInput{Name: "old", Hostname: "old.test", Username: "deploy"})
+	created, err := store.CreateHost(ctx, CreateHostInput{Name: "old", Hostname: "old.test", Username: "deploy", Password: "secret"})
 	if err != nil {
 		t.Fatalf("CreateHost failed: %v", err)
 	}
@@ -168,6 +221,72 @@ func TestUpdateHost(t *testing.T) {
 	}
 	if updated.HostKeyFingerprint != trusted.HostKeyFingerprint || updated.Owner != trusted.Owner {
 		t.Fatalf("expected preserved metadata, got %#v", updated)
+	}
+	if updated.SSHPassword != "secret" || !updated.HasPassword {
+		t.Fatalf("expected preserved password, got %#v", updated)
+	}
+	if !updated.HasCredential {
+		t.Fatalf("expected preserved credential flag, got %#v", updated)
+	}
+}
+
+func TestUpdateHostPassword(t *testing.T) {
+	store := openTestStore(t)
+	defer closeStore(t, store)
+	ctx := context.Background()
+	created, err := store.CreateHost(ctx, CreateHostInput{Name: "old", Hostname: "old.test", Username: "deploy", Password: "secret"})
+	if err != nil {
+		t.Fatalf("CreateHost failed: %v", err)
+	}
+
+	password := "new-secret"
+	updated, err := store.UpdateHost(ctx, created.ID, UpdateHostInput{Password: &password})
+	if err != nil {
+		t.Fatalf("UpdateHost failed: %v", err)
+	}
+	if updated.SSHPassword != "new-secret" || !updated.HasPassword {
+		t.Fatalf("expected updated password, got %#v", updated)
+	}
+
+	password = ""
+	updated, err = store.UpdateHost(ctx, created.ID, UpdateHostInput{Password: &password})
+	if err != nil {
+		t.Fatalf("UpdateHost clear failed: %v", err)
+	}
+	if updated.SSHPassword != "" || updated.HasPassword {
+		t.Fatalf("expected cleared password, got %#v", updated)
+	}
+	if updated.HasCredential {
+		t.Fatalf("expected cleared credential flag, got %#v", updated)
+	}
+}
+
+func TestUpdateHostPrivateKey(t *testing.T) {
+	store := openTestStore(t)
+	defer closeStore(t, store)
+	ctx := context.Background()
+	created, err := store.CreateHost(ctx, CreateHostInput{Name: "old", Hostname: "old.test", Username: "deploy", Password: "secret"})
+	if err != nil {
+		t.Fatalf("CreateHost failed: %v", err)
+	}
+
+	method := SSHAuthMethodPrivateKey
+	privateKey := "new-private-key"
+	passphrase := "new-passphrase"
+	updated, err := store.UpdateHost(ctx, created.ID, UpdateHostInput{
+		SSHAuthMethod: &method, PrivateKey: &privateKey, PrivateKeyPassphrase: &passphrase,
+	})
+	if err != nil {
+		t.Fatalf("UpdateHost failed: %v", err)
+	}
+	if updated.SSHAuthMethod != SSHAuthMethodPrivateKey || !updated.HasCredential {
+		t.Fatalf("expected private key credential, got %#v", updated)
+	}
+	if updated.SSHPassword != "" || updated.HasPassword {
+		t.Fatalf("expected password cleared after auth switch, got %#v", updated)
+	}
+	if updated.SSHPrivateKey != "new-private-key" || updated.SSHKeyPassphrase != "new-passphrase" {
+		t.Fatalf("expected updated private key, got %#v", updated)
 	}
 }
 
@@ -272,7 +391,7 @@ func TestCreateHostValidatesRequiredFields(t *testing.T) {
 
 func openTestStore(t *testing.T) *Store {
 	t.Helper()
-	store, err := Open(filepath.Join(t.TempDir(), "muxchat-test.db"))
+	store, err := Open(filepath.Join(t.TempDir(), "chatmux-test.db"))
 	if err != nil {
 		t.Fatalf("Open failed: %v", err)
 	}

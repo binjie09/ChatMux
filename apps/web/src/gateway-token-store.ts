@@ -6,7 +6,7 @@ import {
   saveDesktopGatewayAccessToken,
 } from "./desktop-secure-storage";
 
-const storagePrefix = "muxchat_";
+const storagePrefix = "chatmux_";
 const gatewayAccessTokenKey = "gateway-access-token";
 const gatewayBiometricUnlockKey = "gateway-biometric-unlock";
 

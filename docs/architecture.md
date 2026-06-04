@@ -2,7 +2,7 @@
 
 ## Summary
 
-MuxChat uses one React SPA across all clients. SSH and tmux operations are
+ChatMux uses one React SPA across all clients. SSH and tmux operations are
 handled by a gateway process because browsers cannot open raw SSH sessions, and
 because key handling, host verification, PTY allocation, and audit logging need a
 clear trusted boundary.
@@ -12,7 +12,7 @@ Web / Mobile / Desktop UI
         |
         | HTTP + WebSocket
         v
-MuxChat Gateway
+ChatMux Gateway
         |
         | SSH
         v
@@ -97,7 +97,7 @@ shipping a single binary as a Tauri sidecar is straightforward.
 
 ## Remote tmux Model
 
-MuxChat maps tmux resources into product concepts:
+ChatMux maps tmux resources into product concepts:
 
 | tmux | Product |
 | --- | --- |

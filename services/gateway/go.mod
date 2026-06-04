@@ -1,4 +1,4 @@
-module github.com/muxchat/muxchat/services/gateway
+module github.com/chatmux/chatmux/services/gateway
 
 go 1.23.0
 

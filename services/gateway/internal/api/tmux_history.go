@@ -5,9 +5,9 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/muxchat/muxchat/services/gateway/internal/hoststore"
-	"github.com/muxchat/muxchat/services/gateway/internal/sshclient"
-	"github.com/muxchat/muxchat/services/gateway/internal/tmux"
+	"github.com/chatmux/chatmux/services/gateway/internal/hoststore"
+	"github.com/chatmux/chatmux/services/gateway/internal/sshclient"
+	"github.com/chatmux/chatmux/services/gateway/internal/tmux"
 )
 
 type tmuxHistoryRequest struct {
@@ -21,7 +21,7 @@ type tmuxHistoryResponse struct {
 
 type summarizeSessionRequest struct {
 	host        hoststore.Host
-	password    string
+	credential  sshclient.Credential
 	request     *http.Request
 	sessionName string
 }
@@ -53,12 +53,12 @@ func (s *Server) handleCaptureTmuxHistory(w http.ResponseWriter, r *http.Request
 		writeError(w, statusForSessionAccessError(err), err)
 		return
 	}
-	password, err := s.sshPasswordForRequest(r, hostID, input.CredentialToken)
+	credential, err := s.sshCredentialForRequest(r, hostID, input.CredentialToken)
 	if err != nil {
 		writeError(w, statusForCredentialError(err), err)
 		return
 	}
-	output, err := s.ssh.Run(r.Context(), hostToSSHConfig(host), sshclient.PasswordCredential{Password: password}, command)
+	output, err := s.ssh.Run(r.Context(), hostToSSHConfig(host), credential, command)
 	if err != nil {
 		writeError(w, http.StatusBadGateway, err)
 		return
@@ -95,13 +95,13 @@ func (s *Server) handleSummarizeTmuxHistory(w http.ResponseWriter, r *http.Reque
 		writeError(w, statusForSessionAccessError(err), err)
 		return
 	}
-	password, err := s.sshPasswordForRequest(r, hostID, input.CredentialToken)
+	credential, err := s.sshCredentialForRequest(r, hostID, input.CredentialToken)
 	if err != nil {
 		writeError(w, statusForCredentialError(err), err)
 		return
 	}
 	summary, err := s.summarizeSessionHistory(summarizeSessionRequest{
-		host: host, password: password, request: r, sessionName: sessionName,
+		host: host, credential: credential, request: r, sessionName: sessionName,
 	})
 	if err != nil {
 		writeError(w, statusForSummaryError(err), err)
@@ -130,7 +130,7 @@ func (s *Server) summarizeSessionHistory(input summarizeSessionRequest) (Transcr
 	if err != nil {
 		return TranscriptSummary{}, err
 	}
-	output, err := s.ssh.Run(input.request.Context(), hostToSSHConfig(input.host), sshclient.PasswordCredential{Password: input.password}, command)
+	output, err := s.ssh.Run(input.request.Context(), hostToSSHConfig(input.host), input.credential, command)
 	if err != nil {
 		return TranscriptSummary{}, err
 	}

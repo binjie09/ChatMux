@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Monitor, Pencil, Plus, Server, ShieldCheck, Smartphone, TerminalSquare, Trash2 } from "lucide-react";
+import { KeyRound, Monitor, Pencil, Plus, Server, ShieldCheck, Smartphone, TerminalSquare, Trash2 } from "lucide-react";
 import { type CreateHostInput, type Host } from "./api";
 import { GatewayTokenControl } from "./GatewayTokenControl";
 import { HostForm } from "./HostForm";
@@ -26,7 +26,7 @@ export function Sidebar(props: SidebarProps) {
       <div className="brand">
         <TerminalSquare aria-hidden="true" />
         <div>
-          <strong>MuxChat</strong>
+          <strong>ChatMux</strong>
           <span>SSH tmux workspaces</span>
         </div>
       </div>
@@ -102,6 +102,7 @@ function HostEntry(props: HostEntryProps) {
             <strong>{props.host.name}</strong>
             <small>{hostAddress(props.host)}</small>
           </span>
+          <KeyRound className={`host-credential-icon ${props.host.hasCredential ? "saved" : ""}`} size={14} aria-hidden="true" />
           <i className={`status-dot ${props.host.status}`} />
         </button>
         <div className="host-row-actions">
@@ -116,6 +117,7 @@ function HostEntry(props: HostEntryProps) {
       {isEditing ? (
         <HostForm
           initialValue={hostFormValue(props.host)}
+          savedCredential={props.host.hasCredential}
           onCancel={() => setIsEditing(false)}
           onSubmit={async (input) => {
             await props.onUpdateHost(props.host.id, input);
@@ -132,6 +134,7 @@ function hostFormValue(host: Host): CreateHostInput {
     hostname: host.hostname,
     name: host.name,
     port: host.port,
+    sshAuthMethod: host.sshAuthMethod,
     username: host.username,
   };
 }

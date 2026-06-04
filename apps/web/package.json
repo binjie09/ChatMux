@@ -1,7 +1,9 @@
 {
-  "name": "@muxchat/web",
+  "name": "@chatmux/web",
   "version": "0.1.0",
+  "description": "Shared ChatMux React SPA for web, desktop, and mobile shells.",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",

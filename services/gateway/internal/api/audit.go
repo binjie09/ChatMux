@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/muxchat/muxchat/services/gateway/internal/hoststore"
+	"github.com/chatmux/chatmux/services/gateway/internal/hoststore"
 )
 
 func (s *Server) handleListAuditEvents(w http.ResponseWriter, r *http.Request) {

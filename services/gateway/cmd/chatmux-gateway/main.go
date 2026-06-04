@@ -2,23 +2,24 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	"os"
 	"time"
 
-	"github.com/muxchat/muxchat/services/gateway/internal/api"
-	"github.com/muxchat/muxchat/services/gateway/internal/hoststore"
+	"github.com/chatmux/chatmux/services/gateway/internal/api"
+	"github.com/chatmux/chatmux/services/gateway/internal/hoststore"
 )
 
 func main() {
-	store, err := hoststore.Open(envOrDefault("MUXCHAT_DB", "muxchat.db"))
+	store, err := hoststore.Open(envOrDefault("CHATMUX_DB", "chatmux.db"))
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer store.Close()
 
-	addr := envOrDefault("MUXCHAT_ADDR", ":8080")
+	addr := envOrDefault("CHATMUX_ADDR", ":8080")
 	users, err := staticUsersFromEnv()
 	if err != nil {
 		log.Fatal(err)
@@ -55,14 +56,14 @@ func main() {
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 
-	log.Printf("muxchat gateway listening on %s", addr)
+	log.Printf("chatmux gateway listening on %s", addr)
 	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatal(err)
 	}
 }
 
 func automationCapabilitiesFromEnv() ([]string, bool, error) {
-	configured := os.Getenv("MUXCHAT_AUTOMATION_CAPABILITIES_JSON")
+	configured := os.Getenv("CHATMUX_AUTOMATION_CAPABILITIES_JSON")
 	if configured == "" {
 		return nil, false, nil
 	}
@@ -89,10 +90,12 @@ type envStaticUser struct {
 
 func staticUsersFromEnv() ([]api.StaticUser, error) {
 	users := []api.StaticUser{}
-	if token := os.Getenv("MUXCHAT_GATEWAY_TOKEN"); token != "" {
-		users = append(users, api.StaticUser{Name: "gateway", Role: api.RoleAdmin, Token: token})
+	token := os.Getenv("CHATMUX_GATEWAY_TOKEN")
+	if token == "" {
+		return nil, errors.New("CHATMUX_GATEWAY_TOKEN is required")
 	}
-	configured := os.Getenv("MUXCHAT_USERS_JSON")
+	users = append(users, api.StaticUser{Name: "gateway", Role: api.RoleAdmin, Token: token})
+	configured := os.Getenv("CHATMUX_USERS_JSON")
 	if configured == "" {
 		return users, api.ValidateStaticUsers(users)
 	}
@@ -111,9 +114,9 @@ func staticUsersFromEnv() ([]api.StaticUser, error) {
 
 func commandPolicyFromEnv() (api.CommandPolicyConfig, error) {
 	config := api.CommandPolicyConfig{
-		Mode: api.CommandPolicyMode(os.Getenv("MUXCHAT_COMMAND_POLICY_MODE")),
+		Mode: api.CommandPolicyMode(os.Getenv("CHATMUX_COMMAND_POLICY_MODE")),
 	}
-	patterns := os.Getenv("MUXCHAT_COMMAND_DENY_PATTERNS_JSON")
+	patterns := os.Getenv("CHATMUX_COMMAND_DENY_PATTERNS_JSON")
 	if patterns == "" {
 		return config, nil
 	}

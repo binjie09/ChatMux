@@ -3,11 +3,11 @@ package api
 import (
 	"context"
 
-	"github.com/muxchat/muxchat/services/gateway/internal/sshclient"
+	"github.com/chatmux/chatmux/services/gateway/internal/sshclient"
 )
 
 type sshRunner interface {
-	Run(context.Context, sshclient.HostConfig, sshclient.PasswordCredential, string) ([]byte, error)
+	Run(context.Context, sshclient.HostConfig, sshclient.Credential, string) ([]byte, error)
 	ScanHostKey(context.Context, sshclient.HostConfig) (string, error)
-	StartTerminal(context.Context, sshclient.HostConfig, sshclient.PasswordCredential, string, sshclient.TerminalSize) (*sshclient.Terminal, error)
+	StartTerminal(context.Context, sshclient.HostConfig, sshclient.Credential, string, sshclient.TerminalSize) (*sshclient.Terminal, error)
 }

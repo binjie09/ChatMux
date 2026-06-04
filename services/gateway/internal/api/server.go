@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/muxchat/muxchat/services/gateway/internal/hoststore"
-	"github.com/muxchat/muxchat/services/gateway/internal/sshclient"
+	"github.com/chatmux/chatmux/services/gateway/internal/hoststore"
+	"github.com/chatmux/chatmux/services/gateway/internal/sshclient"
 )
 
 type Server struct {
@@ -117,7 +117,7 @@ type healthResponse struct {
 func (s *Server) handleHealth(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, healthResponse{
 		OK:        true,
-		Service:   "muxchat-gateway",
+		Service:   "chatmux-gateway",
 		Timestamp: time.Now().UTC(),
 	})
 }

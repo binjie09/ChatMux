@@ -3,35 +3,43 @@ package api
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
-	"github.com/muxchat/muxchat/services/gateway/internal/hoststore"
-	"github.com/muxchat/muxchat/services/gateway/internal/sshclient"
+	"github.com/chatmux/chatmux/services/gateway/internal/hoststore"
+	"github.com/chatmux/chatmux/services/gateway/internal/sshclient"
 )
 
 type fakeSSHRunner struct {
-	command  string
-	output   string
-	password string
+	command    string
+	credential sshclient.Credential
+	output     string
+	password   string
+	privateKey string
 }
 
-func (r *fakeSSHRunner) Run(_ context.Context, _ sshclient.HostConfig, credential sshclient.PasswordCredential, command string) ([]byte, error) {
+func (r *fakeSSHRunner) Run(_ context.Context, _ sshclient.HostConfig, credential sshclient.Credential, command string) ([]byte, error) {
 	r.command = command
+	r.credential = credential
 	r.password = credential.Password
+	r.privateKey = credential.PrivateKey
 	if r.output != "" {
 		return []byte(r.output), nil
 	}
-	return []byte("muxchat-ok"), nil
+	return []byte("chatmux-ok"), nil
 }
 
 func (r *fakeSSHRunner) ScanHostKey(_ context.Context, _ sshclient.HostConfig) (string, error) {
 	return "SHA256:test", nil
 }
 
-func (r *fakeSSHRunner) StartTerminal(_ context.Context, _ sshclient.HostConfig, _ sshclient.PasswordCredential, _ string, _ sshclient.TerminalSize) (*sshclient.Terminal, error) {
+func (r *fakeSSHRunner) StartTerminal(_ context.Context, _ sshclient.HostConfig, credential sshclient.Credential, _ string, _ sshclient.TerminalSize) (*sshclient.Terminal, error) {
+	r.credential = credential
+	r.password = credential.Password
+	r.privateKey = credential.PrivateKey
 	return nil, nil
 }
 
@@ -50,10 +58,10 @@ func TestSSHProbe(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
 	}
-	if !strings.Contains(rec.Body.String(), "muxchat-ok") {
+	if !strings.Contains(rec.Body.String(), "chatmux-ok") {
 		t.Fatalf("expected probe output, got %s", rec.Body.String())
 	}
-	if runner.command != "printf muxchat-ok" {
+	if runner.command != "printf chatmux-ok" {
 		t.Fatalf("unexpected probe command %q", runner.command)
 	}
 }
@@ -95,6 +103,78 @@ func TestCreateSSHCredentialTokenAPI(t *testing.T) {
 	assertHostAuditEvent(t, server, "ssh.credential.created")
 }
 
+func TestCreateSSHCredentialTokenUsesSavedHostPassword(t *testing.T) {
+	server, closeServer := newTestServer(t)
+	defer closeServer()
+	host, err := server.hosts.CreateHost(context.Background(), hoststore.CreateHostInput{
+		Name: "saved", Hostname: "saved.test", Username: "deploy", Password: "saved-secret",
+	})
+	if err != nil {
+		t.Fatalf("CreateHost failed: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/api/hosts/"+host.ID+"/ssh/credentials", bytes.NewBufferString(`{}`))
+	rec := httptest.NewRecorder()
+	server.Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("expected 201, got %d: %s", rec.Code, rec.Body.String())
+	}
+	var response createSSHCredentialResponse
+	if err := json.NewDecoder(rec.Body).Decode(&response); err != nil {
+		t.Fatalf("decode credential response: %v", err)
+	}
+	token, ok := server.credentialTokens.Get(response.Token)
+	if !ok || token.Credential.Kind != sshclient.CredentialKindPassword || token.Credential.Password != "saved-secret" {
+		t.Fatalf("expected saved host credential token, got %#v ok=%v", token, ok)
+	}
+}
+
+func TestCreateSSHCredentialTokenUsesSavedHostPrivateKey(t *testing.T) {
+	server, closeServer := newTestServer(t)
+	defer closeServer()
+	host, err := server.hosts.CreateHost(context.Background(), hoststore.CreateHostInput{
+		Name: "saved-key", Hostname: "saved-key.test", Username: "deploy",
+		SSHAuthMethod: hoststore.SSHAuthMethodPrivateKey, PrivateKey: "test-private-key", PrivateKeyPassphrase: "test-passphrase",
+	})
+	if err != nil {
+		t.Fatalf("CreateHost failed: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/api/hosts/"+host.ID+"/ssh/credentials", bytes.NewBufferString(`{}`))
+	rec := httptest.NewRecorder()
+	server.Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("expected 201, got %d: %s", rec.Code, rec.Body.String())
+	}
+	var response createSSHCredentialResponse
+	if err := json.NewDecoder(rec.Body).Decode(&response); err != nil {
+		t.Fatalf("decode credential response: %v", err)
+	}
+	token, ok := server.credentialTokens.Get(response.Token)
+	if !ok || token.Credential.Kind != sshclient.CredentialKindPrivateKey || token.Credential.PrivateKey != "test-private-key" {
+		t.Fatalf("expected saved host private key token, got %#v ok=%v", token, ok)
+	}
+	if token.Credential.Passphrase != "test-passphrase" {
+		t.Fatalf("expected saved private key passphrase")
+	}
+}
+
+func TestCreateSSHCredentialTokenRequiresSavedHostCredential(t *testing.T) {
+	server, closeServer := newTestServer(t)
+	defer closeServer()
+	host := createTestHost(t, server.hosts)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/hosts/"+host.ID+"/ssh/credentials", bytes.NewBufferString(`{}`))
+	rec := httptest.NewRecorder()
+	server.Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d: %s", rec.Code, rec.Body.String())
+	}
+}
+
 func TestSSHCredentialTokenRequiresPrincipal(t *testing.T) {
 	server := newRoleTestServer(t,
 		StaticUser{Name: "owner", Role: RoleOperator, Token: "owner-token"},
@@ -103,7 +183,11 @@ func TestSSHCredentialTokenRequiresPrincipal(t *testing.T) {
 	server.ssh = &fakeSSHRunner{output: "$0\tdeploy\t1\t0\t1710000000\tzsh\t0\t\n"}
 	host := createOwnedHost(t, server.hosts, "owner", "shared")
 	token := server.credentialTokens.Create(credentialToken{
-		HostID: host.ID, Password: "secret", Principal: "owner",
+		HostID: host.ID,
+		Credential: sshclient.Credential{
+			Kind: sshclient.CredentialKindPassword, Password: "secret",
+		},
+		Principal: "owner",
 	})
 
 	body := bytes.NewBufferString(`{"credentialToken":"` + token + `"}`)
@@ -142,9 +226,10 @@ func createTrustedTestHost(t *testing.T, server *Server) hoststore.Host {
 }
 
 type testCredentialInput struct {
-	hostID    string
-	password  string
-	principal string
+	hostID     string
+	password   string
+	privateKey string
+	principal  string
 }
 
 func createCredentialTokenForTest(t *testing.T, server *Server, input testCredentialInput) string {
@@ -153,12 +238,16 @@ func createCredentialTokenForTest(t *testing.T, server *Server, input testCreden
 	if password == "" {
 		password = "secret"
 	}
+	credential := sshclient.Credential{Kind: sshclient.CredentialKindPassword, Password: password}
+	if input.privateKey != "" {
+		credential = sshclient.Credential{Kind: sshclient.CredentialKindPrivateKey, PrivateKey: input.privateKey}
+	}
 	principal := input.principal
 	if principal == "" {
 		principal = localDevPrincipal.Name
 	}
 	return server.credentialTokens.Create(credentialToken{
-		HostID: input.hostID, Password: password, Principal: principal,
+		HostID: input.hostID, Credential: credential, Principal: principal,
 	})
 }
 

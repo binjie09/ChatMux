@@ -9,6 +9,10 @@ CREATE TABLE IF NOT EXISTS hosts (
 	username TEXT NOT NULL,
 	status TEXT NOT NULL,
 	host_key_fingerprint TEXT NOT NULL DEFAULT '',
+	ssh_auth_method TEXT NOT NULL DEFAULT 'password',
+	ssh_password TEXT NOT NULL DEFAULT '',
+	ssh_private_key TEXT NOT NULL DEFAULT '',
+	ssh_private_key_passphrase TEXT NOT NULL DEFAULT '',
 	pinned BOOLEAN NOT NULL DEFAULT FALSE,
 	owner TEXT NOT NULL DEFAULT 'local-dev',
 	shared BOOLEAN NOT NULL DEFAULT TRUE,
@@ -42,6 +46,18 @@ CREATE TABLE IF NOT EXISTS session_metadata (
 const addHostFingerprintSQL = `
 ALTER TABLE hosts ADD COLUMN host_key_fingerprint TEXT NOT NULL DEFAULT '';`
 
+const addHostSSHPasswordSQL = `
+ALTER TABLE hosts ADD COLUMN ssh_password TEXT NOT NULL DEFAULT '';`
+
+const addHostSSHAuthMethodSQL = `
+ALTER TABLE hosts ADD COLUMN ssh_auth_method TEXT NOT NULL DEFAULT 'password';`
+
+const addHostSSHPrivateKeySQL = `
+ALTER TABLE hosts ADD COLUMN ssh_private_key TEXT NOT NULL DEFAULT '';`
+
+const addHostSSHPrivateKeyPassphraseSQL = `
+ALTER TABLE hosts ADD COLUMN ssh_private_key_passphrase TEXT NOT NULL DEFAULT '';`
+
 const addHostPinnedSQL = `
 ALTER TABLE hosts ADD COLUMN pinned BOOLEAN NOT NULL DEFAULT FALSE;`
 
@@ -61,28 +77,28 @@ const addSessionCollaboratorsSQL = `
 ALTER TABLE session_metadata ADD COLUMN collaborators TEXT NOT NULL DEFAULT '[]';`
 
 const listHostsSQL = `
-SELECT id, name, hostname, port, username, status, host_key_fingerprint, pinned, owner, shared, created_at, updated_at
+SELECT id, name, hostname, port, username, status, host_key_fingerprint, ssh_auth_method, ssh_password, ssh_private_key, ssh_private_key_passphrase, pinned, owner, shared, created_at, updated_at
 FROM hosts
 ORDER BY pinned DESC, created_at DESC;`
 
 const listVisibleHostsSQL = `
-SELECT id, name, hostname, port, username, status, host_key_fingerprint, pinned, owner, shared, created_at, updated_at
+SELECT id, name, hostname, port, username, status, host_key_fingerprint, ssh_auth_method, ssh_password, ssh_private_key, ssh_private_key_passphrase, pinned, owner, shared, created_at, updated_at
 FROM hosts
 WHERE shared = TRUE OR owner = ?
 ORDER BY pinned DESC, created_at DESC;`
 
 const getHostSQL = `
-SELECT id, name, hostname, port, username, status, host_key_fingerprint, pinned, owner, shared, created_at, updated_at
+SELECT id, name, hostname, port, username, status, host_key_fingerprint, ssh_auth_method, ssh_password, ssh_private_key, ssh_private_key_passphrase, pinned, owner, shared, created_at, updated_at
 FROM hosts
 WHERE id = ?;`
 
 const insertHostSQL = `
-INSERT INTO hosts (id, name, hostname, port, username, status, host_key_fingerprint, pinned, owner, shared, created_at, updated_at)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
+INSERT INTO hosts (id, name, hostname, port, username, status, host_key_fingerprint, ssh_auth_method, ssh_password, ssh_private_key, ssh_private_key_passphrase, pinned, owner, shared, created_at, updated_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
 
 const updateHostSQL = `
 UPDATE hosts
-SET name = ?, hostname = ?, port = ?, username = ?, updated_at = ?
+SET name = ?, hostname = ?, port = ?, username = ?, ssh_auth_method = ?, ssh_password = ?, ssh_private_key = ?, ssh_private_key_passphrase = ?, updated_at = ?
 WHERE id = ?;`
 
 const trustHostKeySQL = `

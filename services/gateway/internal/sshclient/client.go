@@ -19,8 +19,18 @@ type HostConfig struct {
 	HostKeyFingerprint string
 }
 
-type PasswordCredential struct {
-	Password string
+type CredentialKind string
+
+const (
+	CredentialKindPassword   CredentialKind = "password"
+	CredentialKindPrivateKey CredentialKind = "private_key"
+)
+
+type Credential struct {
+	Kind       CredentialKind
+	Password   string
+	PrivateKey string
+	Passphrase string
 }
 
 type CommandError struct {
@@ -46,7 +56,7 @@ func NewClient() *Client {
 	return &Client{dialContext: dialer.DialContext}
 }
 
-func (c *Client) Run(ctx context.Context, host HostConfig, credential PasswordCredential, command string) ([]byte, error) {
+func (c *Client) Run(ctx context.Context, host HostConfig, credential Credential, command string) ([]byte, error) {
 	if host.HostKeyFingerprint == "" {
 		return nil, errors.New("host key is not trusted")
 	}
@@ -70,14 +80,46 @@ func (c *Client) Run(ctx context.Context, host HostConfig, credential PasswordCr
 	return output, nil
 }
 
-func (c *Client) connect(ctx context.Context, host HostConfig, credential PasswordCredential) (*ssh.Client, error) {
+func (c *Client) connect(ctx context.Context, host HostConfig, credential Credential) (*ssh.Client, error) {
+	authMethod, err := authMethodForCredential(credential)
+	if err != nil {
+		return nil, err
+	}
 	config := ssh.ClientConfig{
 		User:            host.Username,
-		Auth:            []ssh.AuthMethod{ssh.Password(credential.Password)},
+		Auth:            []ssh.AuthMethod{authMethod},
 		HostKeyCallback: verifyHostKey(host.HostKeyFingerprint),
 		Timeout:         connectTimeout,
 	}
 	return c.dialSSH(ctx, host, &config)
+}
+
+func authMethodForCredential(credential Credential) (ssh.AuthMethod, error) {
+	switch credential.Kind {
+	case CredentialKindPassword:
+		if credential.Password == "" {
+			return nil, errors.New("ssh password is required")
+		}
+		return ssh.Password(credential.Password), nil
+	case CredentialKindPrivateKey:
+		return privateKeyAuthMethod(credential.PrivateKey, credential.Passphrase)
+	default:
+		return nil, fmt.Errorf("unsupported ssh credential kind: %s", credential.Kind)
+	}
+}
+
+func privateKeyAuthMethod(privateKey string, passphrase string) (ssh.AuthMethod, error) {
+	if privateKey == "" {
+		return nil, errors.New("ssh private key is required")
+	}
+	signer, err := ssh.ParsePrivateKey([]byte(privateKey))
+	if err != nil && passphrase != "" {
+		signer, err = ssh.ParsePrivateKeyWithPassphrase([]byte(privateKey), []byte(passphrase))
+	}
+	if err != nil {
+		return nil, fmt.Errorf("parse ssh private key: %w", err)
+	}
+	return ssh.PublicKeys(signer), nil
 }
 
 func (c *Client) ScanHostKey(ctx context.Context, host HostConfig) (string, error) {

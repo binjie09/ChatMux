@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/muxchat/muxchat/services/gateway/internal/hoststore"
+	"github.com/chatmux/chatmux/services/gateway/internal/hoststore"
 )
 
 func TestListTmuxSessionsAPI(t *testing.T) {
@@ -138,7 +138,7 @@ func TestCreateTmuxSessionRejectsUnsafeName(t *testing.T) {
 func TestCaptureTmuxHistoryAPI(t *testing.T) {
 	server, closeServer := newTestServer(t)
 	defer closeServer()
-	server.ssh = &fakeSSHRunner{output: "$ echo muxchat\nmuxchat history\n"}
+	server.ssh = &fakeSSHRunner{output: "$ echo chatmux\nchatmux history\n"}
 	host := createTrustedTestHost(t, server)
 	token := createCredentialTokenForTest(t, server, testCredentialInput{hostID: host.ID})
 
@@ -150,7 +150,7 @@ func TestCaptureTmuxHistoryAPI(t *testing.T) {
 		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
 	}
 	responseBody := rec.Body.String()
-	if !strings.Contains(responseBody, "muxchat history") {
+	if !strings.Contains(responseBody, "chatmux history") {
 		t.Fatalf("expected history, got %s", responseBody)
 	}
 	if !strings.Contains(responseBody, `"chunks"`) || !strings.Contains(responseBody, `"kind":"command"`) {

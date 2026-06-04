@@ -11,14 +11,12 @@ type SessionListProps = {
   newSessionName: string;
   notificationsEnabled: boolean;
   notificationStatus: SessionNotificationStatus;
+  selectedSessionName: string;
   sessions: TmuxSession[];
-  sshPassword: string;
   onCreateSession: () => void;
-  onListSessions: () => void;
   onNewSessionNameChange: (value: string) => void;
   onNotificationsEnabledChange: (enabled: boolean) => void;
   onOpenSession: (sessionName: string) => void;
-  onSSHPasswordChange: (value: string) => void;
 };
 
 export function SessionList(props: SessionListProps) {
@@ -34,12 +32,7 @@ export function SessionList(props: SessionListProps) {
         </button>
       </header>
 
-      <SessionAuth
-        credentialStatus={props.credentialStatus}
-        sshPassword={props.sshPassword}
-        onListSessions={props.onListSessions}
-        onSSHPasswordChange={props.onSSHPasswordChange}
-      />
+      <SessionConnectionStatus credentialStatus={props.credentialStatus} />
       <SessionCreate
         newSessionName={props.newSessionName}
         onCreateSession={props.onCreateSession}
@@ -50,37 +43,32 @@ export function SessionList(props: SessionListProps) {
         status={props.notificationStatus}
         onEnabledChange={props.onNotificationsEnabledChange}
       />
-      <SessionNotificationPrompt status={props.notificationStatus} onReconnect={props.onListSessions} />
-      {props.sessions.map((session) => <SessionRow key={session.id} session={session} onOpenSession={props.onOpenSession} />)}
+      <SessionNotificationPrompt status={props.notificationStatus} />
+      {props.sessions.map((session) => (
+        <SessionRow
+          key={session.id}
+          isSelected={props.selectedSessionName === session.name}
+          session={session}
+          onOpenSession={props.onOpenSession}
+        />
+      ))}
       {props.sessions.length === 0 ? <p className="session-empty">No sessions</p> : null}
     </section>
   );
 }
 
-function SessionAuth(props: Pick<SessionListProps, "credentialStatus" | "sshPassword" | "onListSessions" | "onSSHPasswordChange">) {
+function SessionConnectionStatus(props: Pick<SessionListProps, "credentialStatus">) {
   return (
-    <form className="session-auth" onSubmit={(event) => {
-      event.preventDefault();
-      props.onListSessions();
-    }}>
-      <input
-        aria-label="SSH password"
-        placeholder="Password"
-        type="password"
-        value={props.sshPassword}
-        onChange={(event) => props.onSSHPasswordChange(event.target.value)}
-      />
-      <button type="submit" aria-label="Connect">
-        <KeyRound size={17} aria-hidden="true" />
-      </button>
+    <div className="session-connection" aria-label="Connection status">
+      <KeyRound size={17} aria-hidden="true" />
       <small className={`credential-status ${props.credentialStatus.tone}`}>{props.credentialStatus.label}</small>
-    </form>
+    </div>
   );
 }
 
 const notificationStatusLabels: Record<SessionNotificationStatus, string> = {
-  "credential-error": "Check password",
-  "credential-needed": "Password needed",
+  "credential-error": "Check SSH credential",
+  "credential-needed": "SSH credential needed",
   denied: "Denied",
   enabling: "Enabling",
   off: "Off",
@@ -107,26 +95,22 @@ function SessionNotificationsToggle(props: {
   );
 }
 
-function SessionNotificationPrompt(props: { status: SessionNotificationStatus; onReconnect: () => void }) {
+function SessionNotificationPrompt(props: { status: SessionNotificationStatus }) {
   if (props.status !== "credential-needed" && props.status !== "credential-error") {
     return null;
   }
   return (
     <div className="session-notification-prompt">
       <span>{notificationPromptLabel(props.status)}</span>
-      <button type="button" onClick={props.onReconnect}>
-        <KeyRound size={14} aria-hidden="true" />
-        Connect
-      </button>
     </div>
   );
 }
 
 function notificationPromptLabel(status: SessionNotificationStatus) {
   if (status === "credential-error") {
-    return "Session alerts need a valid SSH password.";
+    return "Session alerts need a valid saved SSH credential.";
   }
-  return "Session alerts need an SSH password.";
+  return "Session alerts need a saved SSH credential.";
 }
 
 function SessionCreate(props: Pick<SessionListProps, "newSessionName" | "onCreateSession" | "onNewSessionNameChange">) {
@@ -145,9 +129,22 @@ function SessionCreate(props: Pick<SessionListProps, "newSessionName" | "onCreat
   );
 }
 
-function SessionRow({ session, onOpenSession }: { session: TmuxSession; onOpenSession: (name: string) => void }) {
+function SessionRow({
+  isSelected,
+  session,
+  onOpenSession,
+}: {
+  isSelected: boolean;
+  session: TmuxSession;
+  onOpenSession: (name: string) => void;
+}) {
   return (
-    <button className="session-row" type="button" onClick={() => onOpenSession(session.name)}>
+    <button
+      aria-current={isSelected ? "true" : undefined}
+      className={`session-row ${isSelected ? "selected" : ""}`}
+      type="button"
+      onClick={() => onOpenSession(session.name)}
+    >
       <Activity size={18} aria-hidden="true" />
       <span>
         <strong>{session.title || session.name}</strong>

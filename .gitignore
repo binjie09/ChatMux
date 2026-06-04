@@ -5,10 +5,15 @@ dist
 *.log
 .env
 .env.local
+deploy/web/.env
+deploy/web/.env.local
 coverage
 *.tsbuildinfo
 *.db
-/services/gateway/muxchat-gateway
+*.db.backup
+*.sqlite
+*.sqlite3
+/services/gateway/chatmux-gateway
 /apps/web/build/
-/apps/web/src-tauri/binaries/muxchat-gateway-*
+/apps/web/src-tauri/binaries/chatmux-gateway-*
 !/apps/web/src-tauri/binaries/.gitkeep

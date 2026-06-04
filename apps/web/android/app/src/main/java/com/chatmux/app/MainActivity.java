@@ -1,4 +1,4 @@
-package com.muxchat.app;
+package com.chatmux.app;
 
 import com.getcapacitor.BridgeActivity;
 

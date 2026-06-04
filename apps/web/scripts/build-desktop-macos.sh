@@ -11,9 +11,9 @@ Usage:
 Signing:
   Set APPLE_SIGNING_IDENTITY to a Developer ID/Application signing identity.
   Or set APPLE_CERTIFICATE and APPLE_CERTIFICATE_PASSWORD for CI import.
-  Set MUXCHAT_MACOS_AD_HOC=1 to create an ad-hoc signed local artifact.
+  Set CHATMUX_MACOS_AD_HOC=1 to create an ad-hoc signed local artifact.
 Updates:
-  Set MUXCHAT_CREATE_UPDATER_ARTIFACTS=1 and TAURI_SIGNING_PRIVATE_KEY to
+  Set CHATMUX_CREATE_UPDATER_ARTIFACTS=1 and TAURI_SIGNING_PRIVATE_KEY to
   generate updater archives and .sig files during the Tauri build.
 USAGE
 }
@@ -40,7 +40,7 @@ validate_target() {
 }
 
 validate_signing() {
-  if [[ "${MUXCHAT_MACOS_AD_HOC:-}" == "1" ]]; then
+  if [[ "${CHATMUX_MACOS_AD_HOC:-}" == "1" ]]; then
     export APPLE_SIGNING_IDENTITY="-"
     return
   fi
@@ -49,7 +49,7 @@ validate_signing() {
     exit 2
   fi
   if [[ -z "${APPLE_SIGNING_IDENTITY:-}" && -z "${APPLE_CERTIFICATE:-}" ]]; then
-    echo "Set APPLE_SIGNING_IDENTITY, APPLE_CERTIFICATE, or MUXCHAT_MACOS_AD_HOC=1" >&2
+    echo "Set APPLE_SIGNING_IDENTITY, APPLE_CERTIFICATE, or CHATMUX_MACOS_AD_HOC=1" >&2
     exit 2
   fi
 }
@@ -66,7 +66,7 @@ JSON
 }
 
 configure_updater_artifacts() {
-  if [[ "${MUXCHAT_CREATE_UPDATER_ARTIFACTS:-}" != "1" ]]; then
+  if [[ "${CHATMUX_CREATE_UPDATER_ARTIFACTS:-}" != "1" ]]; then
     return
   fi
   if [[ -z "${TAURI_SIGNING_PRIVATE_KEY:-}" ]]; then
@@ -74,7 +74,7 @@ configure_updater_artifacts() {
     exit 2
   fi
   local config_path
-  config_path="$(mktemp "${TMPDIR:-/tmp}/muxchat-tauri-updater.XXXXXX.json")"
+  config_path="$(mktemp "${TMPDIR:-/tmp}/chatmux-tauri-updater.XXXXXX.json")"
   temp_configs+=("$config_path")
   write_updater_config "$config_path"
   tauri_config_args+=(--config "$config_path")
@@ -135,12 +135,12 @@ web_dir="$(cd "${script_dir}/.." && pwd)"
 repo_root="$(cd "${web_dir}/../.." && pwd)"
 
 cd "${repo_root}"
-TAURI_TARGET_TRIPLE="$target" pnpm --filter @muxchat/web desktop:sidecar "$target"
+TAURI_TARGET_TRIPLE="$target" pnpm --filter @chatmux/web desktop:sidecar "$target"
 
 cd "${web_dir}"
 tauri_args=(--target "$target" --ci)
 tauri_args+=("${tauri_config_args[@]}")
-if [[ "${MUXCHAT_MACOS_SKIP_STAPLING:-}" == "1" ]]; then
+if [[ "${CHATMUX_MACOS_SKIP_STAPLING:-}" == "1" ]]; then
   tauri_args+=(--skip-stapling)
 fi
 pnpm exec tauri build "${tauri_args[@]}"

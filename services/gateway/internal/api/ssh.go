@@ -6,12 +6,15 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/muxchat/muxchat/services/gateway/internal/hoststore"
-	"github.com/muxchat/muxchat/services/gateway/internal/sshclient"
+	"github.com/chatmux/chatmux/services/gateway/internal/hoststore"
+	"github.com/chatmux/chatmux/services/gateway/internal/sshclient"
 )
 
 type sshProbeRequest struct {
-	Password string `json:"password"`
+	Password             string `json:"password"`
+	PrivateKey           string `json:"privateKey"`
+	PrivateKeyPassphrase string `json:"privateKeyPassphrase"`
+	SSHAuthMethod        string `json:"sshAuthMethod"`
 }
 
 type sshProbeResponse struct {
@@ -36,8 +39,9 @@ func (s *Server) handleSSHProbe(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err)
 		return
 	}
-	if input.Password == "" {
-		writeError(w, http.StatusBadRequest, errors.New("password is required"))
+	credential, err := credentialForRequest(sshCredentialInput(input))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -47,7 +51,7 @@ func (s *Server) handleSSHProbe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	output, err := s.ssh.Run(r.Context(), hostToSSHConfig(host), sshclient.PasswordCredential{Password: input.Password}, "printf muxchat-ok")
+	output, err := s.ssh.Run(r.Context(), hostToSSHConfig(host), credential, "printf chatmux-ok")
 	if err != nil {
 		writeError(w, http.StatusBadGateway, err)
 		return

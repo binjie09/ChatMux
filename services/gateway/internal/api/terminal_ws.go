@@ -7,10 +7,10 @@ import (
 	"net/http"
 	"sync"
 
+	"github.com/chatmux/chatmux/services/gateway/internal/hoststore"
+	"github.com/chatmux/chatmux/services/gateway/internal/sshclient"
+	"github.com/chatmux/chatmux/services/gateway/internal/tmux"
 	"github.com/gorilla/websocket"
-	"github.com/muxchat/muxchat/services/gateway/internal/hoststore"
-	"github.com/muxchat/muxchat/services/gateway/internal/sshclient"
-	"github.com/muxchat/muxchat/services/gateway/internal/tmux"
 )
 
 const terminalBufferSize = 4096
@@ -107,7 +107,7 @@ func (s *Server) openTerminal(r *http.Request, token terminalToken) (*sshclient.
 	if err != nil {
 		return nil, err
 	}
-	return s.ssh.StartTerminal(r.Context(), hostToSSHConfig(host), sshclient.PasswordCredential{Password: token.Password}, command, sshclient.TerminalSize{})
+	return s.ssh.StartTerminal(r.Context(), hostToSSHConfig(host), token.Credential, command, sshclient.TerminalSize{})
 }
 
 type terminalWriter struct {

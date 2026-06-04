@@ -1,8 +1,14 @@
-.session-auth {
+.session-connection {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: 17px minmax(0, 1fr);
+  align-items: center;
   gap: 8px;
   margin-bottom: 12px;
+  border: 1px solid #d6cebd;
+  border-radius: 8px;
+  padding: 9px 10px;
+  color: #1a231e;
+  background: #ffffff;
 }
 
 .session-create {
@@ -36,7 +42,7 @@
 
 .session-notification-prompt {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: 1fr;
   align-items: center;
   gap: 8px;
   margin: -4px 0 12px;
@@ -48,17 +54,6 @@
   font-size: 12px;
 }
 
-.session-notification-prompt button {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  border: 1px solid #d9b66e;
-  border-radius: 8px;
-  padding: 6px 8px;
-  color: #3c2b0e;
-  background: #ffffff;
-}
-
 .session-create input {
   width: 100%;
   border: 1px solid #d6cebd;
@@ -68,27 +63,7 @@
   background: #ffffff;
 }
 
-.session-auth input {
-  min-width: 0;
-  border: 1px solid #d6cebd;
-  border-radius: 8px;
-  padding: 9px 10px;
-  color: #1a231e;
-  background: #ffffff;
-}
-
-.session-auth button {
-  display: grid;
-  place-items: center;
-  width: 40px;
-  border: 1px solid #d7d0c2;
-  border-radius: 8px;
-  color: #1a231e;
-  background: #ffffff;
-}
-
 .credential-status {
-  grid-column: 1 / -1;
   min-height: 16px;
   color: #69746e;
   font-size: 12px;
@@ -120,6 +95,20 @@
   color: #1b241f;
   background: #ffffff;
   text-align: left;
+}
+
+.session-row.selected {
+  border-color: #2c8f5a;
+  background: #edf8f1;
+  box-shadow: inset 3px 0 0 #2c8f5a;
+}
+
+.session-row.selected > svg {
+  color: #24784c;
+}
+
+.session-row.selected small {
+  color: #53615a;
 }
 
 .session-row i {

@@ -20,7 +20,7 @@ web_dir="$(cd "${script_dir}/.." && pwd)"
 repo_root="$(cd "${web_dir}/../.." && pwd)"
 
 cd "${repo_root}"
-pnpm --filter @muxchat/web mobile:sync
+pnpm --filter @chatmux/web mobile:sync
 
 cd "${web_dir}/android"
 ./gradlew :app:bundleRelease
