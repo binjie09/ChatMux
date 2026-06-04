@@ -6,7 +6,7 @@ import (
 )
 
 func TestParseSessions(t *testing.T) {
-	output := "$0\tdeploy\t2\t1\t1710000000\tnode\t0\t\n$1\tlogs\t1\t0\t1710000300\tzsh\t0\t\n"
+	output := "$0\tdeploy\t2\t2\t1710000000\tnode\t0\t\n$1\tlogs\t1\t0\t1710000300\tzsh\t0\t\n"
 	sessions, err := ParseSessions(output)
 	if err != nil {
 		t.Fatalf("ParseSessions failed: %v", err)

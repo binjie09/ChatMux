@@ -118,7 +118,7 @@ func parseSessionLine(line string) (Session, error) {
 	if err != nil {
 		return Session{}, fmt.Errorf("parse tmux activity: %w", err)
 	}
-	attached, err := parseTmuxBool(parts[3], "session attached")
+	attached, err := parseTmuxAttached(parts[3])
 	if err != nil {
 		return Session{}, err
 	}
@@ -193,6 +193,17 @@ func normalizePaneCommand(command string) string {
 func isWaitingPaneCommand(command string) bool {
 	_, ok := waitingPaneCommands[command]
 	return ok
+}
+
+func parseTmuxAttached(value string) (bool, error) {
+	attachedCount, err := strconv.Atoi(value)
+	if err != nil {
+		return false, fmt.Errorf("parse tmux session attached: %q", value)
+	}
+	if attachedCount < 0 {
+		return false, fmt.Errorf("parse tmux session attached: %q", value)
+	}
+	return attachedCount > 0, nil
 }
 
 func parseTmuxBool(value string, name string) (bool, error) {
