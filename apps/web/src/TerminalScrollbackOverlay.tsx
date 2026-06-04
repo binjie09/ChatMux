@@ -8,8 +8,8 @@ type TerminalScrollbackOverlayProps = {
   terminal: Terminal;
 };
 
-const initialHistoryLines = 800;
-const historyLineStep = 800;
+const initialHistoryLines = 5000;
+const historyLineStep = 5000;
 const topLoadThresholdPx = 48;
 
 export function TerminalScrollbackOverlay({ loadEarlier, terminal }: TerminalScrollbackOverlayProps) {

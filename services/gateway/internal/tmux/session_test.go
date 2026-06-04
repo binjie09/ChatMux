@@ -76,7 +76,13 @@ func TestCreateSessionCommand(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CreateSessionCommand failed: %v", err)
 	}
-	if !strings.Contains(command, "\"$TMUX_BIN\" new-session -d -s deploy_1") {
+	if !strings.Contains(command, "CHATMUX_TMUX_HISTORY_LIMIT=\"${CHATMUX_TMUX_HISTORY_LIMIT:-100000}\"") {
+		t.Fatalf("expected default history limit, got %q", command)
+	}
+	if !strings.Contains(command, "\"$TMUX_BIN\" start-server \\; set-option -gq history-limit \"$CHATMUX_TMUX_HISTORY_LIMIT\" \\; new-session -d -s deploy_1") {
+		t.Fatalf("expected new-session command with history limit, got %q", command)
+	}
+	if !strings.Contains(command, "new-session -d -s deploy_1") {
 		t.Fatalf("expected new-session command, got %q", command)
 	}
 	if !strings.Contains(command, "$HOME/.local/bin/tmux") {
@@ -97,6 +103,10 @@ func TestAttachSessionCommand(t *testing.T) {
 	}
 	if !strings.Contains(command, "attach-session -t deploy_1") {
 		t.Fatalf("expected attach command, got %q", command)
+	}
+	if !strings.Contains(command, "set-option -gq history-limit \"$CHATMUX_TMUX_HISTORY_LIMIT\"") ||
+		!strings.Contains(command, "set-option -t deploy_1 -q history-limit \"$CHATMUX_TMUX_HISTORY_LIMIT\"") {
+		t.Fatalf("expected history limit prelude, got %q", command)
 	}
 	if !strings.Contains(command, "set-clipboard external") {
 		t.Fatalf("expected clipboard synchronization option, got %q", command)
@@ -123,6 +133,9 @@ func TestCapturePaneCommand(t *testing.T) {
 	}
 	if !strings.Contains(command, "capture-pane -p -t deploy_1 -S -200") {
 		t.Fatalf("expected capture command, got %q", command)
+	}
+	if !strings.Contains(command, "set-option -t deploy_1 -q history-limit \"$CHATMUX_TMUX_HISTORY_LIMIT\"") {
+		t.Fatalf("expected capture command to refresh history limit, got %q", command)
 	}
 }
 

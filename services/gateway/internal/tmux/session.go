@@ -11,6 +11,7 @@ import (
 
 const listSessionFormat = "#{session_id}\t#{session_name}\t#{session_windows}\t#{session_attached}\t#{session_activity}\t#{pane_current_command}\t#{pane_dead}\t#{pane_dead_status}"
 const terminalOverridesClipboardSlot = "terminal-overrides[900]"
+const tmuxDefaultHistoryLimit = 100000
 
 const (
 	SessionStatusFailed  = "failed"
@@ -51,7 +52,7 @@ func CreateSessionCommand(name string) (string, error) {
 	if err := ValidateSessionName(name); err != nil {
 		return "", err
 	}
-	command := tmuxPrelude() + "\"$TMUX_BIN\" new-session -d -s " + name + " && " + rawListSessionsCommand()
+	command := tmuxPrelude() + tmuxCreateSessionCommand(name) + " && " + rawListSessionsCommand()
 	return loginShellCommand(command), nil
 }
 
@@ -59,7 +60,7 @@ func AttachSessionCommand(name string) (string, error) {
 	if err := ValidateSessionName(name); err != nil {
 		return "", err
 	}
-	command := tmuxPrelude() + tmuxClipboardPrelude() + "exec \"$TMUX_BIN\" attach-session -t " + name
+	command := tmuxPrelude() + tmuxHistoryPrelude(name) + tmuxClipboardPrelude() + "exec \"$TMUX_BIN\" attach-session -t " + name
 	return loginShellCommand(command), nil
 }
 
@@ -89,7 +90,7 @@ func CapturePaneCommandWithOptions(name string, options CapturePaneOptions) (str
 	if options.PreserveANSI {
 		ansiFlag = " -e -C"
 	}
-	command := tmuxPrelude() + "\"$TMUX_BIN\" capture-pane -p" + ansiFlag + " -t " + name + " -S -" + strconv.Itoa(lines)
+	command := tmuxPrelude() + tmuxHistoryPrelude(name) + "\"$TMUX_BIN\" capture-pane -p" + ansiFlag + " -t " + name + " -S -" + strconv.Itoa(lines)
 	return loginShellCommand(command), nil
 }
 
@@ -249,8 +250,21 @@ func loginShellCommand(command string) string {
 
 func tmuxPrelude() string {
 	return "TMUX_BIN=\"${CHATMUX_TMUX_BIN:-$(command -v tmux || true)}\"; " +
+		"CHATMUX_TMUX_HISTORY_LIMIT=\"${CHATMUX_TMUX_HISTORY_LIMIT:-" + strconv.Itoa(tmuxDefaultHistoryLimit) + "}\"; " +
 		"if [ -z \"$TMUX_BIN\" ] && [ -x \"$HOME/.local/bin/tmux\" ]; then TMUX_BIN=\"$HOME/.local/bin/tmux\"; fi; " +
 		"if [ -z \"$TMUX_BIN\" ]; then echo 'tmux not found in PATH, CHATMUX_TMUX_BIN, or $HOME/.local/bin' >&2; exit 127; fi; "
+}
+
+func tmuxCreateSessionCommand(name string) string {
+	return "\"$TMUX_BIN\" start-server \\; " +
+		"set-option -gq history-limit \"$CHATMUX_TMUX_HISTORY_LIMIT\" \\; " +
+		"new-session -d -s " + name + " \\; " +
+		"set-option -t " + name + " -q history-limit \"$CHATMUX_TMUX_HISTORY_LIMIT\""
+}
+
+func tmuxHistoryPrelude(name string) string {
+	return "\"$TMUX_BIN\" set-option -gq history-limit \"$CHATMUX_TMUX_HISTORY_LIMIT\" || exit $?; " +
+		"\"$TMUX_BIN\" set-option -t " + name + " -q history-limit \"$CHATMUX_TMUX_HISTORY_LIMIT\" || exit $?; "
 }
 
 func tmuxClipboardPrelude() string {
