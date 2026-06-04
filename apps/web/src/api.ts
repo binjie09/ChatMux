@@ -179,7 +179,7 @@ export type SaveSessionMetadataInput = {
 };
 
 export async function saveSessionMetadata(hostId: string, sessionName: string, input: SaveSessionMetadataInput): Promise<TmuxSessionMetadata> {
-  return request<TmuxSessionMetadata>(`/api/hosts/${hostId}/tmux/sessions/${sessionName}/metadata`, {
+  return request<TmuxSessionMetadata>(`${tmuxSessionPath(hostId, sessionName)}/metadata`, {
     method: "POST",
     body: JSON.stringify(input),
   });
@@ -197,7 +197,7 @@ export type TmuxSessionMetadata = {
 };
 
 export async function createTerminalToken(hostId: string, sessionName: string, input: CreateTerminalTokenInput): Promise<string> {
-  const response = await request<TerminalTokenResponse>(`/api/hosts/${hostId}/tmux/sessions/${sessionName}/terminal-token`, {
+  const response = await request<TerminalTokenResponse>(`${tmuxSessionPath(hostId, sessionName)}/terminal-token`, {
     method: "POST",
     body: JSON.stringify(input),
   });
@@ -210,21 +210,21 @@ export async function captureTmuxHistory(
   credentialToken: string,
   options: CaptureTmuxHistoryOptions = {},
 ): Promise<TmuxHistory> {
-  return request<TmuxHistory>(`/api/hosts/${hostId}/tmux/sessions/${sessionName}/history`, {
+  return request<TmuxHistory>(`${tmuxSessionPath(hostId, sessionName)}/history`, {
     method: "POST",
     body: JSON.stringify({ credentialToken, ...options }),
   });
 }
 
 export async function summarizeTmuxHistory(hostId: string, sessionName: string, credentialToken: string): Promise<TranscriptSummary> {
-  return request<TranscriptSummary>(`/api/hosts/${hostId}/tmux/sessions/${sessionName}/summary`, {
+  return request<TranscriptSummary>(`${tmuxSessionPath(hostId, sessionName)}/summary`, {
     method: "POST",
     body: JSON.stringify({ credentialToken }),
   });
 }
 
 export async function draftTmuxCommand(hostId: string, sessionName: string, credentialToken: string, prompt: string): Promise<CommandDraft> {
-  return request<CommandDraft>(`/api/hosts/${hostId}/tmux/sessions/${sessionName}/command-draft`, {
+  return request<CommandDraft>(`${tmuxSessionPath(hostId, sessionName)}/command-draft`, {
     method: "POST",
     body: JSON.stringify({ credentialToken, prompt }),
   });
@@ -271,6 +271,10 @@ function requestHeaders(initHeaders?: HeadersInit) {
     headers.set("Authorization", `Bearer ${gatewayAccessToken}`);
   }
   return headers;
+}
+
+function tmuxSessionPath(hostId: string, sessionName: string) {
+  return `/api/hosts/${hostId}/tmux/sessions/${encodeURIComponent(sessionName)}`;
 }
 
 function defaultGatewayURL() {

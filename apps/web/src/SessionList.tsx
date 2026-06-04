@@ -1,3 +1,4 @@
+import { useRef, type RefObject } from "react";
 import { Activity, Bell, ChevronRight, KeyRound, Plus, RefreshCw } from "lucide-react";
 import { type TmuxSession } from "./api";
 import "./session-controls.css";
@@ -21,6 +22,15 @@ type SessionListProps = {
 };
 
 export function SessionList(props: SessionListProps) {
+  const newSessionInputRef = useRef<HTMLInputElement>(null);
+  const handleNewSessionClick = () => {
+    if (props.newSessionName.trim()) {
+      props.onCreateSession();
+      return;
+    }
+    newSessionInputRef.current?.focus();
+  };
+
   return (
     <section className={`session-list ${props.mobileOpen ? "mobile-open" : ""}`}>
       <header>
@@ -28,13 +38,14 @@ export function SessionList(props: SessionListProps) {
           <p>Remote tmux</p>
           <h1>Conversations</h1>
         </div>
-        <button className="icon-button" type="button" aria-label="New session" onClick={props.onCreateSession}>
+        <button className="icon-button" type="button" aria-label="New session" onClick={handleNewSessionClick}>
           <Plus size={19} aria-hidden="true" />
         </button>
       </header>
 
       <SessionConnectionStatus credentialStatus={props.credentialStatus} onListSessions={props.onListSessions} />
       <SessionCreate
+        inputRef={newSessionInputRef}
         newSessionName={props.newSessionName}
         onCreateSession={props.onCreateSession}
         onNewSessionNameChange={props.onNewSessionNameChange}
@@ -117,7 +128,9 @@ function notificationPromptLabel(status: SessionNotificationStatus) {
   return "Session alerts need a saved SSH credential.";
 }
 
-function SessionCreate(props: Pick<SessionListProps, "newSessionName" | "onCreateSession" | "onNewSessionNameChange">) {
+function SessionCreate(props: Pick<SessionListProps, "newSessionName" | "onCreateSession" | "onNewSessionNameChange"> & {
+  inputRef: RefObject<HTMLInputElement | null>;
+}) {
   return (
     <form className="session-create" onSubmit={(event) => {
       event.preventDefault();
@@ -126,6 +139,7 @@ function SessionCreate(props: Pick<SessionListProps, "newSessionName" | "onCreat
       <input
         aria-label="New session name"
         placeholder="New session"
+        ref={props.inputRef}
         value={props.newSessionName}
         onChange={(event) => props.onNewSessionNameChange(event.target.value)}
       />

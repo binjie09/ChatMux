@@ -3,15 +3,17 @@ package tmux
 import (
 	"errors"
 	"fmt"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
+	"unicode/utf8"
 )
 
 const listSessionFormat = "#{session_id}\t#{session_name}\t#{session_windows}\t#{session_attached}\t#{session_activity}\t#{pane_current_command}\t#{pane_dead}\t#{pane_dead_status}"
 const terminalOverridesClipboardSlot = "terminal-overrides[900]"
 const tmuxDefaultHistoryLimit = 100000
+const maxSessionNameRunes = 64
 
 const (
 	SessionStatusFailed  = "failed"
@@ -26,9 +28,7 @@ var waitingPaneCommands = map[string]struct{}{
 	"pwsh": {}, "sh": {}, "zsh": {},
 }
 
-var sessionNamePattern = regexp.MustCompile(`^[A-Za-z0-9_.-]{1,64}$`)
-
-var ErrInvalidSessionName = errors.New("session name must be 1-64 chars using letters, numbers, underscore, dot, or dash")
+var ErrInvalidSessionName = errors.New("session name must be 1-64 Unicode letters or numbers, underscore, dot, or dash")
 
 type Session struct {
 	ID            string    `json:"id"`
@@ -60,7 +60,7 @@ func AttachSessionCommand(name string) (string, error) {
 	if err := ValidateSessionName(name); err != nil {
 		return "", err
 	}
-	command := tmuxPrelude() + tmuxHistoryPrelude(name) + tmuxClipboardPrelude() + "exec \"$TMUX_BIN\" attach-session -t " + name
+	command := tmuxPrelude() + tmuxHistoryPrelude(name) + tmuxClipboardPrelude() + "exec \"$TMUX_BIN\" attach-session -t " + shellQuote(name)
 	return loginShellCommand(command), nil
 }
 
@@ -68,7 +68,7 @@ func KillSessionCommand(name string) (string, error) {
 	if err := ValidateSessionName(name); err != nil {
 		return "", err
 	}
-	command := tmuxPrelude() + "\"$TMUX_BIN\" kill-session -t " + name
+	command := tmuxPrelude() + "\"$TMUX_BIN\" kill-session -t " + shellQuote(name)
 	return loginShellCommand(command), nil
 }
 
@@ -90,7 +90,7 @@ func CapturePaneCommandWithOptions(name string, options CapturePaneOptions) (str
 	if options.PreserveANSI {
 		ansiFlag = " -e -C"
 	}
-	command := tmuxPrelude() + tmuxHistoryPrelude(name) + "\"$TMUX_BIN\" capture-pane -p" + ansiFlag + " -t " + name + " -S -" + strconv.Itoa(lines)
+	command := tmuxPrelude() + tmuxHistoryPrelude(name) + "\"$TMUX_BIN\" capture-pane -p" + ansiFlag + " -t " + shellQuote(name) + " -S -" + strconv.Itoa(lines)
 	return loginShellCommand(command), nil
 }
 
@@ -102,10 +102,19 @@ func normalizeCapturePaneLines(lines int) int {
 }
 
 func ValidateSessionName(name string) error {
-	if !sessionNamePattern.MatchString(name) {
+	if name == "" || utf8.RuneCountInString(name) > maxSessionNameRunes {
 		return ErrInvalidSessionName
 	}
+	for _, value := range name {
+		if !isSessionNameRune(value) {
+			return ErrInvalidSessionName
+		}
+	}
 	return nil
+}
+
+func isSessionNameRune(value rune) bool {
+	return unicode.IsLetter(value) || unicode.IsDigit(value) || value == '_' || value == '.' || value == '-'
 }
 
 func ParseSessions(output string) ([]Session, error) {
@@ -256,15 +265,17 @@ func tmuxPrelude() string {
 }
 
 func tmuxCreateSessionCommand(name string) string {
+	quotedName := shellQuote(name)
 	return "\"$TMUX_BIN\" start-server \\; " +
 		"set-option -gq history-limit \"$CHATMUX_TMUX_HISTORY_LIMIT\" \\; " +
-		"new-session -d -s " + name + " \\; " +
-		"set-option -t " + name + " -q history-limit \"$CHATMUX_TMUX_HISTORY_LIMIT\""
+		"new-session -d -s " + quotedName + " \\; " +
+		"set-option -t " + quotedName + " -q history-limit \"$CHATMUX_TMUX_HISTORY_LIMIT\""
 }
 
 func tmuxHistoryPrelude(name string) string {
+	quotedName := shellQuote(name)
 	return "\"$TMUX_BIN\" set-option -gq history-limit \"$CHATMUX_TMUX_HISTORY_LIMIT\" || exit $?; " +
-		"\"$TMUX_BIN\" set-option -t " + name + " -q history-limit \"$CHATMUX_TMUX_HISTORY_LIMIT\" || exit $?; "
+		"\"$TMUX_BIN\" set-option -t " + quotedName + " -q history-limit \"$CHATMUX_TMUX_HISTORY_LIMIT\" || exit $?; "
 }
 
 func tmuxClipboardPrelude() string {

@@ -71,6 +71,24 @@ func TestCreateSessionCommandRejectsUnsafeName(t *testing.T) {
 	}
 }
 
+func TestValidateSessionNameAllowsUnicode(t *testing.T) {
+	validNames := []string{"部署", "发布_1", "deploy-生产.1", strings.Repeat("部", 64)}
+	for _, name := range validNames {
+		if err := ValidateSessionName(name); err != nil {
+			t.Fatalf("expected %q to be valid: %v", name, err)
+		}
+	}
+}
+
+func TestValidateSessionNameRejectsInvalidNames(t *testing.T) {
+	invalidNames := []string{"", "bad;name", "bad name", "bad/name", "bad:name", strings.Repeat("a", 65)}
+	for _, name := range invalidNames {
+		if err := ValidateSessionName(name); err == nil {
+			t.Fatalf("expected %q to be invalid", name)
+		}
+	}
+}
+
 func TestCreateSessionCommand(t *testing.T) {
 	command, err := CreateSessionCommand("deploy_1")
 	if err != nil {
@@ -79,10 +97,10 @@ func TestCreateSessionCommand(t *testing.T) {
 	if !strings.Contains(command, "CHATMUX_TMUX_HISTORY_LIMIT=\"${CHATMUX_TMUX_HISTORY_LIMIT:-100000}\"") {
 		t.Fatalf("expected default history limit, got %q", command)
 	}
-	if !strings.Contains(command, "\"$TMUX_BIN\" start-server \\; set-option -gq history-limit \"$CHATMUX_TMUX_HISTORY_LIMIT\" \\; new-session -d -s deploy_1") {
+	if !containsLoginShellFragment(command, "\"$TMUX_BIN\" start-server \\; set-option -gq history-limit \"$CHATMUX_TMUX_HISTORY_LIMIT\" \\; new-session -d -s 'deploy_1'") {
 		t.Fatalf("expected new-session command with history limit, got %q", command)
 	}
-	if !strings.Contains(command, "new-session -d -s deploy_1") {
+	if !containsLoginShellFragment(command, "new-session -d -s 'deploy_1'") {
 		t.Fatalf("expected new-session command, got %q", command)
 	}
 	if !strings.Contains(command, "$HOME/.local/bin/tmux") {
@@ -101,11 +119,11 @@ func TestAttachSessionCommand(t *testing.T) {
 	if err != nil {
 		t.Fatalf("AttachSessionCommand failed: %v", err)
 	}
-	if !strings.Contains(command, "attach-session -t deploy_1") {
+	if !containsLoginShellFragment(command, "attach-session -t 'deploy_1'") {
 		t.Fatalf("expected attach command, got %q", command)
 	}
 	if !strings.Contains(command, "set-option -gq history-limit \"$CHATMUX_TMUX_HISTORY_LIMIT\"") ||
-		!strings.Contains(command, "set-option -t deploy_1 -q history-limit \"$CHATMUX_TMUX_HISTORY_LIMIT\"") {
+		!containsLoginShellFragment(command, "set-option -t 'deploy_1' -q history-limit \"$CHATMUX_TMUX_HISTORY_LIMIT\"") {
 		t.Fatalf("expected history limit prelude, got %q", command)
 	}
 	if !strings.Contains(command, "set-clipboard external") {
@@ -121,7 +139,7 @@ func TestKillSessionCommand(t *testing.T) {
 	if err != nil {
 		t.Fatalf("KillSessionCommand failed: %v", err)
 	}
-	if !strings.Contains(command, "kill-session -t deploy_1") {
+	if !containsLoginShellFragment(command, "kill-session -t 'deploy_1'") {
 		t.Fatalf("expected kill command, got %q", command)
 	}
 }
@@ -131,11 +149,21 @@ func TestCapturePaneCommand(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CapturePaneCommand failed: %v", err)
 	}
-	if !strings.Contains(command, "capture-pane -p -t deploy_1 -S -200") {
+	if !containsLoginShellFragment(command, "capture-pane -p -t 'deploy_1' -S -200") {
 		t.Fatalf("expected capture command, got %q", command)
 	}
-	if !strings.Contains(command, "set-option -t deploy_1 -q history-limit \"$CHATMUX_TMUX_HISTORY_LIMIT\"") {
+	if !containsLoginShellFragment(command, "set-option -t 'deploy_1' -q history-limit \"$CHATMUX_TMUX_HISTORY_LIMIT\"") {
 		t.Fatalf("expected capture command to refresh history limit, got %q", command)
+	}
+}
+
+func TestCreateSessionCommandQuotesUnicodeName(t *testing.T) {
+	command, err := CreateSessionCommand("部署")
+	if err != nil {
+		t.Fatalf("CreateSessionCommand failed: %v", err)
+	}
+	if !containsLoginShellFragment(command, "new-session -d -s '部署'") {
+		t.Fatalf("expected quoted unicode session name, got %q", command)
 	}
 }
 
@@ -144,7 +172,11 @@ func TestCapturePaneCommandWithOptions(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CapturePaneCommandWithOptions failed: %v", err)
 	}
-	if !strings.Contains(command, "capture-pane -p -e -C -t deploy_1 -S -800") {
+	if !containsLoginShellFragment(command, "capture-pane -p -e -C -t 'deploy_1' -S -800") {
 		t.Fatalf("expected capture command with ANSI history, got %q", command)
 	}
+}
+
+func containsLoginShellFragment(command string, fragment string) bool {
+	return strings.Contains(command, strings.ReplaceAll(fragment, "'", "'\\''"))
 }
