@@ -1,7 +1,7 @@
 import { type MutableRefObject, useEffect, useRef, useState } from "react";
 import { FitAddon } from "@xterm/addon-fit";
 import { Terminal } from "@xterm/xterm";
-import { ArrowDown, ArrowUp, RefreshCw } from "lucide-react";
+import { ArrowDown, ArrowUp, MousePointer2, RefreshCw, TextCursorInput } from "lucide-react";
 import { bindTerminalClipboard } from "./terminal-clipboard";
 import { sendTerminalInput, sendTerminalResize, terminalSize } from "./terminal-protocol";
 import { type ConnectionStatus, type TerminalHandlers, useTerminalSocket } from "./useTerminalSocket";
@@ -38,6 +38,8 @@ const terminalQuickKeys = [
   { data: "\x1b[B", icon: "down", label: "Down" },
 ] as const;
 
+type MobileTerminalInteractionMode = "input" | "select";
+
 export function NativeTerminal(props: NativeTerminalProps) {
   const terminalRef = useRef<HTMLDivElement | null>(null);
   const socketRef = useRef<WebSocket | null>(null);
@@ -45,6 +47,7 @@ export function NativeTerminal(props: NativeTerminalProps) {
   const connectorRef = useRef(props.createWebSocketURL);
   const handlersRef = useRef<TerminalHandlers>(props);
   const [status, setStatus] = useState<ConnectionStatus>("idle");
+  const [mobileInteractionMode, setMobileInteractionMode] = useState<MobileTerminalInteractionMode>("input");
   const [reconnectAttempt, setReconnectAttempt] = useState(0);
   const reconnecting = status === "connecting" || status === "recovering";
   const canReconnect = Boolean(props.sessionKey && props.createWebSocketURL && !reconnecting);
@@ -57,7 +60,7 @@ export function NativeTerminal(props: NativeTerminalProps) {
     handlersRef.current = props;
   }, [props]);
 
-  useTerminalMount(terminalRef, terminalInstanceRef, socketRef, handlersRef);
+  useTerminalMount(terminalRef, terminalInstanceRef, socketRef, handlersRef, mobileInteractionMode);
   useSessionReset(props.sessionKey, terminalInstanceRef);
   useTerminalSocket({
     connectorRef,
@@ -78,23 +81,56 @@ export function NativeTerminal(props: NativeTerminalProps) {
   }
 
   function sendQuickKey(data: string) {
+    setMobileInteractionMode("input");
     sendTerminalInput(socketRef.current, data);
     terminalInstanceRef.current?.focus();
   }
 
   return (
-    <div className="terminal-shell" aria-label="Terminal">
+    <div className={`terminal-shell terminal-${mobileInteractionMode}-mode`} aria-label="Terminal">
       <div className="terminal-toolbar">
         <span className={`terminal-connection ${status}`}>{statusLabel[status]}</span>
-        <button type="button" disabled={!canReconnect} onClick={reconnect}>
-          <RefreshCw size={14} aria-hidden="true" />
-          Reconnect
-        </button>
+        <div className="terminal-toolbar-actions">
+          <MobileInteractionToggle mode={mobileInteractionMode} onModeChange={setMobileInteractionMode} />
+          <button type="button" disabled={!canReconnect} onClick={reconnect}>
+            <RefreshCw size={14} aria-hidden="true" />
+            Reconnect
+          </button>
+        </div>
       </div>
       <div className="terminal-screen" ref={terminalRef} />
       <TerminalQuickKeys disabled={status !== "connected"} onSend={sendQuickKey} />
     </div>
   );
+}
+
+function MobileInteractionToggle(props: {
+  mode: MobileTerminalInteractionMode;
+  onModeChange: (mode: MobileTerminalInteractionMode) => void;
+}) {
+  const selectMode = props.mode === "select";
+  return (
+    <button
+      className={`terminal-touch-mode ${selectMode ? "active" : ""}`}
+      type="button"
+      aria-pressed={selectMode}
+      onClick={() => {
+        if (!selectMode) {
+          blurFocusedInput();
+        }
+        props.onModeChange(selectMode ? "input" : "select");
+      }}
+    >
+      {selectMode ? <MousePointer2 size={14} aria-hidden="true" /> : <TextCursorInput size={14} aria-hidden="true" />}
+      {selectMode ? "Scroll" : "Input"}
+    </button>
+  );
+}
+
+function blurFocusedInput() {
+  if (document.activeElement instanceof HTMLElement) {
+    document.activeElement.blur();
+  }
 }
 
 function TerminalQuickKeys(props: { disabled: boolean; onSend: (data: string) => void }) {
@@ -130,7 +166,13 @@ function useTerminalMount(
   terminalInstanceRef: MutableRefObject<Terminal | null>,
   socketRef: MutableRefObject<WebSocket | null>,
   handlersRef: MutableRefObject<TerminalHandlers>,
+  mobileInteractionMode: MobileTerminalInteractionMode,
 ) {
+  const modeRef = useRef(mobileInteractionMode);
+  useEffect(() => {
+    modeRef.current = mobileInteractionMode;
+  }, [mobileInteractionMode]);
+
   useEffect(() => {
     if (!terminalRef.current) {
       return;
@@ -143,7 +185,7 @@ function useTerminalMount(
     const clipboardDisposable = bindTerminalClipboard(terminal, {
       onError: (message) => handlersRef.current.onConnectionError(message),
     });
-    const inputDisposable = bindTerminalInput(terminal, socketRef);
+    const inputDisposable = bindTerminalInput(terminal, socketRef, modeRef);
 
     return () => {
       socketRef.current?.close();
@@ -160,6 +202,7 @@ function useTerminalMount(
 function createTerminal() {
   return new Terminal({
     allowProposedApi: false,
+    scrollback: 5000,
     cursorBlink: true,
     fontFamily: '"SFMono-Regular", Consolas, "Liberation Mono", monospace',
     fontSize: 13,
@@ -218,8 +261,15 @@ function observeTerminalResize(
   return resizeObserver;
 }
 
-function bindTerminalInput(terminal: Terminal, socketRef: MutableRefObject<WebSocket | null>) {
+function bindTerminalInput(
+  terminal: Terminal,
+  socketRef: MutableRefObject<WebSocket | null>,
+  modeRef: MutableRefObject<MobileTerminalInteractionMode>,
+) {
   return terminal.onData((data) => {
+    if (modeRef.current === "select") {
+      return;
+    }
     sendTerminalInput(socketRef.current, data);
   });
 }
