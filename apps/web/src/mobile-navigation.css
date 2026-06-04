@@ -10,7 +10,7 @@
     left: 0;
     z-index: 40;
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     height: 64px;
     border-top: 1px solid #d6cebd;
     background: #fffaf0;

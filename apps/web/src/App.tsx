@@ -10,14 +10,11 @@ import {
   type TranscriptChunk,
   type TmuxSession,
 } from "./api";
-import { AuditPanel } from "./AuditPanel";
-import { Composer, type ComposerMode } from "./Composer";
-import { CommandDraftPanel } from "./CommandDraftPanel";
-import { HistoryPanel } from "./HistoryPanel";
-import { HostActions } from "./HostActions";
+import { type ComposerMode } from "./Composer";
+import { ConversationPane } from "./ConversationPane";
 import { MobileNavigation, type MobilePanel } from "./MobileNavigation";
-import { NativeTerminal, type QueuedTerminalInput } from "./NativeTerminal";
-import { SessionMetadataEditor } from "./SessionMetadataEditor";
+import { type MobileTerminalSheet } from "./MobileTerminalChrome";
+import { type QueuedTerminalInput } from "./NativeTerminal";
 import { SessionList } from "./SessionList";
 import { Sidebar } from "./Sidebar";
 import { GatewayUnlockPage } from "./GatewayUnlockPage";
@@ -39,7 +36,8 @@ export function App() {
   const [historyChunks, setHistoryChunks] = useState<TranscriptChunk[]>([]);
   const [historyText, setHistoryText] = useState("");
   const [historyQuery, setHistoryQuery] = useState("");
-  const [mobilePanel, setMobilePanel] = useState<MobilePanel>("terminal");
+  const [mobilePanel, setMobilePanel] = useState<MobilePanel>("hosts");
+  const [mobileSheet, setMobileSheet] = useState<MobileTerminalSheet | null>(null);
   const [queuedInput, setQueuedInput] = useState<QueuedTerminalInput | null>(null);
   const [error, setError] = useState("");
   const autoConnectedHostRef = useRef("");
@@ -101,6 +99,7 @@ export function App() {
 
   function clearSelectedSession() {
     setSelectedSessionName("");
+    setMobileSheet(null);
     sshCredential.resetCredential();
     setSessions([]);
     setHistoryChunks([]);
@@ -117,6 +116,7 @@ export function App() {
       const nextSessions = await listTmuxSessions(selectedHostId, credentialToken);
       setSessions(nextSessions);
       setSelectedSessionName("");
+      setMobilePanel("sessions");
       setHistoryChunks([]);
       setHistoryText("");
       void refreshAuditEvents();
@@ -131,6 +131,7 @@ export function App() {
       return;
     }
     setSelectedSessionName(sessionName);
+    setMobileSheet(null);
     setMobilePanel("terminal");
     try {
       const credentialToken = tokenOverride || await getSelectedHostCredentialToken();
@@ -215,6 +216,7 @@ export function App() {
 
   const selectedSession = sessions.find((session) => session.name === selectedSessionName);
   const terminalSessionKey = selectedHostId && selectedSessionName ? `${selectedHostId}:${selectedSessionName}` : "";
+  const isMobileTerminalActive = Boolean(terminalSessionKey && mobilePanel === "terminal");
   const getSelectedHostCredentialToken = useCallback(async () => {
     if (!selectedHostId) {
       throw new Error("Host is required");
@@ -250,8 +252,14 @@ export function App() {
     return <GatewayUnlockPage error={error} tokenState={gatewayToken} />;
   }
 
+  const summaryTarget = {
+    getCredentialToken: getSelectedHostCredentialToken,
+    hostId: selectedHostId,
+    sessionName: selectedSessionName,
+    sshReady: sshCredential.ready,
+  };
   return (
-    <main className="app-shell">
+    <main className={`app-shell ${isMobileTerminalActive ? "mobile-terminal-active" : ""}`}>
       <Sidebar
         error={error}
         gatewayToken={gatewayToken}
@@ -275,45 +283,44 @@ export function App() {
         selectedSessionName={selectedSessionName}
         sessions={sessions}
         onCreateSession={() => void handleCreateSession()}
+        onListSessions={() => void handleListSessions()}
         onNewSessionNameChange={setNewSessionName}
         onNotificationsEnabledChange={(enabled) => void sessionNotifications.setEnabled(enabled)}
         onOpenSession={(sessionName) => void handleOpenSession(sessionName)}
       />
 
-      <section className="conversation">
-        <header className="conversation-header">
-          <div>
-            <p>{selectedHost?.name ?? "No host"}</p>
-            <h2>{selectedSession?.title || selectedSession?.name || "Terminal"}</h2>
-            <SessionMetadataEditor session={selectedSession} onSave={handleSaveSessionMetadata} />
-          </div>
-          <HostActions host={selectedHost} onTogglePin={handleTogglePin} onToggleShare={handleToggleShare} onTrustHost={handleTrustHost} />
-        </header>
-
-        <div className="terminal-workspace">
-          <NativeTerminal
-            createWebSocketURL={terminalSessionKey ? createTerminalWebSocketURL : null}
-            queuedInput={queuedInput}
-            sessionKey={terminalSessionKey}
-            onConnectionError={setError}
-            onConnectionReady={handleTerminalConnectionReady}
-          />
-          <div className="context-stack">
-            <HistoryPanel chunks={historyChunks} query={historyQuery} summaryTarget={{ getCredentialToken: getSelectedHostCredentialToken, hostId: selectedHostId, sessionName: selectedSessionName, sshReady: sshCredential.ready }} text={historyText} onQueryChange={setHistoryQuery} onSummarized={() => void refreshAuditEvents()} />
-            <AuditPanel events={auditEvents} />
-          </div>
-        </div>
-
-        <Composer
-          draftPanel={<CommandDraftPanel target={{ getCredentialToken: getSelectedHostCredentialToken, hostId: selectedHostId, sessionName: selectedSessionName, sshReady: sshCredential.ready }} onDrafted={() => void refreshAuditEvents()} onInsert={(command) => { setComposerMode("enter"); setComposerValue(command); }} />}
-          mode={composerMode}
-          value={composerValue}
-          onModeChange={setComposerMode}
-          onSubmit={handleComposerSubmit}
-          onValueChange={setComposerValue}
-        />
-      </section>
-      <MobileNavigation activePanel={mobilePanel} onPanelChange={setMobilePanel} />
+      <ConversationPane
+        auditEvents={auditEvents}
+        composerMode={composerMode}
+        composerValue={composerValue}
+        createTerminalWebSocketURL={terminalSessionKey ? createTerminalWebSocketURL : null}
+        historyChunks={historyChunks}
+        historyQuery={historyQuery}
+        historyText={historyText}
+        host={selectedHost}
+        mobileSheet={mobileSheet}
+        queuedInput={queuedInput}
+        selectedSession={selectedSession}
+        target={summaryTarget}
+        terminalSessionKey={terminalSessionKey}
+        onBackToSessions={() => {
+          setMobileSheet(null);
+          setMobilePanel("sessions");
+        }}
+        onComposerModeChange={setComposerMode}
+        onComposerSubmit={handleComposerSubmit}
+        onComposerValueChange={setComposerValue}
+        onConnectionError={setError}
+        onConnectionReady={handleTerminalConnectionReady}
+        onDrafted={() => void refreshAuditEvents()}
+        onHistoryQueryChange={setHistoryQuery}
+        onMobileSheetChange={setMobileSheet}
+        onSaveSessionMetadata={handleSaveSessionMetadata}
+        onTogglePin={handleTogglePin}
+        onToggleShare={handleToggleShare}
+        onTrustHost={handleTrustHost}
+      />
+      <MobileNavigation activePanel={mobilePanel} hidden={isMobileTerminalActive} onPanelChange={setMobilePanel} />
     </main>
   );
 }

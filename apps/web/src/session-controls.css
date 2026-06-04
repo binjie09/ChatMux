@@ -1,6 +1,6 @@
 .session-connection {
   display: grid;
-  grid-template-columns: 17px minmax(0, 1fr);
+  grid-template-columns: 17px minmax(0, 1fr) 32px;
   align-items: center;
   gap: 8px;
   margin-bottom: 12px;
@@ -9,6 +9,17 @@
   padding: 9px 10px;
   color: #1a231e;
   background: #ffffff;
+}
+
+.session-connection button {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid #d6cebd;
+  border-radius: 8px;
+  color: #263029;
+  background: #fffaf0;
 }
 
 .session-create {
@@ -153,4 +164,63 @@
   margin: 12px 4px 0;
   color: #69746e;
   font-size: 13px;
+}
+
+@media (max-width: 720px) {
+  .session-list header {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    margin: -18px -14px 14px;
+    border-bottom: 1px solid #ded8ca;
+    padding: calc(14px + env(safe-area-inset-top)) 14px 12px;
+    background: #fffaf0;
+  }
+
+  .session-list h1 {
+    font-size: 24px;
+  }
+
+  .session-connection,
+  .session-notifications,
+  .session-create input,
+  .session-row {
+    border-radius: 10px;
+  }
+
+  .session-create input {
+    min-height: 46px;
+    font-size: 15px;
+  }
+
+  .session-row {
+    grid-template-columns: 22px minmax(0, 1fr) auto;
+    min-height: 72px;
+    padding: 13px 12px;
+  }
+
+  .session-row > svg:last-child {
+    display: none;
+  }
+
+  .session-row strong {
+    font-size: 15px;
+  }
+
+  .session-row small {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    white-space: normal;
+  }
+
+  .session-row em {
+    align-self: start;
+  }
+
+  .session-connection button {
+    width: 36px;
+    height: 36px;
+  }
 }

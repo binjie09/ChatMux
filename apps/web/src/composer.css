@@ -75,3 +75,73 @@
     width: 100%;
   }
 }
+
+@media (max-width: 720px) {
+  .mobile-terminal-active .command-draft-panel {
+    display: none;
+  }
+
+  .mobile-terminal-active .composer {
+    grid-template-columns: minmax(0, 1fr) 48px;
+    gap: 8px;
+    width: 100vw;
+    max-width: none;
+    border-top: 1px solid #203029;
+    padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
+    background: #111a15;
+  }
+
+  .mobile-terminal-active .composer-modes {
+    grid-column: 1 / -1;
+    display: flex;
+    width: 100%;
+    overflow-x: auto;
+    border-color: #26372f;
+    background: #0f1712;
+    scrollbar-width: none;
+  }
+
+  .mobile-terminal-active .composer-modes::-webkit-scrollbar {
+    display: none;
+  }
+
+  .mobile-terminal-active .composer-modes button {
+    flex: 1 0 88px;
+    height: 36px;
+    border-right-color: #26372f;
+    color: #c3d1c9;
+    font-size: 12px;
+  }
+
+  .mobile-terminal-active .composer-modes button.active {
+    color: #0b110e;
+    background: #8fd5b2;
+  }
+
+  .mobile-terminal-active .composer input {
+    height: 44px;
+    border-color: #26372f;
+    color: #edf7f1;
+    background: #0d1510;
+  }
+
+  .mobile-terminal-active .composer input::placeholder {
+    color: #7f9187;
+  }
+
+  .mobile-terminal-active .composer > button[type="submit"] {
+    width: 48px;
+    height: 44px;
+    padding: 0;
+    font-size: 0;
+  }
+
+  .mobile-terminal-active .composer > button[type="submit"] svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .mobile-terminal-sheet-body .command-draft-panel {
+    display: grid;
+  }
+}

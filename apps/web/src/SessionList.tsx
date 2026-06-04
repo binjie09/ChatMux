@@ -1,4 +1,4 @@
-import { Activity, Bell, ChevronRight, KeyRound, Plus } from "lucide-react";
+import { Activity, Bell, ChevronRight, KeyRound, Plus, RefreshCw } from "lucide-react";
 import { type TmuxSession } from "./api";
 import "./session-controls.css";
 import { type SessionNotificationStatus } from "./useSessionNotifications";
@@ -14,6 +14,7 @@ type SessionListProps = {
   selectedSessionName: string;
   sessions: TmuxSession[];
   onCreateSession: () => void;
+  onListSessions: () => void;
   onNewSessionNameChange: (value: string) => void;
   onNotificationsEnabledChange: (enabled: boolean) => void;
   onOpenSession: (sessionName: string) => void;
@@ -32,7 +33,7 @@ export function SessionList(props: SessionListProps) {
         </button>
       </header>
 
-      <SessionConnectionStatus credentialStatus={props.credentialStatus} />
+      <SessionConnectionStatus credentialStatus={props.credentialStatus} onListSessions={props.onListSessions} />
       <SessionCreate
         newSessionName={props.newSessionName}
         onCreateSession={props.onCreateSession}
@@ -57,11 +58,14 @@ export function SessionList(props: SessionListProps) {
   );
 }
 
-function SessionConnectionStatus(props: Pick<SessionListProps, "credentialStatus">) {
+function SessionConnectionStatus(props: Pick<SessionListProps, "credentialStatus" | "onListSessions">) {
   return (
     <div className="session-connection" aria-label="Connection status">
       <KeyRound size={17} aria-hidden="true" />
       <small className={`credential-status ${props.credentialStatus.tone}`}>{props.credentialStatus.label}</small>
+      <button type="button" aria-label="Refresh sessions" onClick={props.onListSessions}>
+        <RefreshCw size={15} aria-hidden="true" />
+      </button>
     </div>
   );
 }

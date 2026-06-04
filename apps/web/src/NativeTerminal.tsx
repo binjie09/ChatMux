@@ -176,8 +176,20 @@ function mountTerminal(terminal: Terminal, container: HTMLDivElement) {
   const fit = new FitAddon();
   terminal.loadAddon(fit);
   terminal.open(container);
-  fit.fit();
+  fitTerminalWhenVisible(fit, container);
   return fit;
+}
+
+function fitTerminalWhenVisible(fit: FitAddon, container: HTMLDivElement) {
+  if (container.clientWidth > 0 && container.clientHeight > 0) {
+    fit.fit();
+    return;
+  }
+  window.requestAnimationFrame(() => {
+    if (container.clientWidth > 0 && container.clientHeight > 0) {
+      fit.fit();
+    }
+  });
 }
 
 function observeTerminalResize(
@@ -188,6 +200,9 @@ function observeTerminalResize(
 ) {
   let lastSize = terminalSize(terminal);
   const resizeObserver = new ResizeObserver(() => {
+    if (container.clientWidth === 0 || container.clientHeight === 0) {
+      return;
+    }
     fit.fit();
     const nextSize = terminalSize(terminal);
     if (nextSize.cols === lastSize.cols && nextSize.rows === lastSize.rows) {
