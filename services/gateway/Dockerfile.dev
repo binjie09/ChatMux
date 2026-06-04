@@ -1,0 +1,5 @@
+FROM golang:1.24-alpine
+
+RUN apk add --no-cache ca-certificates gcc musl-dev openssh-client
+
+WORKDIR /workspace/services/gateway

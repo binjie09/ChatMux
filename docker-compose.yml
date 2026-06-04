@@ -1,0 +1,54 @@
+services:
+  gateway:
+    build:
+      context: .
+      dockerfile: services/gateway/Dockerfile.dev
+    network_mode: host
+    user: "${MUXCHAT_UID:-1000}:${MUXCHAT_GID:-1000}"
+    working_dir: /workspace/services/gateway
+    environment:
+      CGO_ENABLED: "1"
+      GOCACHE: /tmp/muxchat-go/build
+      GOMODCACHE: /tmp/muxchat-go/pkg/mod
+      MUXCHAT_ADDR: ":${MUXCHAT_GATEWAY_PORT:-19327}"
+      MUXCHAT_DB: "${MUXCHAT_DB:-/workspace/muxchat.db}"
+      MUXCHAT_GATEWAY_TOKEN: "${MUXCHAT_GATEWAY_TOKEN:-}"
+      MUXCHAT_USERS_JSON: "${MUXCHAT_USERS_JSON:-}"
+      MUXCHAT_COMMAND_POLICY_MODE: "${MUXCHAT_COMMAND_POLICY_MODE:-enforce}"
+      MUXCHAT_COMMAND_DENY_PATTERNS_JSON: "${MUXCHAT_COMMAND_DENY_PATTERNS_JSON:-}"
+      MUXCHAT_AUTOMATION_CAPABILITIES_JSON: "${MUXCHAT_AUTOMATION_CAPABILITIES_JSON:-}"
+      OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
+      OPENAI_BASE_URL: "${OPENAI_BASE_URL:-}"
+      OPENAI_MODEL: "${OPENAI_MODEL:-}"
+    volumes:
+      - .:/workspace
+    command: go run ./cmd/muxchat-gateway
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:${MUXCHAT_GATEWAY_PORT:-19327}/healthz >/dev/null"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+
+  web:
+    image: node:24-bookworm-slim
+    network_mode: host
+    user: "${MUXCHAT_UID:-1000}:${MUXCHAT_GID:-1000}"
+    working_dir: /workspace
+    environment:
+      CI: "true"
+      COREPACK_ENABLE_DOWNLOAD_PROMPT: "0"
+      COREPACK_HOME: /tmp/muxchat-corepack
+      HOME: /tmp/muxchat-node-home
+      MUXCHAT_WEB_PORT: "${MUXCHAT_WEB_PORT:-5173}"
+      PATH: "/tmp/muxchat-pnpm:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+      PNPM_HOME: /tmp/muxchat-pnpm
+      XDG_DATA_HOME: /tmp/muxchat-xdg
+    volumes:
+      - .:/workspace
+    command: >
+      sh -lc "corepack pnpm@10.33.2 install --frozen-lockfile &&
+      corepack pnpm@10.33.2 --filter @muxchat/web exec vite
+      --host 0.0.0.0 --port \"$MUXCHAT_WEB_PORT\" --strictPort"
+    depends_on:
+      gateway:
+        condition: service_healthy

@@ -15,6 +15,22 @@
 pnpm install
 ```
 
+## Run With Docker Compose
+
+Copy `.env.example` to `.env` and edit local values there. `.env` is ignored by
+git so tokens and local-only paths stay outside commits.
+
+```bash
+docker-compose up -d --build
+docker-compose logs -f gateway web
+docker-compose down
+```
+
+The compose stack uses host networking on Linux so the gateway can reach SSH
+hosts bound to the host loopback address, such as `127.0.0.1:22001`. The gateway
+listens on `MUXCHAT_GATEWAY_PORT`, defaulting to `19327`, and the web dev server
+listens on `MUXCHAT_WEB_PORT`, defaulting to `5173`.
+
 ## Run Web SPA
 
 ```bash
