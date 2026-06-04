@@ -138,7 +138,8 @@ func TestCreateTmuxSessionRejectsUnsafeName(t *testing.T) {
 func TestCaptureTmuxHistoryAPI(t *testing.T) {
 	server, closeServer := newTestServer(t)
 	defer closeServer()
-	server.ssh = &fakeSSHRunner{output: "$ echo chatmux\nchatmux history\n"}
+	runner := &fakeSSHRunner{output: "$ echo chatmux\nchatmux history\n"}
+	server.ssh = runner
 	host := createTrustedTestHost(t, server)
 	token := createCredentialTokenForTest(t, server, testCredentialInput{hostID: host.ID})
 
@@ -155,6 +156,30 @@ func TestCaptureTmuxHistoryAPI(t *testing.T) {
 	}
 	if !strings.Contains(responseBody, `"chunks"`) || !strings.Contains(responseBody, `"kind":"command"`) {
 		t.Fatalf("expected transcript chunks, got %s", responseBody)
+	}
+	if !strings.Contains(runner.command, "capture-pane -p -t deploy -S -200") {
+		t.Fatalf("expected default capture command, got %q", runner.command)
+	}
+}
+
+func TestCaptureTmuxHistoryAPIWithScrollbackOptions(t *testing.T) {
+	server, closeServer := newTestServer(t)
+	defer closeServer()
+	runner := &fakeSSHRunner{output: "\x1b[31mred\x1b[0m\n"}
+	server.ssh = runner
+	host := createTrustedTestHost(t, server)
+	token := createCredentialTokenForTest(t, server, testCredentialInput{hostID: host.ID})
+
+	body := bytes.NewBufferString(`{"credentialToken":"` + token + `","lines":800,"preserveAnsi":true}`)
+	req := httptest.NewRequest(http.MethodPost, "/api/hosts/"+host.ID+"/tmux/sessions/deploy/history", body)
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+	if !strings.Contains(runner.command, "capture-pane -p -e -t deploy -S -800") {
+		t.Fatalf("expected ANSI capture command, got %q", runner.command)
 	}
 }
 

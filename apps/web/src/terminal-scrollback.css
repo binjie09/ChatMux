@@ -26,6 +26,18 @@
   -webkit-user-select: text;
 }
 
+.terminal-scrollback-error,
+.terminal-scrollback-loading {
+  min-height: 1.45em;
+  color: #aab5af;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.terminal-scrollback-error {
+  color: #ee7567;
+}
+
 @media (max-width: 720px) {
   .mobile-terminal-active .terminal-scrollback-overlay {
     inset: 4px;

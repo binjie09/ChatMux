@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import {
   captureTmuxHistory,
   createTmuxSession,
@@ -11,17 +11,16 @@ import {
   type TmuxSession,
 } from "./api";
 import { type ComposerMode } from "./Composer";
-import { ConversationPane } from "./ConversationPane";
-import { MobileNavigation, type MobilePanel } from "./MobileNavigation";
+import { AppShell } from "./AppShell";
+import { type MobilePanel } from "./MobileNavigation";
 import { type MobileTerminalSheet } from "./MobileTerminalChrome";
 import { type QueuedTerminalInput } from "./NativeTerminal";
-import { SessionList } from "./SessionList";
-import { Sidebar } from "./Sidebar";
-import { GatewayUnlockPage } from "./GatewayUnlockPage";
 import { useGatewayAccessToken } from "./useGatewayAccessToken";
 import { useHostWorkspace } from "./useHostWorkspace";
+import { useAppStartupEffects } from "./useAppStartupEffects";
 import { useSessionNotifications } from "./useSessionNotifications";
 import { useTerminalConnectionURL } from "./useTerminalConnectionURL";
+import { useTerminalScrollbackHistory } from "./useTerminalScrollbackHistory";
 import { useSSHCredentialToken } from "./useSSHCredentialToken";
 import { type ConnectionStatus } from "./useTerminalSocket";
 import { errorMessage } from "./view-utils";
@@ -40,7 +39,6 @@ export function App() {
   const [mobileSheet, setMobileSheet] = useState<MobileTerminalSheet | null>(null);
   const [queuedInput, setQueuedInput] = useState<QueuedTerminalInput | null>(null);
   const [error, setError] = useState("");
-  const autoConnectedHostRef = useRef("");
   const gatewayToken = useGatewayAccessToken(setError);
   const {
     handleCreateHost,
@@ -63,31 +61,16 @@ export function App() {
     onHostSelected: clearSelectedSession,
   });
   const sshCredential = useSSHCredentialToken(Boolean(selectedHost?.hasCredential));
-
-  useEffect(() => {
-    sshCredential.resetCredential();
-    autoConnectedHostRef.current = "";
-  }, [selectedHostId, selectedHost?.hasCredential, sshCredential.resetCredential]);
-
-  useEffect(() => {
-    if (!gatewayToken.ready) {
-      return;
-    }
-    void refreshHosts();
-    void refreshAuditEvents();
-  }, [gatewayToken.ready]);
-
-  useEffect(() => {
-    if (!gatewayToken.ready || !selectedHostId || !selectedHost?.hasCredential) {
-      return;
-    }
-    const autoConnectKey = `${selectedHostId}:${selectedHost.updatedAt}:${selectedHost.hasCredential}`;
-    if (autoConnectedHostRef.current === autoConnectKey) {
-      return;
-    }
-    autoConnectedHostRef.current = autoConnectKey;
-    void handleListSessions();
-  }, [gatewayToken.ready, selectedHost?.hasCredential, selectedHost?.updatedAt, selectedHostId]);
+  useAppStartupEffects({
+    gatewayReady: gatewayToken.ready,
+    resetCredential: sshCredential.resetCredential,
+    selectedHostHasCredential: Boolean(selectedHost?.hasCredential),
+    selectedHostId,
+    selectedHostUpdatedAt: selectedHost?.updatedAt ?? "",
+    onAuditRefresh: () => void refreshAuditEvents(),
+    onHostsRefresh: () => void refreshHosts(),
+    onListSessions: () => void handleListSessions(),
+  });
 
   async function refreshAuditEvents() {
     try {
@@ -223,6 +206,11 @@ export function App() {
     }
     return sshCredential.ensureSSHCredentialToken(selectedHostId);
   }, [selectedHostId, sshCredential.ensureSSHCredentialToken]);
+  const loadTerminalScrollbackHistory = useTerminalScrollbackHistory({
+    getCredentialToken: getSelectedHostCredentialToken,
+    hostId: selectedHostId,
+    sessionName: selectedSessionName,
+  });
 
   const refreshSelectedSessions = useCallback(async () => {
     if (!selectedHostId || !sshCredential.ready) {
@@ -248,10 +236,6 @@ export function App() {
     sessionName: selectedSessionName,
   });
 
-  if (!gatewayToken.ready) {
-    return <GatewayUnlockPage error={error} tokenState={gatewayToken} />;
-  }
-
   const summaryTarget = {
     getCredentialToken: getSelectedHostCredentialToken,
     hostId: selectedHostId,
@@ -259,68 +243,57 @@ export function App() {
     sshReady: sshCredential.ready,
   };
   return (
-    <main className={`app-shell ${isMobileTerminalActive ? "mobile-terminal-active" : ""}`}>
-      <Sidebar
-        error={error}
-        gatewayToken={gatewayToken}
-        hosts={hosts}
-        mobileOpen={mobilePanel === "hosts"}
-        selectedHostId={selectedHostId}
-        showHostForm={showHostForm}
-        onCreateHost={handleCreateHost}
-        onDeleteHost={handleDeleteHost}
-        onSelectHost={handleSelectHost}
-        onShowHostForm={setShowHostForm}
-        onUpdateHost={handleUpdateHost}
-      />
-
-      <SessionList
-        credentialStatus={sshCredential.status}
-        mobileOpen={mobilePanel === "sessions"}
-        newSessionName={newSessionName}
-        notificationsEnabled={sessionNotifications.enabled}
-        notificationStatus={sessionNotifications.status}
-        selectedSessionName={selectedSessionName}
-        sessions={sessions}
-        onCreateSession={() => void handleCreateSession()}
-        onListSessions={() => void handleListSessions()}
-        onNewSessionNameChange={setNewSessionName}
-        onNotificationsEnabledChange={(enabled) => void sessionNotifications.setEnabled(enabled)}
-        onOpenSession={(sessionName) => void handleOpenSession(sessionName)}
-      />
-
-      <ConversationPane
-        auditEvents={auditEvents}
-        composerMode={composerMode}
-        composerValue={composerValue}
-        createTerminalWebSocketURL={terminalSessionKey ? createTerminalWebSocketURL : null}
-        historyChunks={historyChunks}
-        historyQuery={historyQuery}
-        historyText={historyText}
-        host={selectedHost}
-        mobileSheet={mobileSheet}
-        queuedInput={queuedInput}
-        selectedSession={selectedSession}
-        target={summaryTarget}
-        terminalSessionKey={terminalSessionKey}
-        onBackToSessions={() => {
+    <AppShell
+      auditEvents={auditEvents}
+      composerMode={composerMode}
+      composerValue={composerValue}
+      createTerminalWebSocketURL={terminalSessionKey ? createTerminalWebSocketURL : null}
+      credentialStatus={sshCredential.status}
+      error={error}
+      gatewayToken={gatewayToken}
+      historyChunks={historyChunks}
+      historyQuery={historyQuery}
+      historyText={historyText}
+      hosts={hosts}
+      isMobileTerminalActive={isMobileTerminalActive}
+      loadScrollbackHistory={terminalSessionKey ? loadTerminalScrollbackHistory : null}
+      mobilePanel={mobilePanel}
+      mobileSheet={mobileSheet}
+      newSessionName={newSessionName}
+      notifications={{ enabled: sessionNotifications.enabled, status: sessionNotifications.status }}
+      queuedInput={queuedInput}
+      selectedHost={selectedHost}
+      selectedSession={selectedSession}
+      selectedSessionName={selectedSessionName}
+      sessions={sessions}
+      showHostForm={showHostForm}
+      target={summaryTarget}
+      terminalSessionKey={terminalSessionKey}
+      composerHandlers={{ onComposerModeChange: setComposerMode, onComposerSubmit: handleComposerSubmit, onComposerValueChange: setComposerValue }}
+      sessionHandlers={{
+        onBackToSessions: () => {
           setMobileSheet(null);
           setMobilePanel("sessions");
-        }}
-        onComposerModeChange={setComposerMode}
-        onComposerSubmit={handleComposerSubmit}
-        onComposerValueChange={setComposerValue}
-        onConnectionError={setError}
-        onConnectionReady={handleTerminalConnectionReady}
-        onDrafted={() => void refreshAuditEvents()}
-        onHistoryQueryChange={setHistoryQuery}
-        onMobileSheetChange={setMobileSheet}
-        onSaveSessionMetadata={handleSaveSessionMetadata}
-        onTogglePin={handleTogglePin}
-        onToggleShare={handleToggleShare}
-        onTrustHost={handleTrustHost}
-      />
-      <MobileNavigation activePanel={mobilePanel} hidden={isMobileTerminalActive} onPanelChange={setMobilePanel} />
-    </main>
+        },
+        onConnectionReady: handleTerminalConnectionReady, onCreateSession: () => void handleCreateSession(),
+        onListSessions: () => void handleListSessions(), onOpenSession: (sessionName) => void handleOpenSession(sessionName),
+      }}
+      onConnectionError={setError}
+      onCreateHost={handleCreateHost}
+      onDeleteHost={handleDeleteHost}
+      onDrafted={() => void refreshAuditEvents()}
+      onHistoryQueryChange={setHistoryQuery}
+      onMobilePanelChange={setMobilePanel}
+      onMobileSheetChange={setMobileSheet}
+      onNewSessionNameChange={setNewSessionName}
+      onNotificationsEnabledChange={(enabled) => void sessionNotifications.setEnabled(enabled)}
+      onSaveSessionMetadata={handleSaveSessionMetadata}
+      onSelectHost={handleSelectHost}
+      onShowHostForm={setShowHostForm}
+      onTogglePin={handleTogglePin}
+      onToggleShare={handleToggleShare}
+      onTrustHost={handleTrustHost}
+      onUpdateHost={handleUpdateHost}
+    />
   );
 }

@@ -26,6 +26,7 @@ type ConversationPaneProps = {
   historyQuery: string;
   historyText: string;
   host: Host | undefined;
+  loadScrollbackHistory: ((lines: number) => Promise<string>) | null;
   mobileSheet: MobileTerminalSheet | null;
   queuedInput: QueuedTerminalInput | null;
   selectedSession: TmuxSession | undefined;
@@ -71,6 +72,7 @@ export function ConversationPane(props: ConversationPaneProps) {
       <div className="terminal-workspace">
         <NativeTerminal
           createWebSocketURL={props.terminalSessionKey ? props.createTerminalWebSocketURL : null}
+          loadScrollbackHistory={props.loadScrollbackHistory}
           queuedInput={props.queuedInput}
           sessionKey={props.terminalSessionKey}
           onConnectionError={props.onConnectionError}

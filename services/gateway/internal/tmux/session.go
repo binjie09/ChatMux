@@ -72,11 +72,32 @@ func KillSessionCommand(name string) (string, error) {
 }
 
 func CapturePaneCommand(name string) (string, error) {
+	return CapturePaneCommandWithOptions(name, CapturePaneOptions{Lines: 200})
+}
+
+type CapturePaneOptions struct {
+	Lines        int
+	PreserveANSI bool
+}
+
+func CapturePaneCommandWithOptions(name string, options CapturePaneOptions) (string, error) {
 	if err := ValidateSessionName(name); err != nil {
 		return "", err
 	}
-	command := tmuxPrelude() + "\"$TMUX_BIN\" capture-pane -p -t " + name + " -S -200"
+	lines := normalizeCapturePaneLines(options.Lines)
+	ansiFlag := ""
+	if options.PreserveANSI {
+		ansiFlag = " -e"
+	}
+	command := tmuxPrelude() + "\"$TMUX_BIN\" capture-pane -p" + ansiFlag + " -t " + name + " -S -" + strconv.Itoa(lines)
 	return loginShellCommand(command), nil
+}
+
+func normalizeCapturePaneLines(lines int) int {
+	if lines <= 0 {
+		return 200
+	}
+	return lines
 }
 
 func ValidateSessionName(name string) error {

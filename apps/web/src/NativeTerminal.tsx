@@ -13,6 +13,7 @@ import "./terminal.css";
 
 type NativeTerminalProps = {
   createWebSocketURL: ((status: ConnectionStatus) => Promise<string>) | null;
+  loadScrollbackHistory?: ((lines: number) => Promise<string>) | null;
   onConnectionError: (message: string) => void;
   onConnectionReady: (status: ConnectionStatus) => void;
   queuedInput: QueuedTerminalInput | null;
@@ -102,7 +103,7 @@ export function NativeTerminal(props: NativeTerminalProps) {
       </div>
       <div className="terminal-screen" ref={terminalRef}>
         {mobileInteractionMode === "select" && terminalReady && terminalInstanceRef.current ? (
-          <TerminalScrollbackOverlay terminal={terminalInstanceRef.current} />
+          <TerminalScrollbackOverlay loadEarlier={props.loadScrollbackHistory} terminal={terminalInstanceRef.current} />
         ) : null}
       </div>
       <TerminalQuickKeys disabled={status !== "connected"} onSend={sendQuickKey} />

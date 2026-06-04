@@ -12,6 +12,8 @@ import (
 
 type tmuxHistoryRequest struct {
 	CredentialToken string `json:"credentialToken"`
+	Lines           int    `json:"lines"`
+	PreserveANSI    bool   `json:"preserveAnsi"`
 }
 
 type tmuxHistoryResponse struct {
@@ -39,7 +41,7 @@ func (s *Server) handleCaptureTmuxHistory(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	command, err := tmux.CapturePaneCommand(sessionName)
+	command, err := tmux.CapturePaneCommandWithOptions(sessionName, capturePaneOptions(input))
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err)
 		return
@@ -69,6 +71,10 @@ func (s *Server) handleCaptureTmuxHistory(w http.ResponseWriter, r *http.Request
 	}
 	text := string(output)
 	writeJSON(w, http.StatusOK, tmuxHistoryResponse{Chunks: tmux.NormalizeHistory(text), Text: text})
+}
+
+func capturePaneOptions(input tmuxHistoryRequest) tmux.CapturePaneOptions {
+	return tmux.CapturePaneOptions{Lines: input.Lines, PreserveANSI: input.PreserveANSI}
 }
 
 func (s *Server) handleSummarizeTmuxHistory(w http.ResponseWriter, r *http.Request) {

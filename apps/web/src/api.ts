@@ -69,6 +69,11 @@ export type TmuxHistory = {
   text: string;
 };
 
+export type CaptureTmuxHistoryOptions = {
+  lines?: number;
+  preserveAnsi?: boolean;
+};
+
 export type TranscriptSummary = {
   model: string;
   summary: string;
@@ -199,10 +204,15 @@ export async function createTerminalToken(hostId: string, sessionName: string, i
   return response.token;
 }
 
-export async function captureTmuxHistory(hostId: string, sessionName: string, credentialToken: string): Promise<TmuxHistory> {
+export async function captureTmuxHistory(
+  hostId: string,
+  sessionName: string,
+  credentialToken: string,
+  options: CaptureTmuxHistoryOptions = {},
+): Promise<TmuxHistory> {
   return request<TmuxHistory>(`/api/hosts/${hostId}/tmux/sessions/${sessionName}/history`, {
     method: "POST",
-    body: JSON.stringify({ credentialToken }),
+    body: JSON.stringify({ credentialToken, ...options }),
   });
 }
 
