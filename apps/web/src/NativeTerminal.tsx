@@ -44,8 +44,10 @@ export function NativeTerminal(props: NativeTerminalProps) {
   const terminalRef = useRef<HTMLDivElement | null>(null);
   const socketRef = useRef<WebSocket | null>(null);
   const terminalInstanceRef = useRef<Terminal | null>(null);
+  const scrollbackRef = useRef("");
   const connectorRef = useRef(props.createWebSocketURL);
   const handlersRef = useRef<TerminalHandlers>(props);
+  const [scrollbackText, setScrollbackText] = useState("");
   const [status, setStatus] = useState<ConnectionStatus>("idle");
   const [mobileInteractionMode, setMobileInteractionMode] = useState<MobileTerminalInteractionMode>("input");
   const [reconnectAttempt, setReconnectAttempt] = useState(0);
@@ -57,10 +59,21 @@ export function NativeTerminal(props: NativeTerminalProps) {
   }, [props.createWebSocketURL]);
 
   useEffect(() => {
-    handlersRef.current = props;
+    handlersRef.current = {
+      ...props,
+      onTerminalOutput: appendScrollback,
+    };
   }, [props]);
 
-  useTerminalMount(terminalRef, terminalInstanceRef, socketRef, handlersRef, mobileInteractionMode);
+  useTerminalMount({
+    handlersRef,
+    mode: mobileInteractionMode,
+    scrollbackRef,
+    setScrollbackText,
+    socketRef,
+    terminalInstanceRef,
+    terminalRef,
+  });
   useSessionReset(props.sessionKey, terminalInstanceRef);
   useTerminalSocket({
     connectorRef,
@@ -86,6 +99,12 @@ export function NativeTerminal(props: NativeTerminalProps) {
     terminalInstanceRef.current?.focus();
   }
 
+  function appendScrollback(data: string) {
+    const nextText = trimScrollback(scrollbackRef.current + data);
+    scrollbackRef.current = nextText;
+    setScrollbackText(nextText);
+  }
+
   return (
     <div className={`terminal-shell terminal-${mobileInteractionMode}-mode`} aria-label="Terminal">
       <div className="terminal-toolbar">
@@ -98,8 +117,28 @@ export function NativeTerminal(props: NativeTerminalProps) {
           </button>
         </div>
       </div>
-      <div className="terminal-screen" ref={terminalRef} />
+      <div className="terminal-screen" ref={terminalRef}>
+        {mobileInteractionMode === "select" ? <TerminalScrollbackOverlay text={scrollbackText} /> : null}
+      </div>
       <TerminalQuickKeys disabled={status !== "connected"} onSend={sendQuickKey} />
+    </div>
+  );
+}
+
+function TerminalScrollbackOverlay({ text }: { text: string }) {
+  const overlayRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const overlay = overlayRef.current;
+    if (!overlay) {
+      return;
+    }
+    overlay.scrollTop = overlay.scrollHeight;
+  }, []);
+
+  return (
+    <div className="terminal-scrollback-overlay" ref={overlayRef} aria-label="Scrollable terminal output">
+      <pre>{text || "No terminal output yet."}</pre>
     </div>
   );
 }
@@ -161,42 +200,63 @@ function quickKeyContent(key: (typeof terminalQuickKeys)[number]) {
   return <ArrowDown size={15} aria-hidden="true" />;
 }
 
-function useTerminalMount(
-  terminalRef: MutableRefObject<HTMLDivElement | null>,
-  terminalInstanceRef: MutableRefObject<Terminal | null>,
-  socketRef: MutableRefObject<WebSocket | null>,
-  handlersRef: MutableRefObject<TerminalHandlers>,
-  mobileInteractionMode: MobileTerminalInteractionMode,
-) {
-  const modeRef = useRef(mobileInteractionMode);
+type TerminalMountOptions = {
+  terminalRef: MutableRefObject<HTMLDivElement | null>;
+  terminalInstanceRef: MutableRefObject<Terminal | null>;
+  socketRef: MutableRefObject<WebSocket | null>;
+  handlersRef: MutableRefObject<TerminalHandlers>;
+  mode: MobileTerminalInteractionMode;
+  scrollbackRef: MutableRefObject<string>;
+  setScrollbackText: (text: string) => void;
+};
+
+function useTerminalMount(options: TerminalMountOptions) {
+  const modeRef = useRef(options.mode);
   useEffect(() => {
-    modeRef.current = mobileInteractionMode;
-  }, [mobileInteractionMode]);
+    modeRef.current = options.mode;
+  }, [options.mode]);
 
   useEffect(() => {
-    if (!terminalRef.current) {
+    if (!options.terminalRef.current) {
       return;
     }
 
     const terminal = createTerminal();
-    const fit = mountTerminal(terminal, terminalRef.current);
-    terminalInstanceRef.current = terminal;
-    const resizeObserver = observeTerminalResize(terminal, fit, terminalRef.current, socketRef);
+    const fit = mountTerminal(terminal, options.terminalRef.current);
+    options.terminalInstanceRef.current = terminal;
+    const resizeObserver = observeTerminalResize(terminal, fit, options.terminalRef.current, options.socketRef);
     const clipboardDisposable = bindTerminalClipboard(terminal, {
-      onError: (message) => handlersRef.current.onConnectionError(message),
+      onError: (message) => options.handlersRef.current.onConnectionError(message),
     });
-    const inputDisposable = bindTerminalInput(terminal, socketRef, modeRef);
+    const inputDisposable = bindTerminalInput(terminal, options.socketRef, modeRef);
 
     return () => {
-      socketRef.current?.close();
-      socketRef.current = null;
-      terminalInstanceRef.current = null;
+      options.socketRef.current?.close();
+      options.socketRef.current = null;
+      options.terminalInstanceRef.current = null;
+      options.scrollbackRef.current = "";
+      options.setScrollbackText("");
       clipboardDisposable.dispose();
       inputDisposable.dispose();
       resizeObserver.disconnect();
       terminal.dispose();
     };
-  }, [handlersRef, socketRef, terminalInstanceRef, terminalRef]);
+  }, [
+    options.handlersRef,
+    options.scrollbackRef,
+    options.setScrollbackText,
+    options.socketRef,
+    options.terminalInstanceRef,
+    options.terminalRef,
+  ]);
+}
+
+function trimScrollback(text: string) {
+  const maxLength = 120_000;
+  if (text.length <= maxLength) {
+    return text;
+  }
+  return text.slice(text.length - maxLength);
 }
 
 function createTerminal() {

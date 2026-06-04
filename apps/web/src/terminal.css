@@ -102,12 +102,41 @@
 }
 
 .terminal-screen {
+  position: relative;
   height: 100%;
   min-height: 0;
   min-width: 0;
   overflow: hidden;
   touch-action: none;
   user-select: none;
+}
+
+.terminal-scrollback-overlay {
+  position: absolute;
+  inset: 4px;
+  z-index: 5;
+  overflow: auto;
+  border-radius: 6px;
+  padding: 10px;
+  color: #e6ece8;
+  background: #101713;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.terminal-scrollback-overlay pre {
+  min-width: max-content;
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  user-select: text;
+  -webkit-user-select: text;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 13px;
+  line-height: 1.45;
 }
 
 .terminal-screen .xterm {
@@ -234,7 +263,7 @@
   }
 
   .mobile-terminal-active .terminal-select-mode .terminal-screen {
-    touch-action: pan-y;
+    touch-action: auto;
     user-select: text;
     -webkit-user-select: text;
   }
@@ -247,9 +276,14 @@
   .mobile-terminal-active .terminal-select-mode .terminal-screen .xterm-viewport,
   .mobile-terminal-active .terminal-select-mode .terminal-screen .xterm-screen,
   .mobile-terminal-active .terminal-select-mode .terminal-screen .xterm-rows {
-    touch-action: pan-y;
+    touch-action: auto;
     user-select: text;
     -webkit-user-select: text;
+  }
+
+  .mobile-terminal-active .terminal-scrollback-overlay {
+    inset: 4px;
+    touch-action: pan-y;
   }
 
   .mobile-terminal-active .terminal-quick-keys {

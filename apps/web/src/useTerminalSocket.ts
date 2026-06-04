@@ -7,6 +7,7 @@ export type ConnectionStatus = "idle" | "connecting" | "connected" | "recovering
 export type TerminalHandlers = {
   onConnectionError: (message: string) => void;
   onConnectionReady: (status: ConnectionStatus) => void;
+  onTerminalOutput?: (data: string) => void;
 };
 
 type TerminalSocketOptions = {
@@ -140,9 +141,24 @@ function handleSocketMessage(options: TerminalSocketOptions, data: unknown) {
   if (!terminal) {
     return;
   }
+  notifyTerminalOutput(options, data);
   const error = writeTerminalMessage(terminal, data);
   if (error) {
     options.setStatus("error");
     options.handlersRef.current.onConnectionError(error);
+  }
+}
+
+function notifyTerminalOutput(options: TerminalSocketOptions, data: unknown) {
+  if (typeof data !== "string") {
+    return;
+  }
+  try {
+    const message = JSON.parse(data) as { type?: string; data?: string };
+    if (message.type === "output" && message.data) {
+      options.handlersRef.current.onTerminalOutput?.(message.data);
+    }
+  } catch {
+    return;
   }
 }
