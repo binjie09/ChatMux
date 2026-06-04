@@ -202,6 +202,8 @@
   }
 
   .mobile-terminal-active .terminal-toolbar button {
+    justify-content: center;
+    gap: 0;
     width: 32px;
     min-width: 32px;
     padding: 0;
@@ -214,6 +216,7 @@
 
   .mobile-terminal-active .terminal-toolbar .terminal-touch-mode {
     display: inline-flex;
+    gap: 7px;
     width: auto;
     min-width: 74px;
     padding: 0 8px;
