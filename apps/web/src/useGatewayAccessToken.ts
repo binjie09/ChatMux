@@ -11,6 +11,7 @@ import {
   saveGatewayBiometricUnlock,
   saveGatewayAccessToken,
 } from "./gateway-token-store";
+import { isDesktopShell } from "./runtime-platform";
 import { errorMessage } from "./view-utils";
 
 export type GatewayTokenStatus = "empty" | "loading" | "locked" | "saving" | "stored";
@@ -20,6 +21,7 @@ export type GatewayTokenState = {
   biometricEnabled: boolean;
   hasToken: boolean;
   ready: boolean;
+  required: boolean;
   status: GatewayTokenStatus;
   clearToken: () => Promise<void>;
   saveToken: (token: string) => Promise<void>;
@@ -28,6 +30,7 @@ export type GatewayTokenState = {
 };
 
 export function useGatewayAccessToken(onError: (message: string) => void): GatewayTokenState {
+  const required = !isDesktopShell();
   const [biometricAvailable, setBiometricAvailable] = useState(false);
   const [biometricEnabled, setBiometricEnabled] = useState(false);
   const [status, setStatus] = useState<GatewayTokenStatus>("loading");
@@ -41,36 +44,60 @@ export function useGatewayAccessToken(onError: (message: string) => void): Gatew
   }), []);
 
   useEffect(() => {
+    if (!required) {
+      setGatewayAccessToken("");
+      tokenSetters.setBiometricAvailable(false);
+      tokenSetters.setBiometricEnabled(false);
+      tokenSetters.setHasToken(false);
+      tokenSetters.setStatus("stored");
+      return;
+    }
     let active = true;
     void loadToken(() => active, tokenSetters, onError);
     return () => {
       active = false;
     };
-  }, [onError, tokenSetters]);
+  }, [onError, required, tokenSetters]);
 
   const saveToken = useCallback(async (token: string) => {
+    if (!required) {
+      return;
+    }
     await saveTokenValue(token, setStatus, setHasToken, onError);
-  }, [onError]);
+  }, [onError, required]);
 
   const clearToken = useCallback(async () => {
+    if (!required) {
+      setGatewayAccessToken("");
+      setStatus("stored");
+      return;
+    }
     await clearTokenValue(tokenSetters, onError);
-  }, [onError, tokenSetters]);
+  }, [onError, required, tokenSetters]);
 
   const unlockToken = useCallback(async () => {
+    if (!required) {
+      setStatus("stored");
+      return;
+    }
     setStatus("loading");
     await loadToken(() => true, tokenSetters, onError);
-  }, [onError, tokenSetters]);
+  }, [onError, required, tokenSetters]);
 
   const setBiometricUnlock = useCallback(async (enabled: boolean) => {
+    if (!required) {
+      return;
+    }
     await updateBiometricUnlock(enabled, hasToken, tokenSetters, onError);
-  }, [hasToken, onError, tokenSetters]);
+  }, [hasToken, onError, required, tokenSetters]);
 
   return {
     biometricAvailable,
     biometricEnabled,
     clearToken,
     hasToken,
-    ready: status === "stored",
+    ready: !required || status === "stored",
+    required,
     saveToken,
     setBiometricUnlock,
     status,

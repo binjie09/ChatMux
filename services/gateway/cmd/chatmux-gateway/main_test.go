@@ -9,7 +9,7 @@ import (
 func TestStaticUsersFromEnvIncludesGatewayToken(t *testing.T) {
 	t.Setenv("CHATMUX_GATEWAY_TOKEN", "admin-token")
 
-	users, err := staticUsersFromEnv()
+	users, err := staticUsersFromEnv(":8080")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -19,10 +19,33 @@ func TestStaticUsersFromEnvIncludesGatewayToken(t *testing.T) {
 }
 
 func TestStaticUsersFromEnvRequiresGatewayToken(t *testing.T) {
-	_, err := staticUsersFromEnv()
+	_, err := staticUsersFromEnv(":8080")
 
 	if err == nil {
 		t.Fatal("expected required gateway token error")
+	}
+}
+
+func TestStaticUsersFromEnvAllowsLocalDesktopNoAuth(t *testing.T) {
+	t.Setenv("CHATMUX_LOCAL_NO_AUTH", "1")
+
+	users, err := staticUsersFromEnv("127.0.0.1:19327")
+
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(users) != 0 {
+		t.Fatalf("expected no static users in local no-auth mode, got %#v", users)
+	}
+}
+
+func TestStaticUsersFromEnvRejectsPublicNoAuth(t *testing.T) {
+	t.Setenv("CHATMUX_LOCAL_NO_AUTH", "1")
+
+	_, err := staticUsersFromEnv(":8080")
+
+	if err == nil {
+		t.Fatal("expected public no-auth mode to fail")
 	}
 }
 
@@ -30,7 +53,7 @@ func TestStaticUsersFromEnvParsesConfiguredUsers(t *testing.T) {
 	t.Setenv("CHATMUX_GATEWAY_TOKEN", "admin-token")
 	t.Setenv("CHATMUX_USERS_JSON", `[{"name":"ops","role":"operator","token":"ops-token"}]`)
 
-	users, err := staticUsersFromEnv()
+	users, err := staticUsersFromEnv(":8080")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -43,7 +66,7 @@ func TestStaticUsersFromEnvRejectsInvalidRole(t *testing.T) {
 	t.Setenv("CHATMUX_GATEWAY_TOKEN", "admin-token")
 	t.Setenv("CHATMUX_USERS_JSON", `[{"name":"ops","role":"owner","token":"ops-token"}]`)
 
-	_, err := staticUsersFromEnv()
+	_, err := staticUsersFromEnv(":8080")
 
 	if err == nil {
 		t.Fatal("expected invalid role error")

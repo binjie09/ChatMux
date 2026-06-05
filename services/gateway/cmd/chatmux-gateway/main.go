@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"log"
+	"net"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/chatmux/chatmux/services/gateway/internal/api"
@@ -20,7 +22,7 @@ func main() {
 	defer store.Close()
 
 	addr := envOrDefault("CHATMUX_ADDR", ":8080")
-	users, err := staticUsersFromEnv()
+	users, err := staticUsersFromEnv(addr)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -88,7 +90,13 @@ type envStaticUser struct {
 	Token string   `json:"token"`
 }
 
-func staticUsersFromEnv() ([]api.StaticUser, error) {
+func staticUsersFromEnv(addr string) ([]api.StaticUser, error) {
+	if localNoAuthEnabled() {
+		if !isLoopbackAddr(addr) {
+			return nil, errors.New("CHATMUX_LOCAL_NO_AUTH requires a loopback CHATMUX_ADDR")
+		}
+		return []api.StaticUser{}, nil
+	}
 	users := []api.StaticUser{}
 	token := os.Getenv("CHATMUX_GATEWAY_TOKEN")
 	if token == "" {
@@ -110,6 +118,23 @@ func staticUsersFromEnv() ([]api.StaticUser, error) {
 		return nil, err
 	}
 	return users, nil
+}
+
+func localNoAuthEnabled() bool {
+	return os.Getenv("CHATMUX_LOCAL_NO_AUTH") == "1"
+}
+
+func isLoopbackAddr(addr string) bool {
+	host, _, err := net.SplitHostPort(addr)
+	if err != nil {
+		return false
+	}
+	host = strings.Trim(host, "[]")
+	if strings.EqualFold(host, "localhost") {
+		return true
+	}
+	ip := net.ParseIP(host)
+	return ip != nil && ip.IsLoopback()
 }
 
 func commandPolicyFromEnv() (api.CommandPolicyConfig, error) {

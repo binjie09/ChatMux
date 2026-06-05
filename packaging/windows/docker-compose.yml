@@ -1,0 +1,26 @@
+services:
+  windows-exe:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    working_dir: /workspace
+    environment:
+      CI: "true"
+      COREPACK_ENABLE_DOWNLOAD_PROMPT: "0"
+      HOST_UID: "${CHATMUX_UID:-1000}"
+      HOST_GID: "${CHATMUX_GID:-1000}"
+      TAURI_TARGET_TRIPLE: x86_64-pc-windows-msvc
+      GOCACHE: /go-cache/build
+      GOMODCACHE: /go-cache/mod
+      PNPM_STORE_DIR: /pnpm/store
+    volumes:
+      - ../..:/workspace
+      - cargo-xwin:/root/.cache/cargo-xwin
+      - go-cache:/go-cache
+      - pnpm-cache:/pnpm
+    command: bash /workspace/packaging/windows/build-portable-exe.sh
+
+volumes:
+  cargo-xwin:
+  go-cache:
+  pnpm-cache:

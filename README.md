@@ -87,12 +87,12 @@ ChatMux 把 **tmux 会话** 作为远程工作的稳定载体：
 | 历史上下文 | 可用 | 捕获 tmux pane 历史并侧栏展示 |
 | 会话元数据 | 可用 | 标题、标签、owner 信息 |
 | 审计事件 | 可用 | 记录连接、凭据 token、历史捕获等关键事件 |
-| Gateway Token | 可用 | Web 本地存储；桌面和移动端使用系统安全存储能力 |
+| Gateway Token | 可用 | Web 本地存储；移动端使用系统安全存储能力；桌面本地 Gateway 不需要 token |
 | 生物识别解锁 | 可用 | 移动端可用 Face ID、Touch ID、Android 生物识别或设备凭据 |
 | AI 总结 | 可选 | 配置 `OPENAI_API_KEY` 后由用户主动触发 |
 | AI 命令草稿 | 可选 | 只生成草稿，必须用户显式插入和发送 |
 | 自动化工具 | 可选 | 仅暴露 allowlist 工具，不提供任意 shell 执行工具 |
-| 桌面端 | 可构建 | Tauri v2，包含 Go Gateway sidecar |
+| 桌面端 | 可构建 | Tauri v2，Windows 便携 exe 内嵌本地 Go Gateway |
 | 移动端 | 可构建 | Capacitor iOS / Android |
 
 ## 技术栈
@@ -135,6 +135,7 @@ docker-compose up -d --build
 - 健康检查：`http://localhost:19327/healthz`
 
 打开 Web 后先输入 `.env` 里的 `CHATMUX_GATEWAY_TOKEN`，再添加自己的 SSH 主机。
+桌面端会启动 exe 内置的本地 Gateway，不需要输入 Gateway Token。
 
 ## Web 自托管部署
 
@@ -230,10 +231,15 @@ go test ./...
 ```bash
 pnpm --filter @chatmux/web desktop:dev
 pnpm --filter @chatmux/web desktop:build
+pnpm desktop:build:windows
 pnpm --filter @chatmux/web mobile:sync
 pnpm --filter @chatmux/web mobile:build:android-internal
 pnpm --filter @chatmux/web mobile:build:ios-testflight
 ```
+
+`pnpm desktop:build:windows` 使用 Docker Compose 打包 Windows x64 单文件便携版，
+产物是 `.tmp/artifacts/windows-x86_64-pc-windows-msvc/ChatMux.exe`。这个 exe
+内嵌 Gateway，复制到 Windows 后双击即可启动本地桌面端。
 
 更完整的开发、签名和测试说明见 [docs/development.md](docs/development.md)。
 
@@ -241,9 +247,10 @@ pnpm --filter @chatmux/web mobile:build:ios-testflight
 
 ```text
 apps/web              React / Vite SPA，Tauri 和 Capacitor 也复用它
-apps/web/src-tauri    Tauri v2 桌面壳和 Gateway sidecar 配置
+apps/web/src-tauri    Tauri v2 桌面壳和本地 Gateway 配置
 services/gateway      Go SSH / tmux Gateway
 packages/shared       共享 TypeScript contracts
+packaging/windows     Windows 便携 exe Docker 打包入口
 deploy/web            生产 Web 自托管部署模板
 docs                  架构、部署、使用和路线图文档
 ```

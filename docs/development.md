@@ -8,6 +8,7 @@
 - pnpm 10+
 - Go 1.23+
 - Rust 1.85+ for Tauri desktop builds
+- Docker / Docker Compose for the Linux-to-Windows portable exe build
 - JDK 21+ for Android builds
 - `tmux` installed on SSH hosts used for tmux feature testing
 
@@ -67,14 +68,25 @@ pnpm --filter @chatmux/web mobile:build:ios-testflight
 pnpm --filter @chatmux/web desktop:dev
 pnpm --filter @chatmux/web desktop:build
 pnpm --filter @chatmux/web desktop:build:macos
-pnpm --filter @chatmux/web desktop:build:windows
+pnpm desktop:build:windows
 ```
 
 Capacitor generates `ios/` and `android/` under `apps/web` when the add commands
 run. The iOS and Android projects are checked in after generation and use the
 shared SPA from `apps/web/dist`. Tauri uses `apps/web/src-tauri`.
 
-The desktop commands build a Go gateway sidecar into
+The canonical Windows portable build is:
+
+```bash
+pnpm desktop:build:windows
+```
+
+It runs Docker Compose from `packaging/windows/` and writes a single Windows x64
+portable exe to `.tmp/artifacts/windows-x86_64-pc-windows-msvc/ChatMux.exe`.
+The exe embeds the Go gateway and extracts it into the app data directory at
+runtime, so there is no adjacent gateway exe to distribute.
+
+Desktop dev and non-Windows desktop bundles still build the Go gateway into
 `apps/web/src-tauri/binaries/` before Tauri starts. The generated binary is
 ignored by git and is named with the Tauri target triple, for example
 `chatmux-gateway-x86_64-unknown-linux-gnu`.
@@ -85,6 +97,7 @@ artifacts. Windows builds must run on Windows with
 `CHATMUX_WINDOWS_CERT_THUMBPRINT` for a certificate in the Windows store, or
 `CHATMUX_WINDOWS_SIGN_COMMAND` for a custom signer. Optional Windows overrides
 are `CHATMUX_WINDOWS_DIGEST_ALGORITHM` and `CHATMUX_WINDOWS_TIMESTAMP_URL`.
+Use `pnpm desktop:build:windows:signed` for that signed Windows build path.
 Set `CHATMUX_CREATE_UPDATER_ARTIFACTS=1` plus `TAURI_SIGNING_PRIVATE_KEY` to
 have Tauri generate updater archives and `.sig` files alongside signed desktop
 bundles. Keep the updater private key outside the repository.
@@ -109,6 +122,8 @@ Android uses Android Keystore backed storage, Tauri desktop uses the operating
 system credential store, and the web fallback is only for local development.
 When biometric unlock is enabled on mobile, the stored token is loaded only
 after Face ID, Touch ID, Android biometrics, or device credentials succeed.
+The desktop app starts its packaged local gateway with `CHATMUX_LOCAL_NO_AUTH=1`
+on `127.0.0.1:19327`, so the desktop UI does not ask for a Gateway Token.
 Hosts are owned by the principal that creates them. Non-admin users can only see
 their own hosts; admins can see all hosts. tmux sessions carry owner metadata.
 Host owners and admins can see all sessions on an owned or admin-visible host;

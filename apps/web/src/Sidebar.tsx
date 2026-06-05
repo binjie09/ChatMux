@@ -39,7 +39,7 @@ export function Sidebar(props: SidebarProps) {
         Add host
       </button>
       {props.showHostForm ? <HostForm onCancel={() => props.onShowHostForm(false)} onSubmit={props.onCreateHost} /> : null}
-      <GatewayTokenControl tokenState={props.gatewayToken} />
+      {props.gatewayToken.required ? <GatewayTokenControl tokenState={props.gatewayToken} /> : null}
 
       <section className="nav-section">
         <h2>Hosts</h2>

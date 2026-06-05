@@ -1,5 +1,8 @@
+import { isDesktopShell } from "./runtime-platform";
+
 const desktopGatewayURL = "http://127.0.0.1:19327";
 const gatewayURL = import.meta.env.VITE_GATEWAY_URL ?? defaultGatewayURL();
+const jsonContentType = "application/json";
 
 let gatewayAccessToken = "";
 
@@ -250,6 +253,7 @@ export async function request<T>(path: string, init: RequestInit = {}): Promise<
   if (!response.ok) {
     throw new Error(await response.text());
   }
+  validateJSONResponse(response, path);
   return response.json() as Promise<T>;
 }
 
@@ -265,7 +269,7 @@ async function requestWithoutBody(path: string, init: RequestInit = {}) {
 
 function requestHeaders(initHeaders?: HeadersInit) {
   const headers = new Headers(initHeaders);
-  headers.set("Content-Type", "application/json");
+  headers.set("Content-Type", jsonContentType);
   if (gatewayAccessToken) {
     headers.set("Authorization", `Bearer ${gatewayAccessToken}`);
   }
@@ -277,8 +281,19 @@ export function tmuxSessionPath(hostId: string, sessionName: string) {
 }
 
 function defaultGatewayURL() {
+  if (isDesktopShell()) {
+    return desktopGatewayURL;
+  }
   if (window.location.protocol === "http:" || window.location.protocol === "https:") {
     return "";
   }
   return desktopGatewayURL;
+}
+
+function validateJSONResponse(response: Response, path: string) {
+  const contentType = response.headers.get("Content-Type") ?? "";
+  if (contentType.includes(jsonContentType)) {
+    return;
+  }
+  throw new Error(`Gateway returned non-JSON for ${path}: ${response.status} ${contentType}`);
 }

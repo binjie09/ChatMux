@@ -1,5 +1,6 @@
 node_modules
 .pnpm-store
+.tmp/
 dist
 .DS_Store
 *.log
@@ -15,5 +16,8 @@ coverage
 *.sqlite3
 /services/gateway/chatmux-gateway
 /apps/web/build/
+/apps/web/src-tauri/gen/
+/apps/web/src-tauri/icons/icon.ico
+/apps/web/src-tauri/target/
 /apps/web/src-tauri/binaries/chatmux-gateway-*
 !/apps/web/src-tauri/binaries/.gitkeep
