@@ -117,6 +117,16 @@ export type CreateTerminalTokenInput = {
   windowIndex?: number;
 };
 
+export type UploadTerminalImageInput = {
+  credentialToken: string;
+  dataBase64: string;
+  mimeType: string;
+};
+
+export type UploadTerminalImageResponse = {
+  remotePath: string;
+};
+
 export async function listHosts(): Promise<Host[]> {
   return request<Host[]>("/api/hosts");
 }
@@ -193,6 +203,17 @@ export async function createTerminalToken(hostId: string, sessionName: string, i
     body: JSON.stringify(input),
   });
   return response.token;
+}
+
+export async function uploadTerminalImage(
+  hostId: string,
+  sessionName: string,
+  input: UploadTerminalImageInput,
+): Promise<UploadTerminalImageResponse> {
+  return request<UploadTerminalImageResponse>(`${tmuxSessionPath(hostId, sessionName)}/terminal-images`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
 }
 
 export async function captureTmuxHistory(

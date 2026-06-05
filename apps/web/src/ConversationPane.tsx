@@ -49,6 +49,7 @@ type ConversationPaneProps = {
   onHistoryQueryChange: (query: string) => void;
   onMobileSheetChange: (sheet: MobileTerminalSheet | null) => void;
   onOpenWindow: (sessionName: string, windowIndex: number) => void;
+  onPasteTerminalImage: ((file: File) => Promise<string>) | null;
   onRenameWindow: (sessionName: string, windowIndex: number, name: string) => Promise<void> | void;
   onSaveSessionMetadata: (input: SaveSessionMetadataInput) => Promise<void>;
   onTogglePin: () => void;
@@ -104,6 +105,7 @@ export function ConversationPane(props: ConversationPaneProps) {
             onConnectionClosed={props.onConnectionClosed}
             onConnectionError={props.onConnectionError}
             onConnectionReady={props.onConnectionReady}
+            onPasteImage={props.onPasteTerminalImage}
           />
         </div>
         <div className="context-stack">{contextPanels}</div>

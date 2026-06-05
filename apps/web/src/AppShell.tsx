@@ -88,6 +88,7 @@ type AppShellProps = {
   onMobileSheetChange: (sheet: MobileTerminalSheet | null) => void;
   onNewSessionNameChange: (value: string) => void;
   onNotificationsEnabledChange: (enabled: boolean) => void;
+  onPasteTerminalImage: ((file: File) => Promise<string>) | null;
   onSaveSessionMetadata: (input: SaveSessionMetadataInput) => Promise<void>;
   onSelectHost: (hostId: string) => void;
   onShowHostForm: (show: boolean) => void;
@@ -173,6 +174,7 @@ export function AppShell(props: AppShellProps) {
         onHistoryQueryChange={props.onHistoryQueryChange}
         onMobileSheetChange={props.onMobileSheetChange}
         onOpenWindow={props.sessionHandlers.onOpenWindow}
+        onPasteTerminalImage={props.onPasteTerminalImage}
         onRenameWindow={props.sessionHandlers.onRenameWindow}
         onSaveSessionMetadata={props.onSaveSessionMetadata}
         onTogglePin={props.onTogglePin}

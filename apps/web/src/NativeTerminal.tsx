@@ -5,6 +5,7 @@ import { MousePointer2, RefreshCw, TextCursorInput } from "lucide-react";
 import { TerminalQuickKeys } from "./TerminalQuickKeys";
 import { TerminalScrollbackOverlay } from "./TerminalScrollbackOverlay";
 import { bindTerminalClipboard } from "./terminal-clipboard";
+import { bindTerminalPaste, type TerminalPasteHandlers } from "./terminal-image-paste";
 import { sendTerminalInput, sendTerminalResize, terminalSize } from "./terminal-protocol";
 import { terminalTheme } from "./terminal-theme";
 import { type ConnectionStatus, type TerminalHandlers, useTerminalSocket } from "./useTerminalSocket";
@@ -17,9 +18,12 @@ type NativeTerminalProps = {
   onConnectionClosed: () => void;
   onConnectionError: (message: string) => void;
   onConnectionReady: (status: ConnectionStatus) => void;
+  onPasteImage?: ((file: File) => Promise<string>) | null;
   queuedInput: QueuedTerminalInput | null;
   sessionKey: string;
 };
+
+type NativeTerminalHandlers = TerminalHandlers & TerminalPasteHandlers;
 
 export type QueuedTerminalInput = {
   data: string;
@@ -41,7 +45,7 @@ export function NativeTerminal(props: NativeTerminalProps) {
   const socketRef = useRef<WebSocket | null>(null);
   const terminalInstanceRef = useRef<Terminal | null>(null);
   const connectorRef = useRef(props.createWebSocketURL);
-  const handlersRef = useRef<TerminalHandlers>(props);
+  const handlersRef = useRef<NativeTerminalHandlers>(props);
   const [terminalReady, setTerminalReady] = useState(false);
   const [status, setStatus] = useState<ConnectionStatus>("idle");
   const [mobileInteractionMode, setMobileInteractionMode] = useState<MobileTerminalInteractionMode>("input");
@@ -145,7 +149,7 @@ type TerminalMountOptions = {
   terminalRef: MutableRefObject<HTMLDivElement | null>;
   terminalInstanceRef: MutableRefObject<Terminal | null>;
   socketRef: MutableRefObject<WebSocket | null>;
-  handlersRef: MutableRefObject<TerminalHandlers>;
+  handlersRef: MutableRefObject<NativeTerminalHandlers>;
   mode: MobileTerminalInteractionMode;
   setTerminalReady: (ready: boolean) => void;
 };
@@ -170,6 +174,12 @@ function useTerminalMount(options: TerminalMountOptions) {
       onError: (message) => options.handlersRef.current.onConnectionError(message),
     });
     const inputDisposable = bindTerminalInput(terminal, options.socketRef, modeRef);
+    const pasteDisposable = bindTerminalPaste({
+      container: options.terminalRef.current,
+      handlersRef: options.handlersRef,
+      socketRef: options.socketRef,
+      terminal,
+    });
 
     return () => {
       options.socketRef.current?.close();
@@ -178,6 +188,7 @@ function useTerminalMount(options: TerminalMountOptions) {
       options.setTerminalReady(false);
       clipboardDisposable.dispose();
       inputDisposable.dispose();
+      pasteDisposable.dispose();
       resizeObserver.disconnect();
       terminal.dispose();
     };

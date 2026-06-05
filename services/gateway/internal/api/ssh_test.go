@@ -20,6 +20,8 @@ type fakeSSHRunner struct {
 	outputForCommand func(string) string
 	password         string
 	privateKey       string
+	writeData        []byte
+	writePath        string
 }
 
 func (r *fakeSSHRunner) Run(_ context.Context, _ sshclient.HostConfig, credential sshclient.Credential, command string) ([]byte, error) {
@@ -45,6 +47,15 @@ func (r *fakeSSHRunner) StartTerminal(_ context.Context, _ sshclient.HostConfig,
 	r.password = credential.Password
 	r.privateKey = credential.PrivateKey
 	return nil, nil
+}
+
+func (r *fakeSSHRunner) WriteFile(_ context.Context, _ sshclient.HostConfig, credential sshclient.Credential, path string, data []byte) error {
+	r.credential = credential
+	r.password = credential.Password
+	r.privateKey = credential.PrivateKey
+	r.writePath = path
+	r.writeData = append([]byte(nil), data...)
+	return nil
 }
 
 func TestSSHProbe(t *testing.T) {

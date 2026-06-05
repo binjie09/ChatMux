@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { type TmuxSession } from "./api";
+import { type TmuxSession, uploadTerminalImage } from "./api";
 import { type ComposerMode } from "./Composer";
 import { AppShell } from "./AppShell";
 import { type MobilePanel } from "./MobileNavigation";
@@ -111,6 +111,20 @@ export function App() {
     setComposerValue("");
   }
 
+  async function handleTerminalImagePaste(file: File) {
+    if (!selectedHostId || !selection.selectedSessionName) {
+      throw new Error("Host and session are required");
+    }
+    const credentialToken = await getSelectedHostCredentialToken();
+    const response = await uploadTerminalImage(selectedHostId, selection.selectedSessionName, {
+      credentialToken,
+      dataBase64: await fileToBase64(file),
+      mimeType: file.type,
+    });
+    void auditEvents.refresh();
+    return response.remotePath;
+  }
+
   const terminalSessionKey = selectedHostId && selection.selectedSessionName && selection.selectedWindowIndex !== null
     ? `${selectedHostId}:${selection.selectedSessionName}:${selection.selectedWindowIndex}`
     : "";
@@ -214,6 +228,7 @@ export function App() {
       composerHandlers={{ onComposerModeChange: setComposerMode, onComposerSubmit: handleComposerSubmit, onComposerValueChange: setComposerValue }}
       sessionHandlers={sessionHandlers}
       onConnectionError={setError}
+      onPasteTerminalImage={terminalSessionKey ? handleTerminalImagePaste : null}
       onCreateHost={handleCreateHost}
       onDeleteHost={handleDeleteHost}
       onDrafted={() => void auditEvents.refresh()}
@@ -232,4 +247,19 @@ export function App() {
       onUpdateHost={handleUpdateHost}
     />
   );
+}
+
+function fileToBase64(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.addEventListener("error", () => reject(reader.error ?? new Error("Failed to read image")));
+    reader.addEventListener("load", () => {
+      if (typeof reader.result !== "string") {
+        reject(new Error("Image reader returned non-text data"));
+        return;
+      }
+      resolve(reader.result.split(",", 2)[1] ?? "");
+    });
+    reader.readAsDataURL(file);
+  });
 }
