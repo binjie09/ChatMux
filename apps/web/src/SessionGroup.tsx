@@ -107,7 +107,7 @@ function SessionRow({
           {session.name}
           {session.processName ? ` · ${session.processName}` : ""}
           {" · "}
-          {windowCountLabel(session.windowList.length)} · {sessionAccessLabel(session)} · {formatTime(session.updatedAt)}
+          {windowCountLabel(session.windowList.length)} · {session.owner || "local"} · {formatTime(session.updatedAt)}
         </small>
         {session.tags.length > 0 ? <i>{session.tags.join(", ")}</i> : null}
       </span>
@@ -115,11 +115,4 @@ function SessionRow({
       <ChevronRight className={isExpanded ? "expanded" : ""} size={17} aria-hidden="true" />
     </button>
   );
-}
-
-function sessionAccessLabel(session: DisplayTmuxSession) {
-  if (session.shared) {
-    return "shared";
-  }
-  return session.owner || "private";
 }

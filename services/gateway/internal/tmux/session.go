@@ -22,19 +22,17 @@ var ErrInvalidSessionName = errors.New("session name must be 1-64 Unicode letter
 var ErrInvalidWindowTarget = errors.New("window target must have a non-negative window index")
 
 type Session struct {
-	ID            string    `json:"id"`
-	Name          string    `json:"name"`
-	Windows       int       `json:"windows"`
-	WindowList    []Window  `json:"windowList"`
-	Attached      bool      `json:"attached"`
-	UpdatedAt     time.Time `json:"updatedAt"`
-	Status        string    `json:"status"`
-	ProcessName   string    `json:"processName"`
-	Title         string    `json:"title"`
-	Tags          []string  `json:"tags"`
-	Owner         string    `json:"owner"`
-	Shared        bool      `json:"shared"`
-	Collaborators []string  `json:"collaborators"`
+	ID          string    `json:"id"`
+	Name        string    `json:"name"`
+	Windows     int       `json:"windows"`
+	WindowList  []Window  `json:"windowList"`
+	Attached    bool      `json:"attached"`
+	UpdatedAt   time.Time `json:"updatedAt"`
+	Status      string    `json:"status"`
+	ProcessName string    `json:"processName"`
+	Title       string    `json:"title"`
+	Tags        []string  `json:"tags"`
+	Owner       string    `json:"owner"`
 }
 
 func ListSessionsCommand() string {
@@ -202,16 +200,15 @@ func parseSessionLine(line string, now time.Time) (Session, error) {
 		updatedAt:      updatedAt,
 	})
 	return Session{
-		ID:            parts[0],
-		Name:          parts[1],
-		Windows:       windows,
-		WindowList:    defaultWindowList(parts[1], updatedAt, processName, status),
-		Attached:      attached,
-		UpdatedAt:     updatedAt,
-		ProcessName:   processName,
-		Tags:          []string{},
-		Collaborators: []string{},
-		Status:        status,
+		ID:          parts[0],
+		Name:        parts[1],
+		Windows:     windows,
+		WindowList:  defaultWindowList(parts[1], updatedAt, processName, status),
+		Attached:    attached,
+		UpdatedAt:   updatedAt,
+		ProcessName: processName,
+		Tags:        []string{},
+		Status:      status,
 	}, nil
 }
 

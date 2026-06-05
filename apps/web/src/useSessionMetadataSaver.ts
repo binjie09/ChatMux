@@ -19,9 +19,7 @@ export function useSessionMetadataSaver(options: SessionMetadataSaverOptions) {
       options.onSessionsChange((current) => current.map((session) => (
         session.name === metadata.sessionName ? {
           ...session,
-          collaborators: metadata.collaborators,
           owner: metadata.owner,
-          shared: metadata.shared,
           tags: metadata.tags,
           title: metadata.title,
         } : session

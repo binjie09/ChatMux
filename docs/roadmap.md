@@ -65,7 +65,6 @@ Goal: iOS and Android apps share the same SPA.
 Goal: make ChatMux useful for teams and AI-assisted operations.
 
 - Multi-user auth and RBAC.
-- Shared hosts and shared sessions.
 - Recording and command policy.
 - AI transcript summarization.
 - AI command drafting with explicit confirmation.

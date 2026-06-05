@@ -145,5 +145,5 @@ function hostFormValue(host: Host): CreateHostInput {
 }
 
 function hostAddress(host: Host) {
-  return `${host.username}@${host.hostname}:${host.port} · ${host.shared ? "shared" : host.owner}`;
+  return `${host.username}@${host.hostname}:${host.port} · ${host.owner}`;
 }

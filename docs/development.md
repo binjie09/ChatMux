@@ -109,14 +109,11 @@ Android uses Android Keystore backed storage, Tauri desktop uses the operating
 system credential store, and the web fallback is only for local development.
 When biometric unlock is enabled on mobile, the stored token is loaded only
 after Face ID, Touch ID, Android biometrics, or device credentials succeed.
-Hosts are owned by the principal that creates them. Shared hosts are visible to
-all authenticated users; private hosts are visible only to their owner and
-admins. tmux sessions can also carry owner/shared metadata. Host owners and
-admins can see all sessions on a visible host; session owners can see and manage
-their private sessions; other users can see sessions explicitly marked shared or
-sessions where their principal name is listed as a collaborator. Collaborators
-can use the session but cannot edit its metadata or grants. tmux sessions
-without ChatMux metadata are visible only to the host owner and admins.
+Hosts are owned by the principal that creates them. Non-admin users can only see
+their own hosts; admins can see all hosts. tmux sessions carry owner metadata.
+Host owners and admins can see all sessions on an owned or admin-visible host;
+session owners can see and manage their sessions. tmux sessions without ChatMux
+metadata are visible only to the host owner and admins.
 Session alerts use local notifications on iOS and Android, and browser
 notifications on the web. When enabled, the SPA notifies on status changes from
 the selected host's 30-second session status refresh. If the in-memory SSH

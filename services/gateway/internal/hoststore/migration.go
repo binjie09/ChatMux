@@ -23,7 +23,6 @@ func (s *Store) migrate(ctx context.Context) error {
 		{column: "ssh_private_key_passphrase", sql: addHostSSHPrivateKeyPassphraseSQL, label: "host ssh private key passphrase"},
 		{column: "pinned", sql: addHostPinnedSQL, label: "host pinned"},
 		{column: "owner", sql: addHostOwnerSQL, label: "host owner"},
-		{column: "shared", sql: addHostSharedSQL, label: "host shared"},
 	}
 	if err := s.migrateColumns(ctx, "hosts", hostColumns); err != nil {
 		return err
@@ -47,8 +46,6 @@ func (s *Store) createBaseTables(ctx context.Context) error {
 func (s *Store) migrateSessionMetadata(ctx context.Context) error {
 	columns := []tableColumnMigration{
 		{column: "owner", sql: addSessionOwnerSQL, label: "session owner"},
-		{column: "shared", sql: addSessionSharedSQL, label: "session shared"},
-		{column: "collaborators", sql: addSessionCollaboratorsSQL, label: "session collaborators"},
 	}
 	return s.migrateColumns(ctx, "session_metadata", columns)
 }

@@ -133,42 +133,6 @@ func (s *Server) handlePinHost(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, host)
 }
 
-type shareHostRequest struct {
-	Shared bool `json:"shared"`
-}
-
-func (s *Server) handleShareHost(w http.ResponseWriter, r *http.Request) {
-	hostID, ok := routeHostAction(r.URL.Path, "/share")
-	if !ok {
-		writeError(w, http.StatusNotFound, errors.New("route not found"))
-		return
-	}
-	if _, err := s.visibleHost(r, hostID); err != nil {
-		writeError(w, statusForHostAccessError(err), err)
-		return
-	}
-
-	var input shareHostRequest
-	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		writeError(w, http.StatusBadRequest, err)
-		return
-	}
-	host, err := s.hosts.SetHostShared(r.Context(), hostID, input.Shared)
-	if err != nil {
-		writeError(w, statusForHostAccessError(err), err)
-		return
-	}
-	eventType := "host.unshared"
-	if host.Shared {
-		eventType = "host.shared"
-	}
-	if err := s.logAudit(r.Context(), hoststore.LogAuditEventInput{Type: eventType, HostID: host.ID, Message: eventType}); err != nil {
-		writeError(w, http.StatusInternalServerError, err)
-		return
-	}
-	writeJSON(w, http.StatusOK, host)
-}
-
 func (s *Server) listHostsForPrincipal(r *http.Request) ([]hoststore.Host, error) {
 	principal, ok := principalFromContext(r.Context())
 	if !ok || principal.Role == RoleAdmin {

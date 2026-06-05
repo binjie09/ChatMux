@@ -92,7 +92,6 @@ type AppShellProps = {
   onSelectHost: (hostId: string) => void;
   onShowHostForm: (show: boolean) => void;
   onTogglePin: () => void;
-  onToggleShare: () => void;
   onTrustHost: () => void;
   onUpdateHost: (hostId: string, input: CreateHostInput) => Promise<void>;
   onHistoryQueryChange: (query: string) => void;
@@ -177,7 +176,6 @@ export function AppShell(props: AppShellProps) {
         onRenameWindow={props.sessionHandlers.onRenameWindow}
         onSaveSessionMetadata={props.onSaveSessionMetadata}
         onTogglePin={props.onTogglePin}
-        onToggleShare={props.onToggleShare}
         onTrustHost={props.onTrustHost}
       />
       <MobileNavigation activePanel={props.mobilePanel} hidden={props.isMobileTerminalActive} onPanelChange={props.onMobilePanelChange} />

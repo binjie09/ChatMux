@@ -185,18 +185,18 @@ func TestSSHCredentialTokenRequiresPrincipal(t *testing.T) {
 		StaticUser{Name: "other", Role: RoleOperator, Token: "other-token"},
 	)
 	server.ssh = &fakeSSHRunner{output: "$0\tdeploy\t1\t0\t1710000000\tzsh\t0\t\n"}
-	host := createOwnedHost(t, server.hosts, "owner", "shared")
+	host := createOwnedHost(t, server.hosts, "owner", "owned")
 	token := server.credentialTokens.Create(credentialToken{
 		HostID: host.ID,
 		Credential: sshclient.Credential{
 			Kind: sshclient.CredentialKindPassword, Password: "secret",
 		},
-		Principal: "owner",
+		Principal: "other",
 	})
 
 	body := bytes.NewBufferString(`{"credentialToken":"` + token + `"}`)
 	req := httptest.NewRequest(http.MethodPost, "/api/hosts/"+host.ID+"/tmux/sessions/list", body)
-	req.Header.Set("Authorization", "Bearer other-token")
+	req.Header.Set("Authorization", "Bearer owner-token")
 	rec := httptest.NewRecorder()
 
 	server.Handler().ServeHTTP(rec, req)

@@ -25,7 +25,7 @@ func principalCanAccessHost(r *http.Request, host hoststore.Host) bool {
 	if principal.Role == RoleAdmin {
 		return true
 	}
-	return host.Shared || host.Owner == principal.Name
+	return host.Owner == principal.Name
 }
 
 func statusForHostAccessError(err error) int {

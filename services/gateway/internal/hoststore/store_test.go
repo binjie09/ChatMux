@@ -36,8 +36,8 @@ func TestCreateAndListHosts(t *testing.T) {
 	if hosts[0].Port != 22001 {
 		t.Fatalf("expected port 22001, got %d", hosts[0].Port)
 	}
-	if hosts[0].Owner != "local-dev" || !hosts[0].Shared {
-		t.Fatalf("expected default owner/shared, got %#v", hosts[0])
+	if hosts[0].Owner != "local-dev" {
+		t.Fatalf("expected default owner, got %#v", hosts[0])
 	}
 }
 
@@ -172,28 +172,6 @@ func TestSetHostPinned(t *testing.T) {
 	}
 	if !host.Pinned {
 		t.Fatal("expected pinned host")
-	}
-}
-
-func TestSetHostShared(t *testing.T) {
-	store := openTestStore(t)
-	defer closeStore(t, store)
-
-	created, err := store.CreateHost(context.Background(), CreateHostInput{
-		Name:     "share",
-		Hostname: "example.test",
-		Username: "deploy",
-	})
-	if err != nil {
-		t.Fatalf("CreateHost failed: %v", err)
-	}
-
-	host, err := store.SetHostShared(context.Background(), created.ID, false)
-	if err != nil {
-		t.Fatalf("SetHostShared failed: %v", err)
-	}
-	if host.Shared {
-		t.Fatal("expected private host")
 	}
 }
 
@@ -348,34 +326,30 @@ func TestDeleteHostMissing(t *testing.T) {
 	}
 }
 
-func TestListHostsVisibleTo(t *testing.T) {
+func TestListHostsVisibleToReturnsOwnedHosts(t *testing.T) {
 	store := openTestStore(t)
 	defer closeStore(t, store)
 
-	privateHost, err := store.CreateHost(context.Background(), CreateHostInput{Name: "private", Hostname: "private.test", Username: "deploy", Owner: "alice"})
-	if err != nil {
-		t.Fatalf("CreateHost private failed: %v", err)
+	if _, err := store.CreateHost(context.Background(), CreateHostInput{Name: "alice", Hostname: "alice.test", Username: "deploy", Owner: "alice"}); err != nil {
+		t.Fatalf("CreateHost alice failed: %v", err)
 	}
-	if _, err := store.SetHostShared(context.Background(), privateHost.ID, false); err != nil {
-		t.Fatalf("SetHostShared failed: %v", err)
-	}
-	if _, err := store.CreateHost(context.Background(), CreateHostInput{Name: "shared", Hostname: "shared.test", Username: "deploy", Owner: "bob"}); err != nil {
-		t.Fatalf("CreateHost shared failed: %v", err)
+	if _, err := store.CreateHost(context.Background(), CreateHostInput{Name: "bob", Hostname: "bob.test", Username: "deploy", Owner: "bob"}); err != nil {
+		t.Fatalf("CreateHost bob failed: %v", err)
 	}
 
 	hosts, err := store.ListHostsVisibleTo(context.Background(), "alice")
 	if err != nil {
 		t.Fatalf("ListHostsVisibleTo failed: %v", err)
 	}
-	if len(hosts) != 2 {
-		t.Fatalf("expected owner to see private and shared hosts, got %d", len(hosts))
+	if len(hosts) != 1 || hosts[0].Owner != "alice" {
+		t.Fatalf("expected alice host only, got %#v", hosts)
 	}
 	hosts, err = store.ListHostsVisibleTo(context.Background(), "charlie")
 	if err != nil {
 		t.Fatalf("ListHostsVisibleTo other failed: %v", err)
 	}
-	if len(hosts) != 1 || !hosts[0].Shared {
-		t.Fatalf("expected other user to see only shared host, got %#v", hosts)
+	if len(hosts) != 0 {
+		t.Fatalf("expected no hosts for unrelated user, got %#v", hosts)
 	}
 }
 

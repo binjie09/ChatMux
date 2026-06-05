@@ -43,7 +43,6 @@ export function App() {
     handleDeleteHost,
     handleSelectHost,
     handleTogglePin,
-    handleToggleShare,
     handleTrustHost,
     handleUpdateHost,
     hosts,
@@ -229,7 +228,6 @@ export function App() {
       onSelectHost={handleSelectHost}
       onShowHostForm={setShowHostForm}
       onTogglePin={handleTogglePin}
-      onToggleShare={handleToggleShare}
       onTrustHost={handleTrustHost}
       onUpdateHost={handleUpdateHost}
     />

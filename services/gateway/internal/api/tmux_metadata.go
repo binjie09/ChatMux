@@ -10,10 +10,8 @@ import (
 )
 
 type saveSessionMetadataRequest struct {
-	Shared        *bool     `json:"shared"`
-	Tags          []string  `json:"tags"`
-	Title         string    `json:"title"`
-	Collaborators *[]string `json:"collaborators"`
+	Tags  []string `json:"tags"`
+	Title string   `json:"title"`
 }
 
 func (s *Server) handleSaveTmuxSessionMetadata(w http.ResponseWriter, r *http.Request) {
@@ -43,7 +41,7 @@ func (s *Server) handleSaveTmuxSessionMetadata(w http.ResponseWriter, r *http.Re
 	}
 	metadata, err := s.hosts.SaveSessionMetadata(r.Context(), hoststore.SaveSessionMetadataInput{
 		HostID: hostID, Owner: requestPrincipal(r).Name, SessionName: sessionName,
-		Shared: input.Shared, Tags: input.Tags, Title: input.Title, Collaborators: input.Collaborators,
+		Tags: input.Tags, Title: input.Title,
 	})
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err)
@@ -83,7 +81,5 @@ func applySessionMetadata(session tmux.Session, metadata hoststore.SessionMetada
 	session.Title = metadata.Title
 	session.Tags = metadata.Tags
 	session.Owner = metadata.Owner
-	session.Shared = metadata.Shared
-	session.Collaborators = metadata.Collaborators
 	return session
 }

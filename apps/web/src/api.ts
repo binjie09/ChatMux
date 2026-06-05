@@ -18,7 +18,6 @@ export type Host = {
   hasCredential: boolean;
   pinned: boolean;
   owner: string;
-  shared: boolean;
   updatedAt: string;
 };
 
@@ -47,8 +46,6 @@ export type TmuxSession = {
   title: string;
   tags: string[];
   owner: string;
-  shared: boolean;
-  collaborators: string[];
 };
 
 export type TmuxWindow = {
@@ -166,18 +163,9 @@ export async function setHostPinned(hostId: string, pinned: boolean): Promise<Ho
   });
 }
 
-export async function setHostShared(hostId: string, shared: boolean): Promise<Host> {
-  return request<Host>(`/api/hosts/${hostId}/share`, {
-    method: "POST",
-    body: JSON.stringify({ shared }),
-  });
-}
-
 export type SaveSessionMetadataInput = {
   title: string;
   tags: string[];
-  shared: boolean;
-  collaborators: string[];
 };
 
 export async function saveSessionMetadata(hostId: string, sessionName: string, input: SaveSessionMetadataInput): Promise<TmuxSessionMetadata> {
@@ -193,8 +181,6 @@ export type TmuxSessionMetadata = {
   title: string;
   tags: string[];
   owner: string;
-  shared: boolean;
-  collaborators: string[];
   updatedAt: string;
 };
 

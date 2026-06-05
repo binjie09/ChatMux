@@ -4,7 +4,6 @@ import {
   deleteHost,
   listHosts,
   setHostPinned,
-  setHostShared,
   trustHost,
   updateHost,
   type CreateHostInput,
@@ -79,20 +78,6 @@ export function useHostWorkspace(options: HostWorkspaceOptions) {
     }
   }
 
-  async function handleToggleShare() {
-    if (!selectedHost) {
-      return;
-    }
-    try {
-      const updated = await setHostShared(selectedHost.id, !selectedHost.shared);
-      updateHostInList(updated);
-      options.onAuditRefresh();
-      options.onError("");
-    } catch (err) {
-      options.onError(errorMessage(err));
-    }
-  }
-
   async function handleUpdateHost(hostId: string, input: CreateHostInput) {
     try {
       const updated = await updateHost(hostId, input);
@@ -135,7 +120,6 @@ export function useHostWorkspace(options: HostWorkspaceOptions) {
     handleDeleteHost,
     handleSelectHost,
     handleTogglePin,
-    handleToggleShare,
     handleTrustHost,
     handleUpdateHost,
     hosts,

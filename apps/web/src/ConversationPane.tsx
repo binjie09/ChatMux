@@ -52,7 +52,6 @@ type ConversationPaneProps = {
   onRenameWindow: (sessionName: string, windowIndex: number, name: string) => Promise<void> | void;
   onSaveSessionMetadata: (input: SaveSessionMetadataInput) => Promise<void>;
   onTogglePin: () => void;
-  onToggleShare: () => void;
   onTrustHost: () => void;
 };
 
@@ -84,7 +83,7 @@ export function ConversationPane(props: ConversationPaneProps) {
           <h2>{sessionTitle(props.selectedSession)}</h2>
           <SessionMetadataEditor session={props.selectedSession} onSave={props.onSaveSessionMetadata} />
         </div>
-        <HostActions host={props.host} onTogglePin={props.onTogglePin} onToggleShare={props.onToggleShare} onTrustHost={props.onTrustHost} />
+        <HostActions host={props.host} onTogglePin={props.onTogglePin} onTrustHost={props.onTrustHost} />
       </header>
 
       <div className="terminal-workspace">

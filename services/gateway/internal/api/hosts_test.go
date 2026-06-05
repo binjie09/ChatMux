@@ -39,8 +39,8 @@ func TestCreateAndListHostsAPI(t *testing.T) {
 	if len(hosts) != 1 {
 		t.Fatalf("expected 1 host, got %d", len(hosts))
 	}
-	if hosts[0].Owner != localDevPrincipal.Name || !hosts[0].Shared {
-		t.Fatalf("expected created host owner/shared fields, got %#v", hosts[0])
+	if hosts[0].Owner != localDevPrincipal.Name {
+		t.Fatalf("expected created host owner field, got %#v", hosts[0])
 	}
 	if !hosts[0].HasPassword || strings.Contains(listRec.Body.String(), "secret") {
 		t.Fatalf("expected password flag without secret exposure, got %s", listRec.Body.String())
@@ -55,41 +55,21 @@ func TestCreateAndListHostsAPI(t *testing.T) {
 	}
 }
 
-func TestShareHostAPI(t *testing.T) {
-	server, closeServer := newTestServer(t)
-	defer closeServer()
-	host := createTestHost(t, server.hosts)
-
-	req := httptest.NewRequest(http.MethodPost, "/api/hosts/"+host.ID+"/share", bytes.NewBufferString(`{"shared":false}`))
-	rec := httptest.NewRecorder()
-
-	server.Handler().ServeHTTP(rec, req)
-	if rec.Code != http.StatusOK {
-		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
-	}
-	if !bytes.Contains(rec.Body.Bytes(), []byte(`"shared":false`)) {
-		t.Fatalf("expected private response, got %s", rec.Body.String())
-	}
-}
-
-func TestListHostsFiltersPrivateHosts(t *testing.T) {
+func TestListHostsFiltersForeignHosts(t *testing.T) {
 	server := newRoleTestServer(t,
 		StaticUser{Name: "owner", Role: RoleViewer, Token: "owner-token"},
 		StaticUser{Name: "reader", Role: RoleViewer, Token: "reader-token"},
 	)
-	privateHost := createOwnedHost(t, server.hosts, "owner", "private")
-	if _, err := server.hosts.SetHostShared(testContext(t), privateHost.ID, false); err != nil {
-		t.Fatalf("SetHostShared failed: %v", err)
-	}
-	createOwnedHost(t, server.hosts, "other", "shared")
+	createOwnedHost(t, server.hosts, "owner", "owned")
+	createOwnedHost(t, server.hosts, "other", "foreign")
 
 	ownerHosts := listHostsWithToken(t, server, "owner-token")
-	if len(ownerHosts) != 2 {
-		t.Fatalf("expected owner to see two hosts, got %d", len(ownerHosts))
+	if len(ownerHosts) != 1 || ownerHosts[0].Owner != "owner" {
+		t.Fatalf("expected owner host only, got %#v", ownerHosts)
 	}
 	readerHosts := listHostsWithToken(t, server, "reader-token")
-	if len(readerHosts) != 1 || !readerHosts[0].Shared {
-		t.Fatalf("expected reader to see only shared host, got %#v", readerHosts)
+	if len(readerHosts) != 0 {
+		t.Fatalf("expected reader to see no foreign hosts, got %#v", readerHosts)
 	}
 }
 
@@ -152,9 +132,6 @@ func TestUpdateHostRejectsEmptyPatch(t *testing.T) {
 func TestUpdateHostRequiresVisibility(t *testing.T) {
 	server := newRoleTestServer(t, StaticUser{Name: "ops", Role: RoleOperator, Token: "ops-token"})
 	host := createOwnedHost(t, server.hosts, "owner", "private")
-	if _, err := server.hosts.SetHostShared(testContext(t), host.ID, false); err != nil {
-		t.Fatalf("SetHostShared failed: %v", err)
-	}
 
 	req := httptest.NewRequest(http.MethodPatch, "/api/hosts/"+host.ID, bytes.NewBufferString(`{"name":"blocked"}`))
 	req.Header.Set("Authorization", "Bearer ops-token")
@@ -195,9 +172,6 @@ func TestDeleteHostAPI(t *testing.T) {
 func TestDeleteHostRequiresVisibility(t *testing.T) {
 	server := newRoleTestServer(t, StaticUser{Name: "ops", Role: RoleOperator, Token: "ops-token"})
 	host := createOwnedHost(t, server.hosts, "owner", "private")
-	if _, err := server.hosts.SetHostShared(testContext(t), host.ID, false); err != nil {
-		t.Fatalf("SetHostShared failed: %v", err)
-	}
 
 	req := httptest.NewRequest(http.MethodDelete, "/api/hosts/"+host.ID, nil)
 	req.Header.Set("Authorization", "Bearer ops-token")

@@ -22,7 +22,6 @@ func scanHost(row hostScanner) (Host, error) {
 		&host.SSHKeyPassphrase,
 		&host.Pinned,
 		&host.Owner,
-		&host.Shared,
 		&host.CreatedAt,
 		&host.UpdatedAt,
 	); err != nil {

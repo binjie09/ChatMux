@@ -33,7 +33,6 @@ type Host struct {
 	HasCredential      bool      `json:"hasCredential"`
 	Pinned             bool      `json:"pinned"`
 	Owner              string    `json:"owner"`
-	Shared             bool      `json:"shared"`
 	CreatedAt          time.Time `json:"createdAt"`
 	UpdatedAt          time.Time `json:"updatedAt"`
 }
@@ -138,13 +137,12 @@ func (s *Store) CreateHost(ctx context.Context, input CreateHostInput) (Host, er
 		Username:         input.Username,
 		Status:           "offline",
 		Owner:            normalizeOwner(input.Owner),
-		Shared:           true,
 		CreatedAt:        now,
 		UpdatedAt:        now,
 	}
 	host = normalizeHostCredential(host)
 
-	if _, err := s.db.ExecContext(ctx, insertHostSQL, host.ID, host.Name, host.Hostname, host.Port, host.Username, host.Status, host.HostKeyFingerprint, host.SSHAuthMethod, host.SSHPassword, host.SSHPrivateKey, host.SSHKeyPassphrase, host.Pinned, host.Owner, host.Shared, host.CreatedAt, host.UpdatedAt); err != nil {
+	if _, err := s.db.ExecContext(ctx, insertHostSQL, host.ID, host.Name, host.Hostname, host.Port, host.Username, host.Status, host.HostKeyFingerprint, host.SSHAuthMethod, host.SSHPassword, host.SSHPrivateKey, host.SSHKeyPassphrase, host.Pinned, host.Owner, host.CreatedAt, host.UpdatedAt); err != nil {
 		return Host{}, fmt.Errorf("insert host: %w", err)
 	}
 	return host, nil
@@ -159,22 +157,6 @@ func (s *Store) SetHostPinned(ctx context.Context, id string, pinned bool) (Host
 	affected, err := result.RowsAffected()
 	if err != nil {
 		return Host{}, fmt.Errorf("set host pinned affected rows: %w", err)
-	}
-	if affected == 0 {
-		return Host{}, ErrHostNotFound
-	}
-	return s.GetHost(ctx, id)
-}
-
-func (s *Store) SetHostShared(ctx context.Context, id string, shared bool) (Host, error) {
-	now := time.Now().UTC()
-	result, err := s.db.ExecContext(ctx, setHostSharedSQL, shared, now, id)
-	if err != nil {
-		return Host{}, fmt.Errorf("set host shared: %w", err)
-	}
-	affected, err := result.RowsAffected()
-	if err != nil {
-		return Host{}, fmt.Errorf("set host shared affected rows: %w", err)
 	}
 	if affected == 0 {
 		return Host{}, ErrHostNotFound
