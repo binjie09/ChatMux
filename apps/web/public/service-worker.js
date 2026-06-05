@@ -1,4 +1,4 @@
-const CACHE_VERSION = "chatmux-pwa-v2";
+const CACHE_VERSION = "chatmux-pwa-v3";
 const APP_SHELL = [
   "/",
   "/manifest.webmanifest",
@@ -32,6 +32,10 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
+  if (isViteDevelopmentAsset(url.pathname)) {
+    return;
+  }
+
   if (request.mode === "navigate") {
     event.respondWith(fetch(request).catch(() => caches.match("/")));
     return;
@@ -54,3 +58,10 @@ self.addEventListener("fetch", (event) => {
     }),
   );
 });
+
+function isViteDevelopmentAsset(pathname) {
+  return pathname.startsWith("/src/")
+    || pathname.startsWith("/@vite/")
+    || pathname.startsWith("/@react-refresh")
+    || pathname.startsWith("/node_modules/.vite/");
+}

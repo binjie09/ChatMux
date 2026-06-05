@@ -30,7 +30,7 @@
   .session-list.mobile-open {
     display: block;
     border-right: 0;
-    padding: calc(18px + env(safe-area-inset-top)) 14px 18px;
+    padding: 0 14px 18px;
   }
 
   .conversation {

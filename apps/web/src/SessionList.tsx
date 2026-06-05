@@ -56,17 +56,19 @@ export function SessionList(props: SessionListProps) {
         showNewSession={!props.tmuxFallbackActive}
       />
 
-      {windowListSession ? (
-        <MobileWindowListView
-          selectedWindowIndex={props.selectedSessionName === windowListSession.name ? props.selectedWindowIndex : null}
-          session={windowListSession}
-          onDeleteWindow={(windowIndex) => props.onDeleteWindow(windowListSession.name, windowIndex)}
-          onOpenWindow={(windowIndex) => props.onOpenWindow(windowListSession.name, windowIndex)}
-          onRenameWindow={(windowIndex, name) => props.onRenameWindow(windowListSession.name, windowIndex, name)}
-        />
-      ) : (
-        <SessionListBody {...props} inputRef={newSessionInputRef} />
-      )}
+      <div className="session-list-content">
+        {windowListSession ? (
+          <MobileWindowListView
+            selectedWindowIndex={props.selectedSessionName === windowListSession.name ? props.selectedWindowIndex : null}
+            session={windowListSession}
+            onDeleteWindow={(windowIndex) => props.onDeleteWindow(windowListSession.name, windowIndex)}
+            onOpenWindow={(windowIndex) => props.onOpenWindow(windowListSession.name, windowIndex)}
+            onRenameWindow={(windowIndex, name) => props.onRenameWindow(windowListSession.name, windowIndex, name)}
+          />
+        ) : (
+          <SessionListBody {...props} inputRef={newSessionInputRef} />
+        )}
+      </div>
     </section>
   );
 }
@@ -78,7 +80,7 @@ function SessionListHeader(props: {
   showNewSession: boolean;
 }) {
   return (
-    <header>
+    <header className={`session-list-header ${props.inWindowList ? "window-list" : "conversation-list"}`}>
       {props.inWindowList ? (
         <button className="icon-button" type="button" aria-label="Back to conversations" onClick={props.onBack}>
           <ChevronLeft size={20} aria-hidden="true" />
