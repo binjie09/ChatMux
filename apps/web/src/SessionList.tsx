@@ -1,6 +1,7 @@
-import { useRef, type RefObject } from "react";
-import { Bell, ChevronLeft, KeyRound, Plus, RefreshCw } from "lucide-react";
+import { useRef, useState, type RefObject } from "react";
+import { Bell, ChevronLeft, KeyRound, Pencil, Plus, RefreshCw } from "lucide-react";
 import "./session-controls.css";
+import { InlineNameEdit } from "./InlineNameEdit";
 import { SessionGroup } from "./SessionGroup";
 import { SessionWindowList } from "./SessionWindowList";
 import { type DisplayTmuxSession } from "./session-state-machine";
@@ -72,6 +73,7 @@ export function SessionList(props: SessionListProps) {
             session={windowListSession}
             onDeleteWindow={(windowIndex) => props.onDeleteWindow(windowListSession.name, windowIndex)}
             onOpenWindow={(windowIndex) => props.onOpenWindow(windowListSession.name, windowIndex)}
+            onRenameSession={props.onRenameSession}
             onRenameWindow={(windowIndex, name) => props.onRenameWindow(windowListSession.name, windowIndex, name)}
           />
         ) : (
@@ -159,13 +161,32 @@ function TmuxFallbackNotice(props: { visible: boolean }) {
   );
 }
 
-function MobileWindowListView(props: {
+type MobileWindowListViewProps = {
   selectedWindowIndex: number | null;
   session: DisplayTmuxSession;
   onDeleteWindow: (windowIndex: number) => void;
   onOpenWindow: (windowIndex: number) => void;
+  onRenameSession: (sessionName: string, name: string) => Promise<void> | void;
   onRenameWindow: (windowIndex: number, name: string) => Promise<void> | void;
-}) {
+};
+
+function MobileWindowListView(props: MobileWindowListViewProps) {
+  const [editingSession, setEditingSession] = useState(false);
+  if (editingSession) {
+    return (
+      <div className="session-mobile-windows">
+        <div className="session-window-heading editing">
+          <InlineNameEdit
+            ariaLabel="Rename session"
+            initialName={props.session.name}
+            onCancel={() => setEditingSession(false)}
+            onSave={(name) => props.onRenameSession(props.session.name, name)}
+          />
+        </div>
+        <MobileWindowRows {...props} />
+      </div>
+    );
+  }
   return (
     <div className="session-mobile-windows">
       <div className="session-window-heading">
@@ -173,15 +194,27 @@ function MobileWindowListView(props: {
           <strong>{props.session.title || props.session.name}</strong>
           <small>{props.session.name} · {windowCountLabel(props.session.windowList.length)}</small>
         </div>
+        {!isSSHFallbackSession(props.session) ? (
+          <button className="session-window-action" type="button" aria-label={`Rename ${props.session.name}`} onClick={() => setEditingSession(true)}>
+            <Pencil size={14} aria-hidden="true" />
+          </button>
+        ) : null}
       </div>
-      <SessionWindowList
-        selectedWindowIndex={props.selectedWindowIndex}
-        windows={props.session.windowList}
-        onDeleteWindow={isSSHFallbackSession(props.session) ? undefined : props.onDeleteWindow}
-        onOpenWindow={props.onOpenWindow}
-        onRenameWindow={isSSHFallbackSession(props.session) ? undefined : props.onRenameWindow}
-      />
+      <MobileWindowRows {...props} />
     </div>
+  );
+}
+
+function MobileWindowRows(props: Pick<MobileWindowListViewProps, "onDeleteWindow" | "onOpenWindow" | "onRenameWindow" | "selectedWindowIndex" | "session">) {
+  return (
+    <SessionWindowList
+      selectedWindowIndex={props.selectedWindowIndex}
+      windows={props.session.windowList}
+      onDeleteWindow={isSSHFallbackSession(props.session) ? undefined : props.onDeleteWindow}
+      onOpenWindow={props.onOpenWindow}
+      onRenameWindow={isSSHFallbackSession(props.session) ? undefined : props.onRenameWindow}
+      showRenameButton={!isSSHFallbackSession(props.session)}
+    />
   );
 }
 

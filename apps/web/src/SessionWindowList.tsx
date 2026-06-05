@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Monitor, Terminal, Trash2 } from "lucide-react";
+import { Monitor, Pencil, Terminal, Trash2 } from "lucide-react";
 import { InlineNameEdit } from "./InlineNameEdit";
 import { type TmuxWindow } from "./api";
 import { windowLabel } from "./session-window-utils";
@@ -11,6 +11,7 @@ type SessionWindowListProps = {
   onDeleteWindow?: (windowIndex: number) => void;
   onOpenWindow: (windowIndex: number) => void;
   onRenameWindow?: (windowIndex: number, name: string) => Promise<void> | void;
+  showRenameButton?: boolean;
 };
 
 export function SessionWindowList(props: SessionWindowListProps) {
@@ -28,6 +29,7 @@ export function SessionWindowList(props: SessionWindowListProps) {
           window={window}
           onDeleteWindow={props.onDeleteWindow}
           onRenameWindow={props.onRenameWindow}
+          showRenameButton={Boolean(props.showRenameButton)}
           onStopEditing={() => setEditingWindowIndex(null)}
           onStartEditing={() => setEditingWindowIndex(window.index)}
           onOpenWindow={props.onOpenWindow}
@@ -44,6 +46,7 @@ function WindowRow({
   onDeleteWindow,
   onOpenWindow,
   onRenameWindow,
+  showRenameButton,
   onStartEditing,
   onStopEditing,
 }: {
@@ -53,6 +56,7 @@ function WindowRow({
   onDeleteWindow?: (windowIndex: number) => void;
   onOpenWindow: (windowIndex: number) => void;
   onRenameWindow?: (windowIndex: number, name: string) => Promise<void> | void;
+  showRenameButton: boolean;
   onStartEditing: () => void;
   onStopEditing: () => void;
 }) {
@@ -68,8 +72,10 @@ function WindowRow({
       </div>
     );
   }
+  const canRename = showRenameButton && Boolean(onRenameWindow);
+  const actionCount = (canRename ? 1 : 0) + (onDeleteWindow ? 1 : 0);
   return (
-    <div className={`session-window-row ${isSelected ? "selected" : ""}`}>
+    <div className={`session-window-row ${isSelected ? "selected" : ""} ${actionCount > 1 ? "has-two-actions" : ""}`}>
       <button
         aria-current={isSelected ? "true" : undefined}
         type="button"
@@ -91,8 +97,13 @@ function WindowRow({
         </span>
         <em className={window.status}>{window.status}</em>
       </button>
+      {canRename ? (
+        <button className="session-window-action" type="button" aria-label={`Rename ${windowLabel(window)}`} onClick={onStartEditing}>
+          <Pencil size={14} aria-hidden="true" />
+        </button>
+      ) : null}
       {onDeleteWindow ? (
-        <button className="session-window-delete" type="button" aria-label={`Delete ${windowLabel(window)}`} onClick={() => onDeleteWindow(window.index)}>
+        <button className="session-window-action delete" type="button" aria-label={`Delete ${windowLabel(window)}`} onClick={() => onDeleteWindow(window.index)}>
           <Trash2 size={14} aria-hidden="true" />
         </button>
       ) : null}
