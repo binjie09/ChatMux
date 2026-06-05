@@ -78,6 +78,7 @@ type AppShellProps = {
   composerHandlers: {
     onComposerModeChange: (mode: ComposerMode) => void;
     onComposerSubmit: (data: string) => void;
+    onComposerUploadImage: ((file: File) => Promise<void>) | null;
     onComposerValueChange: (value: string) => void;
   };
   onConnectionError: (message: string) => void;
@@ -164,6 +165,7 @@ export function AppShell(props: AppShellProps) {
         onBackToSessions={props.sessionHandlers.onBackToSessions}
         onComposerModeChange={props.composerHandlers.onComposerModeChange}
         onComposerSubmit={props.composerHandlers.onComposerSubmit}
+        onComposerUploadImage={props.composerHandlers.onComposerUploadImage}
         onComposerValueChange={props.composerHandlers.onComposerValueChange}
         onConnectionError={props.onConnectionError}
         onConnectionClosed={props.sessionHandlers.onConnectionClosed}

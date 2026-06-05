@@ -83,10 +83,22 @@
   line-height: 1.35;
 }
 
-.composer-expand-button {
+.composer-input-shell.has-image-upload textarea {
+  padding-right: 80px;
+}
+
+.composer-image-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.composer-expand-button,
+.composer-image-button {
   position: absolute;
   top: 6px;
-  right: 6px;
   display: grid;
   place-items: center;
   width: 32px;
@@ -95,6 +107,18 @@
   border-radius: 8px;
   color: #415049;
   background: #fffaf0;
+}
+
+.composer-expand-button {
+  right: 6px;
+}
+
+.composer-image-button {
+  right: 42px;
+}
+
+.composer-image-button:disabled {
+  opacity: 0.58;
 }
 
 .composer-send-button {
@@ -195,11 +219,16 @@
     background: #0d1510;
   }
 
+  .mobile-terminal-active .composer-input-shell.has-image-upload textarea {
+    padding-right: 78px;
+  }
+
   .mobile-terminal-active .composer textarea::placeholder {
     color: #7f9187;
   }
 
-  .mobile-terminal-active .composer-expand-button {
+  .mobile-terminal-active .composer-expand-button,
+  .mobile-terminal-active .composer-image-button {
     border-color: #26372f;
     color: #c3d1c9;
     background: #16231c;

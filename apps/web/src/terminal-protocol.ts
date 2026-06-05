@@ -13,6 +13,10 @@ export function sendTerminalInput(socket: WebSocket | null, data: string, source
   }
 }
 
+export function bracketedPaste(data: string) {
+  return `\x1b[200~${data}\x1b[201~`;
+}
+
 export function sendTerminalResize(socket: WebSocket, cols: number, rows: number) {
   socket.send(JSON.stringify({ type: "resize", cols, rows }));
 }

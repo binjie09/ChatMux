@@ -21,6 +21,8 @@ import { useTmuxWindowActions } from "./useTmuxWindowActions";
 import { useAppSessionHandlers } from "./useAppSessionHandlers";
 import { useAppSessionWorkflow } from "./useAppSessionWorkflow";
 import { findSessionWindow, windowLabel } from "./session-window-utils";
+import { bracketedPaste } from "./terminal-protocol";
+import { errorMessage } from "./view-utils";
 
 const noExpandedSessions: ReadonlySet<string> = new Set();
 
@@ -129,6 +131,16 @@ export function App() {
     ? `${selectedHostId}:${selection.selectedSessionName}:${selection.selectedWindowIndex}`
     : "";
   const isMobileTerminalActive = Boolean(terminalSessionKey && mobilePanel === "terminal");
+
+  async function handleMobileTerminalImageUpload(file: File) {
+    try {
+      const remotePath = await handleTerminalImagePaste(file);
+      setQueuedInput({ data: bracketedPaste(remotePath), id: Date.now() });
+    } catch (error) {
+      setError(errorMessage(error));
+    }
+  }
+
   const loadTerminalScrollbackHistory = useTerminalScrollbackHistory({
     getCredentialToken: getSelectedHostCredentialToken,
     hostId: selectedHostId,
@@ -225,7 +237,12 @@ export function App() {
       showHostForm={showHostForm}
       target={summaryTarget}
       terminalSessionKey={terminalSessionKey}
-      composerHandlers={{ onComposerModeChange: setComposerMode, onComposerSubmit: handleComposerSubmit, onComposerValueChange: setComposerValue }}
+      composerHandlers={{
+        onComposerModeChange: setComposerMode,
+        onComposerSubmit: handleComposerSubmit,
+        onComposerUploadImage: isMobileLayout && isMobileTerminalActive ? handleMobileTerminalImageUpload : null,
+        onComposerValueChange: setComposerValue,
+      }}
       sessionHandlers={sessionHandlers}
       onConnectionError={setError}
       onPasteTerminalImage={terminalSessionKey ? handleTerminalImagePaste : null}

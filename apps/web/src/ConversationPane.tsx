@@ -39,6 +39,7 @@ type ConversationPaneProps = {
   onBackToSessions: () => void;
   onComposerModeChange: (mode: ComposerMode) => void;
   onComposerSubmit: (data: string) => void;
+  onComposerUploadImage: ((file: File) => Promise<void>) | null;
   onComposerValueChange: (value: string) => void;
   onConnectionError: (message: string) => void;
   onConnectionReady: (status: ConnectionStatus) => void;
@@ -117,6 +118,7 @@ export function ConversationPane(props: ConversationPaneProps) {
         value={props.composerValue}
         onModeChange={props.onComposerModeChange}
         onSubmit={props.onComposerSubmit}
+        onUploadImage={props.onComposerUploadImage}
         onValueChange={props.onComposerValueChange}
       />
       <MobileSheet open={props.mobileSheet === "context"} title="Context" onClose={() => props.onMobileSheetChange(null)}>

@@ -1,5 +1,7 @@
 import { type ReactNode, useState } from "react";
 import { CircleHelp, Clipboard, CornerDownLeft, Maximize2, Send, TextCursorInput, X } from "lucide-react";
+import { ComposerImageUploadButton } from "./ComposerImageUploadButton";
+import { bracketedPaste } from "./terminal-protocol";
 import "./composer.css";
 import "./composer-dialog.css";
 
@@ -11,6 +13,7 @@ type ComposerProps = {
   value: string;
   onModeChange: (mode: ComposerMode) => void;
   onSubmit: (data: string) => void;
+  onUploadImage?: ((file: File) => Promise<void>) | null;
   onValueChange: (value: string) => void;
 };
 
@@ -58,6 +61,7 @@ export function Composer(props: ComposerProps) {
         onRequestFullScreen={() => setFullScreenOpen(true)}
         onRequestHelp={setHelpMode}
         onSubmit={submitValue}
+        onUploadImage={props.onUploadImage}
         onValueChange={props.onValueChange}
       />
       {fullScreenOpen ? (
@@ -94,6 +98,7 @@ function ComposerForm(props: ComposerFormProps) {
       <ComposerTextArea
         value={props.value}
         onRequestFullScreen={props.onRequestFullScreen}
+        onUploadImage={props.onUploadImage}
         onValueChange={props.onValueChange}
       />
       <button className="composer-send-button" type="button" onClick={props.onSubmit}>
@@ -141,12 +146,13 @@ function ModeButtons(props: {
 }
 
 function ComposerTextArea(props: {
+  onUploadImage?: ((file: File) => Promise<void>) | null;
   value: string;
   onRequestFullScreen: () => void;
   onValueChange: (value: string) => void;
 }) {
   return (
-    <div className="composer-input-shell">
+    <div className={`composer-input-shell ${props.onUploadImage ? "has-image-upload" : ""}`}>
       <textarea
         aria-label="Command"
         placeholder="Send command or terminal input..."
@@ -154,6 +160,7 @@ function ComposerTextArea(props: {
         value={props.value}
         onChange={(event) => props.onValueChange(event.target.value)}
       />
+      {props.onUploadImage ? <ComposerImageUploadButton onUpload={props.onUploadImage} /> : null}
       <button
         aria-label="Open full screen editor"
         className="composer-expand-button"
@@ -239,7 +246,7 @@ function composeTerminalInput(value: string, mode: ComposerMode) {
     return `${value}\n`;
   }
   if (mode === "paste") {
-    return `\x1b[200~${value}\x1b[201~`;
+    return bracketedPaste(value);
   }
   return value;
 }

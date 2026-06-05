@@ -1,6 +1,6 @@
 import { type MutableRefObject } from "react";
 import { type Terminal } from "@xterm/xterm";
-import { errorMessage, sendTerminalInput } from "./terminal-protocol";
+import { bracketedPaste, errorMessage, sendTerminalInput } from "./terminal-protocol";
 
 export type TerminalPasteHandlers = {
   onConnectionError: (message: string) => void;
@@ -139,10 +139,6 @@ async function pasteTerminalImage(
   } catch (error) {
     handlersRef.current.onConnectionError(errorMessage(error));
   }
-}
-
-function bracketedPaste(data: string) {
-  return `\x1b[200~${data}\x1b[201~`;
 }
 
 function extensionForMimeType(mimeType: string) {
