@@ -130,7 +130,7 @@ func (s *Server) runManagedTmuxListMutation(
 }
 
 func createWindowCommand(sessionName string, input tmuxWindowRequest) (string, error) {
-	return tmux.CreateWindowCommand(sessionName, input.Name)
+	return tmux.CreateWindowCommand(sessionName, input.Name, input.WindowIndex)
 }
 
 func renameWindowCommand(sessionName string, input tmuxWindowRequest) (string, error) {

@@ -21,10 +21,10 @@ export async function renameTmuxSession(hostId: string, sessionName: string, cre
   });
 }
 
-export async function createTmuxWindow(hostId: string, sessionName: string, credentialToken: string, name: string): Promise<TmuxSession[]> {
+export async function createTmuxWindow(hostId: string, sessionName: string, credentialToken: string, name: string, windowIndex: number | null): Promise<TmuxSession[]> {
   return request<TmuxSession[]>(`${tmuxSessionPath(hostId, sessionName)}/windows`, {
     method: "POST",
-    body: JSON.stringify({ credentialToken, name }),
+    body: JSON.stringify({ credentialToken, name, windowIndex }),
   });
 }
 

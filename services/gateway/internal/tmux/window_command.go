@@ -4,16 +4,26 @@ import "errors"
 
 var ErrInvalidWindowName = errors.New("window name must be 1-256 characters without tabs or newlines")
 
-func CreateWindowCommand(sessionName string, windowName string) (string, error) {
+func CreateWindowCommand(sessionName string, windowName string, sourceWindowIndex *int) (string, error) {
 	if err := ValidateSessionName(sessionName); err != nil {
 		return "", err
 	}
 	if err := ValidateWindowName(windowName); err != nil {
 		return "", err
 	}
-	command := tmuxPrelude() + tmuxHistoryPrelude(sessionName) +
-		"\"$TMUX_BIN\" new-window -d -t " + shellQuote(formatNewWindowTarget(sessionName)) + " -n " + shellQuote(windowName) + rawListSessionsAfterSuccessCommand()
+	sourceTarget := Target{SessionName: sessionName, WindowIndex: sourceWindowIndex}
+	if err := ValidateTarget(sourceTarget); err != nil {
+		return "", err
+	}
+	command := tmuxPrelude() + tmuxHistoryPrelude(sessionName) + tmuxCurrentPathPrelude(sourceTarget) +
+		"\"$TMUX_BIN\" new-window -d -t " + shellQuote(formatNewWindowTarget(sessionName)) + " -c \"$CHATMUX_TMUX_CURRENT_PATH\" -n " +
+		shellQuote(windowName) + rawListSessionsAfterSuccessCommand()
 	return loginShellCommand(command), nil
+}
+
+func tmuxCurrentPathPrelude(target Target) string {
+	return "CHATMUX_TMUX_CURRENT_PATH=$(\"$TMUX_BIN\" display-message -p -t " + shellQuote(formatTarget(target)) + " " +
+		shellQuote("#{pane_current_path}") + ") || exit $?; "
 }
 
 func KillWindowCommand(target Target) (string, error) {

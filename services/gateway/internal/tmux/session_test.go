@@ -257,11 +257,17 @@ func TestCaptureTargetPaneCommandTargetsWindow(t *testing.T) {
 }
 
 func TestCreateWindowCommand(t *testing.T) {
-	command, err := CreateWindowCommand("deploy_1", "logs")
+	command, err := CreateWindowCommand("deploy_1", "logs", nil)
 	if err != nil {
 		t.Fatalf("CreateWindowCommand failed: %v", err)
 	}
-	if !containsLoginShellFragment(command, "new-window -d -t '=deploy_1:' -n 'logs'") {
+	if !containsLoginShellFragment(command, "display-message -p -t '=deploy_1:' '#{pane_current_path}'") {
+		t.Fatalf("expected current path lookup, got %q", command)
+	}
+	if !strings.Contains(command, "-c \"$CHATMUX_TMUX_CURRENT_PATH\"") {
+		t.Fatalf("expected new-window to inherit current path, got %q", command)
+	}
+	if !containsLoginShellFragment(command, "new-window -d -t '=deploy_1:' -c \"$CHATMUX_TMUX_CURRENT_PATH\" -n 'logs'") {
 		t.Fatalf("expected new-window command, got %q", command)
 	}
 	if !strings.Contains(command, "list-windows -a") {
@@ -269,15 +275,29 @@ func TestCreateWindowCommand(t *testing.T) {
 	}
 }
 
+func TestCreateWindowCommandUsesSourceWindowPath(t *testing.T) {
+	windowIndex := 2
+	command, err := CreateWindowCommand("deploy_1", "logs", &windowIndex)
+	if err != nil {
+		t.Fatalf("CreateWindowCommand failed: %v", err)
+	}
+	if !containsLoginShellFragment(command, "display-message -p -t '=deploy_1:2' '#{pane_current_path}'") {
+		t.Fatalf("expected source window current path lookup, got %q", command)
+	}
+	if !containsLoginShellFragment(command, "new-window -d -t '=deploy_1:' -c \"$CHATMUX_TMUX_CURRENT_PATH\" -n 'logs'") {
+		t.Fatalf("expected new-window command with current path, got %q", command)
+	}
+}
+
 func TestCreateWindowCommandTargetsNumericSessionName(t *testing.T) {
-	command, err := CreateWindowCommand("14", "logs")
+	command, err := CreateWindowCommand("14", "logs", nil)
 	if err != nil {
 		t.Fatalf("CreateWindowCommand failed: %v", err)
 	}
 	if !containsLoginShellFragment(command, "set-option -t '=14' -q history-limit \"$CHATMUX_TMUX_HISTORY_LIMIT\"") {
 		t.Fatalf("expected exact numeric session target in history prelude, got %q", command)
 	}
-	if !containsLoginShellFragment(command, "new-window -d -t '=14:' -n 'logs'") {
+	if !containsLoginShellFragment(command, "new-window -d -t '=14:' -c \"$CHATMUX_TMUX_CURRENT_PATH\" -n 'logs'") {
 		t.Fatalf("expected exact numeric session target for new-window, got %q", command)
 	}
 }

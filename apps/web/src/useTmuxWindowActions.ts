@@ -69,7 +69,8 @@ export function useTmuxWindowActions(options: UseTmuxWindowActionsOptions) {
     await runTmuxAction(optionsRef, async (current) => {
       const credentialToken = await current.getCredentialToken();
       const windowName = nextWindowName(current.sessions.find((session) => session.name === sessionName));
-      const nextSessions = await createTmuxWindow(current.hostId, sessionName, credentialToken, windowName);
+      const sourceWindowIndex = sourceWindowIndexForCreate(current, sessionName);
+      const nextSessions = await createTmuxWindow(current.hostId, sessionName, credentialToken, windowName, sourceWindowIndex);
       current.onSessionsChange(nextSessions);
       const windowIndex = findWindowIndexByName(nextSessions, sessionName, windowName);
       if (windowIndex !== null) {
@@ -107,6 +108,13 @@ export function useTmuxWindowActions(options: UseTmuxWindowActionsOptions) {
   }, []);
 
   return { applySessionRefresh, createWindow, deleteWindow, refreshSessionsKeepingSelection, renameSession, renameWindow };
+}
+
+function sourceWindowIndexForCreate(options: UseTmuxWindowActionsOptions, sessionName: string) {
+  if (options.selectedSessionName !== sessionName) {
+    return null;
+  }
+  return options.selectedWindowIndex;
 }
 
 async function runTmuxAction(

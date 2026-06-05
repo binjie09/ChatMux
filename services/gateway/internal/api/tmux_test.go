@@ -280,7 +280,7 @@ func TestCreateTmuxWindowAPI(t *testing.T) {
 	host := createTrustedTestHost(t, server)
 	token := createCredentialTokenForTest(t, server, testCredentialInput{hostID: host.ID})
 
-	body := bytes.NewBufferString(`{"credentialToken":"` + token + `","name":"logs"}`)
+	body := bytes.NewBufferString(`{"credentialToken":"` + token + `","name":"logs","windowIndex":1}`)
 	req := httptest.NewRequest(http.MethodPost, "/api/hosts/"+host.ID+"/tmux/sessions/deploy/windows", body)
 	rec := httptest.NewRecorder()
 
@@ -288,7 +288,10 @@ func TestCreateTmuxWindowAPI(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
 	}
-	if !containsLoginShellFragment(runner.command, "new-window -d -t '=deploy:' -n 'logs'") {
+	if !containsLoginShellFragment(runner.command, "display-message -p -t '=deploy:1' '#{pane_current_path}'") {
+		t.Fatalf("expected source window current path lookup, got %q", runner.command)
+	}
+	if !containsLoginShellFragment(runner.command, "new-window -d -t '=deploy:' -c \"$CHATMUX_TMUX_CURRENT_PATH\" -n 'logs'") {
 		t.Fatalf("expected new-window command, got %q", runner.command)
 	}
 	if !strings.Contains(rec.Body.String(), `"logs"`) {
