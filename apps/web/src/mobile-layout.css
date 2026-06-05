@@ -71,8 +71,7 @@
   .sidebar.mobile-open .brand,
   .sidebar.mobile-open .primary-action,
   .sidebar.mobile-open .nav-section h2,
-  .sidebar.mobile-open .host-row span,
-  .sidebar.mobile-open .platforms {
+  .sidebar.mobile-open .host-row span {
     display: flex;
   }
 
@@ -95,6 +94,19 @@
   }
 
   .sidebar.mobile-open .platforms {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+    align-content: start;
     margin-top: 12px;
+  }
+
+  .sidebar.mobile-open .platforms div {
+    display: grid;
+    grid-template-columns: 18px minmax(0, 1fr);
+    align-items: start;
+    gap: 8px;
+    min-width: 0;
+    line-height: 1.35;
   }
 }
