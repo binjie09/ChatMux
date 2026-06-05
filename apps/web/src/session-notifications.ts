@@ -1,6 +1,7 @@
 import { Capacitor } from "@capacitor/core";
 import { LocalNotifications } from "@capacitor/local-notifications";
 import { type SessionStatus } from "./api";
+import { isBrowserShell } from "./runtime-platform";
 import { type DisplayTmuxSession } from "./session-state-machine";
 
 export type SessionStatusChange = {
@@ -31,7 +32,7 @@ export async function sendSessionStatusNotification(change: SessionStatusChange)
     await sendNativeNotification(payload);
     return;
   }
-  sendWebNotification(payload);
+  await sendWebNotification(payload);
 }
 
 function sessionNotificationPayload(change: SessionStatusChange) {
@@ -88,14 +89,45 @@ async function sendNativeNotification(payload: ReturnType<typeof sessionNotifica
   });
 }
 
-function sendWebNotification(payload: ReturnType<typeof sessionNotificationPayload>) {
+async function sendWebNotification(payload: ReturnType<typeof sessionNotificationPayload>) {
   if (Notification.permission !== "granted") {
     throw new Error("Notification permission was denied");
   }
-  new Notification(payload.title, {
+  const options: NotificationOptions = {
     body: payload.body,
     tag: String(payload.id),
-  });
+  };
+  const registration = await webNotificationServiceWorkerRegistration();
+  if (registration) {
+    await registration.showNotification(payload.title, options);
+    return;
+  }
+  new Notification(payload.title, options);
+}
+
+async function webNotificationServiceWorkerRegistration() {
+  if (!("serviceWorker" in navigator)) {
+    return null;
+  }
+  const registration = await navigator.serviceWorker.getRegistration();
+  if (isNotificationRegistration(registration)) {
+    return registration;
+  }
+  if (import.meta.env.DEV || !isBrowserShell()) {
+    return null;
+  }
+  return notificationRegistration(await navigator.serviceWorker.register("/service-worker.js"));
+}
+
+function notificationRegistration(registration: ServiceWorkerRegistration) {
+  if (!isNotificationRegistration(registration)) {
+    throw new Error("Service worker notifications are not available in this browser");
+  }
+  return registration;
+}
+
+function isNotificationRegistration(registration: ServiceWorkerRegistration | undefined) {
+  return Boolean(registration && typeof registration.showNotification === "function");
 }
 
 function notificationId(value: string) {
