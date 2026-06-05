@@ -108,7 +108,7 @@ function HostEntry(props: HostEntryProps) {
             <small>{hostAddress(props.host)}</small>
           </span>
           <KeyRound className={`host-credential-icon ${props.host.hasCredential ? "saved" : ""}`} size={14} aria-hidden="true" />
-          <i className={`status-dot ${props.host.status}`} />
+          <i className={`status-dot ${props.host.status}`} role="img" aria-label={`SSH status: ${props.host.status}`} title={`SSH status: ${props.host.status}`} />
         </button>
         <div className="host-row-actions">
           <button className="host-action-button" type="button" onClick={() => setIsEditing(!isEditing)} aria-label={`Edit ${props.host.name}`} title="Edit host">

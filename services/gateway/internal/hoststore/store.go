@@ -17,6 +17,13 @@ const (
 	SSHAuthMethodPrivateKey = "private_key"
 )
 
+const (
+	HostStatusOffline    = "offline"
+	HostStatusConnecting = "connecting"
+	HostStatusOnline     = "online"
+	HostStatusError      = "error"
+)
+
 type Host struct {
 	ID                 string    `json:"id"`
 	Name               string    `json:"name"`
@@ -135,7 +142,7 @@ func (s *Store) CreateHost(ctx context.Context, input CreateHostInput) (Host, er
 		SSHKeyPassphrase: input.PrivateKeyPassphrase,
 		Port:             normalizePort(input.Port),
 		Username:         input.Username,
-		Status:           "offline",
+		Status:           HostStatusOffline,
 		Owner:            normalizeOwner(input.Owner),
 		CreatedAt:        now,
 		UpdatedAt:        now,
@@ -146,6 +153,24 @@ func (s *Store) CreateHost(ctx context.Context, input CreateHostInput) (Host, er
 		return Host{}, fmt.Errorf("insert host: %w", err)
 	}
 	return host, nil
+}
+
+func (s *Store) SetHostStatus(ctx context.Context, id string, status string) (Host, error) {
+	if !validHostStatus(status) {
+		return Host{}, errors.New("host status must be offline, connecting, online, or error")
+	}
+	result, err := s.db.ExecContext(ctx, setHostStatusSQL, status, id)
+	if err != nil {
+		return Host{}, fmt.Errorf("set host status: %w", err)
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return Host{}, fmt.Errorf("set host status affected rows: %w", err)
+	}
+	if affected == 0 {
+		return Host{}, ErrHostNotFound
+	}
+	return s.GetHost(ctx, id)
 }
 
 func (s *Store) SetHostPinned(ctx context.Context, id string, pinned bool) (Host, error) {
@@ -216,6 +241,10 @@ func normalizeOwner(owner string) string {
 
 func validSSHAuthMethod(method string) bool {
 	return method == "" || method == SSHAuthMethodPassword || method == SSHAuthMethodPrivateKey
+}
+
+func validHostStatus(status string) bool {
+	return status == HostStatusOffline || status == HostStatusConnecting || status == HostStatusOnline || status == HostStatusError
 }
 
 func normalizeSSHAuthMethod(method string) string {

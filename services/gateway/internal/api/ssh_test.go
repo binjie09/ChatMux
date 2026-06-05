@@ -97,6 +97,54 @@ func TestSSHProbe(t *testing.T) {
 	}
 }
 
+func TestSSHHeartbeatUsesSavedCredentialAndSetsOnline(t *testing.T) {
+	server, closeServer := newTestServer(t)
+	defer closeServer()
+	runner := &fakeSSHRunner{}
+	server.ssh = runner
+	host := createTrustedPasswordHost(t, server)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/hosts/"+host.ID+"/ssh/heartbeat", bytes.NewBufferString(`{}`))
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+	var response sshHeartbeatResponse
+	if err := json.NewDecoder(rec.Body).Decode(&response); err != nil {
+		t.Fatalf("decode heartbeat response: %v", err)
+	}
+	if !response.OK || response.Host.Status != hoststore.HostStatusOnline {
+		t.Fatalf("expected online heartbeat response, got %#v", response)
+	}
+	if runner.command != "printf chatmux-ok" || runner.password != "saved-secret" {
+		t.Fatalf("expected saved credential heartbeat, command=%q password=%q", runner.command, runner.password)
+	}
+}
+
+func TestSSHHeartbeatFailureSetsError(t *testing.T) {
+	server, closeServer := newTestServer(t)
+	defer closeServer()
+	server.ssh = failingCommandRunner{fakeSSHRunner: &fakeSSHRunner{}}
+	host := createTrustedPasswordHost(t, server)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/hosts/"+host.ID+"/ssh/heartbeat", bytes.NewBufferString(`{}`))
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+	var response sshHeartbeatResponse
+	if err := json.NewDecoder(rec.Body).Decode(&response); err != nil {
+		t.Fatalf("decode heartbeat response: %v", err)
+	}
+	if response.OK || response.Host.Status != hoststore.HostStatusError || response.Error == "" {
+		t.Fatalf("expected error heartbeat response, got %#v", response)
+	}
+}
+
 func TestTrustHostKeyAPI(t *testing.T) {
 	server, closeServer := newTestServer(t)
 	defer closeServer()
@@ -249,6 +297,21 @@ func createTestHost(t *testing.T, store *hoststore.Store) hoststore.Host {
 func createTrustedTestHost(t *testing.T, server *Server) hoststore.Host {
 	t.Helper()
 	host := createTestHost(t, server.hosts)
+	trusted, err := server.hosts.TrustHostKey(context.Background(), host.ID, "SHA256:test")
+	if err != nil {
+		t.Fatalf("TrustHostKey failed: %v", err)
+	}
+	return trusted
+}
+
+func createTrustedPasswordHost(t *testing.T, server *Server) hoststore.Host {
+	t.Helper()
+	host, err := server.hosts.CreateHost(context.Background(), hoststore.CreateHostInput{
+		Name: "saved", Hostname: "saved.test", Username: "deploy", Password: "saved-secret",
+	})
+	if err != nil {
+		t.Fatalf("CreateHost failed: %v", err)
+	}
 	trusted, err := server.hosts.TrustHostKey(context.Background(), host.ID, "SHA256:test")
 	if err != nil {
 		t.Fatalf("TrustHostKey failed: %v", err)

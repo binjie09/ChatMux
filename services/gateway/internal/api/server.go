@@ -94,6 +94,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("PATCH /api/hosts/{id}", s.handleUpdateHost)
 	mux.HandleFunc("POST /api/hosts/{id}/pin", s.handlePinHost)
 	mux.HandleFunc("POST /api/hosts/{id}/ssh/credentials", s.handleCreateSSHCredential)
+	mux.HandleFunc("POST /api/hosts/{id}/ssh/heartbeat", s.handleSSHHeartbeat)
 	mux.HandleFunc("POST /api/hosts/{id}/ssh/probe", s.handleSSHProbe)
 	mux.HandleFunc("POST /api/hosts/{id}/ssh/trust", s.handleTrustHostKey)
 	mux.HandleFunc("POST /api/hosts/{id}/tmux/sessions/list", s.handleListTmuxSessions)

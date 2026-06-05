@@ -8,6 +8,7 @@ import { type MobilePanel } from "./MobileNavigation";
 import { type MobileTerminalSheet } from "./MobileTerminalChrome";
 import { type QueuedTerminalInput } from "./NativeTerminal";
 import { useGatewayAccessToken } from "./useGatewayAccessToken";
+import { useHostHeartbeat } from "./useHostHeartbeat";
 import { useHostWorkspace } from "./useHostWorkspace";
 import { useAppStartupEffects } from "./useAppStartupEffects";
 import { useSessionWorkspaceState } from "./useSessionWorkspaceState";
@@ -51,6 +52,8 @@ export function App() {
   const {
     handleCreateHost,
     handleDeleteHost,
+    handleHostHeartbeat,
+    handleHostHeartbeatStatus,
     handleSelectHost,
     handleTogglePin,
     handleTrustHost,
@@ -120,6 +123,13 @@ export function App() {
     onAuditRefresh: () => void auditEvents.refresh(),
     onHostsRefresh: () => void refreshHosts(),
     onListSessions: () => void sessionWorkflow.handleListSessions(),
+  });
+  useHostHeartbeat({
+    gatewayReady: gatewayToken.ready,
+    hosts,
+    onError: setError,
+    onHostHeartbeat: handleHostHeartbeat,
+    onHostStatusChange: handleHostHeartbeatStatus,
   });
 
   function clearSelectedSession() {

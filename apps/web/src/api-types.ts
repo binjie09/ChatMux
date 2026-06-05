@@ -99,6 +99,12 @@ export type SSHCredential = {
   expiresIn: number;
 };
 
+export type HostHeartbeatResponse = {
+  error?: string;
+  host: Host;
+  ok: boolean;
+};
+
 export type TerminalTokenResponse = {
   token: string;
   expiresIn: number;

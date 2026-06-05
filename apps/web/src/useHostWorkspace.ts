@@ -111,6 +111,14 @@ export function useHostWorkspace(options: HostWorkspaceOptions) {
     }
   }
 
+  function handleHostHeartbeat(host: Host) {
+    updateHostInList(host);
+  }
+
+  function handleHostHeartbeatStatus(hostId: string, status: Host["status"]) {
+    setHosts((current) => current.map((host) => (host.id === hostId ? { ...host, status } : host)));
+  }
+
   function updateHostInList(updated: Host) {
     setHosts((current) => sortHosts(current.map((host) => (host.id === updated.id ? updated : host))));
   }
@@ -127,6 +135,8 @@ export function useHostWorkspace(options: HostWorkspaceOptions) {
   return {
     handleCreateHost,
     handleDeleteHost,
+    handleHostHeartbeat,
+    handleHostHeartbeatStatus,
     handleSelectHost,
     handleTogglePin,
     handleTrustHost,

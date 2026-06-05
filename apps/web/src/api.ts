@@ -6,6 +6,7 @@ import type {
   CreateHostInput,
   CreateTerminalTokenInput,
   Host,
+  HostHeartbeatResponse,
   SaveSessionMetadataInput,
   SSHCredential,
   TerminalTokenResponse,
@@ -24,6 +25,7 @@ export type {
   CreateHostInput,
   CreateTerminalTokenInput,
   Host,
+  HostHeartbeatResponse,
   SaveSessionMetadataInput,
   SessionStatus,
   SSHAuthMethod,
@@ -82,6 +84,13 @@ export async function trustHost(hostId: string): Promise<Host> {
 
 export async function createSSHCredential(hostId: string): Promise<SSHCredential> {
   return request<SSHCredential>(`/api/hosts/${hostId}/ssh/credentials`, {
+    method: "POST",
+    body: JSON.stringify({}),
+  });
+}
+
+export async function heartbeatHost(hostId: string): Promise<HostHeartbeatResponse> {
+  return request<HostHeartbeatResponse>(`/api/hosts/${hostId}/ssh/heartbeat`, {
     method: "POST",
     body: JSON.stringify({}),
   });

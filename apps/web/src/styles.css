@@ -117,6 +117,10 @@ button {
   background: #65ce91;
 }
 
+.status-dot.connecting {
+  background: #d7b66c;
+}
+
 .status-dot.error {
   background: #ee7567;
 }

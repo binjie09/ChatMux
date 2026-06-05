@@ -22,6 +22,12 @@ type sshProbeResponse struct {
 	Output string `json:"output"`
 }
 
+type sshHeartbeatResponse struct {
+	Error string         `json:"error,omitempty"`
+	Host  hoststore.Host `json:"host"`
+	OK    bool           `json:"ok"`
+}
+
 type trustHostKeyResponse struct {
 	Fingerprint string         `json:"fingerprint"`
 	Host        hoststore.Host `json:"host"`
@@ -61,6 +67,44 @@ func (s *Server) handleSSHProbe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, sshProbeResponse{OK: true, Output: string(output)})
+}
+
+func (s *Server) handleSSHHeartbeat(w http.ResponseWriter, r *http.Request) {
+	hostID, ok := routeHostAction(r.URL.Path, "/ssh/heartbeat")
+	if !ok {
+		writeError(w, http.StatusNotFound, errors.New("route not found"))
+		return
+	}
+
+	host, err := s.visibleHost(r, hostID)
+	if err != nil {
+		writeError(w, statusForHostAccessError(err), err)
+		return
+	}
+	credential, err := credentialForHost(host)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+
+	if _, err := s.ssh.Run(r.Context(), hostToSSHConfig(host), credential, "printf chatmux-ok"); err != nil {
+		s.writeHeartbeatStatus(w, r, host.ID, hoststore.HostStatusError, err)
+		return
+	}
+	s.writeHeartbeatStatus(w, r, host.ID, hoststore.HostStatusOnline, nil)
+}
+
+func (s *Server) writeHeartbeatStatus(w http.ResponseWriter, r *http.Request, hostID string, status string, heartbeatErr error) {
+	host, err := s.hosts.SetHostStatus(r.Context(), hostID, status)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	response := sshHeartbeatResponse{Host: host, OK: heartbeatErr == nil}
+	if heartbeatErr != nil {
+		response.Error = heartbeatErr.Error()
+	}
+	writeJSON(w, http.StatusOK, response)
 }
 
 func (s *Server) handleTrustHostKey(w http.ResponseWriter, r *http.Request) {

@@ -175,6 +175,26 @@ func TestSetHostPinned(t *testing.T) {
 	}
 }
 
+func TestSetHostStatus(t *testing.T) {
+	store := openTestStore(t)
+	defer closeStore(t, store)
+
+	created, err := store.CreateHost(context.Background(), CreateHostInput{
+		Name: "status", Hostname: "example.test", Username: "deploy",
+	})
+	if err != nil {
+		t.Fatalf("CreateHost failed: %v", err)
+	}
+
+	host, err := store.SetHostStatus(context.Background(), created.ID, HostStatusOnline)
+	if err != nil {
+		t.Fatalf("SetHostStatus failed: %v", err)
+	}
+	if host.Status != HostStatusOnline {
+		t.Fatalf("expected online status, got %#v", host)
+	}
+}
+
 func TestUpdateHost(t *testing.T) {
 	store := openTestStore(t)
 	defer closeStore(t, store)

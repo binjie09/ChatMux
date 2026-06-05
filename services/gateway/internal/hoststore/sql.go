@@ -99,6 +99,11 @@ UPDATE hosts
 SET pinned = ?, updated_at = ?
 WHERE id = ?;`
 
+const setHostStatusSQL = `
+UPDATE hosts
+SET status = ?
+WHERE id = ?;`
+
 const deleteHostSQL = `
 DELETE FROM hosts
 WHERE id = ?;`
