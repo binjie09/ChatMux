@@ -40,6 +40,7 @@ type AppShellProps = {
   historyQuery: string;
   historyText: string;
   hosts: Host[];
+  expandedSessionNames: ReadonlySet<string>;
   isMobileTerminalActive: boolean;
   loadScrollbackHistory: ((lines: number) => Promise<string>) | null;
   mobilePanel: MobilePanel;
@@ -123,6 +124,7 @@ export function AppShell(props: AppShellProps) {
 
       <SessionList
         credentialStatus={props.credentialStatus}
+        expandedSessionNames={props.expandedSessionNames}
         mobileOpen={props.mobilePanel === "sessions"}
         mobileWindowList={props.mobileWindowList}
         newSessionName={props.newSessionName}

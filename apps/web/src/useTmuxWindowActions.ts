@@ -22,7 +22,6 @@ type SelectionResult = {
 };
 
 type UseTmuxWindowActionsOptions = {
-  expandedSessionName: string;
   getCredentialToken: () => Promise<string>;
   hostId: string;
   isMobileLayout: boolean;
@@ -36,8 +35,8 @@ type UseTmuxWindowActionsOptions = {
   onMobileSheetClear: () => void;
   onOpenWindow: (sessionName: string, windowIndex: number, tokenOverride?: string) => Promise<void>;
   onSelectionClear: () => void;
-  onSelectionExpand: (sessionName: string) => void;
   onSelectionOpen: (input: { isMobileLayout: boolean; sessionName: string; windowIndex: number }) => void;
+  onSelectionRenameSession: (oldName: string, newName: string) => void;
   onSessionsChange: (sessions: TmuxSession[]) => void;
 };
 
@@ -102,9 +101,7 @@ export function useTmuxWindowActions(options: UseTmuxWindowActionsOptions) {
       const nextSessions = await renameTmuxSession(current.hostId, sessionName, credentialToken, name);
       const preferred = renamedSelectionTarget(current, sessionName, name);
       const result = applySessions(current, nextSessions, preferred);
-      if (current.expandedSessionName === sessionName) {
-        current.onSelectionExpand(name);
-      }
+      current.onSelectionRenameSession(sessionName, name);
       await openReconciledWindow(current, result, credentialToken);
     });
   }, []);

@@ -10,6 +10,7 @@ import { type SSHCredentialStatus } from "./useSSHCredentialToken";
 
 type SessionListProps = {
   credentialStatus: SSHCredentialStatus;
+  expandedSessionNames: ReadonlySet<string>;
   mobileOpen: boolean;
   mobileWindowList: boolean;
   newSessionName: string;
@@ -108,7 +109,7 @@ function SessionListBody(props: SessionListProps & { inputRef: RefObject<HTMLInp
       <SessionNotificationPrompt status={props.notificationStatus} />
       {props.sessions.map((session) => (
         <SessionGroup
-          isExpanded={!props.mobileWindowList && props.windowListSessionName === session.name}
+          isExpanded={!props.mobileWindowList && props.expandedSessionNames.has(session.name)}
           isSelected={props.selectedSessionName === session.name}
           key={session.id}
           selectedWindowIndex={props.selectedSessionName === session.name ? props.selectedWindowIndex : null}

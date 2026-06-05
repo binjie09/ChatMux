@@ -22,6 +22,8 @@ import { useAppSessionHandlers } from "./useAppSessionHandlers";
 import { useAppSessionWorkflow } from "./useAppSessionWorkflow";
 import { findSessionWindow, windowLabel } from "./session-window-utils";
 
+const noExpandedSessions: ReadonlySet<string> = new Set();
+
 export function App() {
   const [sessions, setSessions] = useState<TmuxSession[]>([]);
   const [newSessionName, setNewSessionName] = useState("");
@@ -122,7 +124,6 @@ export function App() {
   });
 
   const tmuxWindowActions = useTmuxWindowActions({
-    expandedSessionName: selection.expandedSessionName,
     getCredentialToken: getSelectedHostCredentialToken,
     hostId: selectedHostId,
     isMobileLayout,
@@ -136,8 +137,8 @@ export function App() {
     onMobileSheetClear: () => setMobileSheet(null),
     onOpenWindow: sessionWorkflow.handleOpenSessionWindow,
     onSelectionClear: selection.clearSelection,
-    onSelectionExpand: selection.expandSession,
     onSelectionOpen: selection.openWindow,
+    onSelectionRenameSession: selection.renameSession,
     onSessionsChange: setSessions,
   });
 
@@ -194,6 +195,7 @@ export function App() {
       historyQuery={history.query}
       historyText={history.text}
       hosts={hosts}
+      expandedSessionNames={isMobileLayout ? noExpandedSessions : selection.expandedSessionNames}
       isMobileTerminalActive={isMobileTerminalActive}
       loadScrollbackHistory={terminalSessionKey ? loadTerminalScrollbackHistory : null}
       mobilePanel={mobilePanel}
@@ -221,8 +223,8 @@ export function App() {
       onMobileSheetChange={setMobileSheet}
       onNewSessionNameChange={setNewSessionName}
       onNotificationsEnabledChange={(enabled) => void sessionState.notifications.setEnabled(enabled)}
-      mobileWindowList={isMobileLayout && Boolean(selection.expandedSessionName)}
-      windowListSessionName={selection.expandedSessionName}
+      mobileWindowList={isMobileLayout && Boolean(selection.windowListSessionName)}
+      windowListSessionName={selection.windowListSessionName}
       onSaveSessionMetadata={saveSessionMetadata}
       onSelectHost={handleSelectHost}
       onShowHostForm={setShowHostForm}

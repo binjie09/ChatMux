@@ -22,7 +22,7 @@ export function SessionGroup(props: SessionGroupProps) {
   const [editingSession, setEditingSession] = useState(false);
   const handleSessionClick = () => {
     if (sessionHasMultipleWindows(props.session)) {
-      props.onExpandSession(props.isExpanded ? "" : props.session.name);
+      props.onExpandSession(props.session.name);
       return;
     }
     const windowIndex = firstSessionWindowIndex(props.session);

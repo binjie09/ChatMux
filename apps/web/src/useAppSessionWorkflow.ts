@@ -7,8 +7,9 @@ import { errorMessage } from "./view-utils";
 
 type SessionSelection = {
   clearSelection: () => void;
-  expandSession: (sessionName: string) => void;
   openWindow: (input: { isMobileLayout: boolean; sessionName: string; windowIndex: number }) => void;
+  showWindowList: (sessionName: string) => void;
+  toggleExpandedSession: (sessionName: string) => void;
   selectedSessionName: string;
   selectedWindowIndex: number | null;
 };
@@ -41,7 +42,11 @@ export function useAppSessionWorkflow(options: SessionWorkflowOptions) {
 }
 
 function expandSession(options: SessionWorkflowOptions, sessionName: string) {
-  options.selection.expandSession(sessionName);
+  if (options.isMobileLayout) {
+    options.selection.showWindowList(sessionName);
+  } else {
+    options.selection.toggleExpandedSession(sessionName);
+  }
   options.onMobileSheetClear();
   if (sessionName) {
     options.onMobilePanelChange("sessions");
@@ -50,7 +55,7 @@ function expandSession(options: SessionWorkflowOptions, sessionName: string) {
 
 function backToSessions(options: SessionWorkflowOptions, session: TmuxSession | undefined) {
   if (options.isMobileLayout && session && session.windowList.length > 1) {
-    options.selection.expandSession(session.name);
+    options.selection.showWindowList(session.name);
   }
   options.onMobilePanelChange("sessions");
 }
