@@ -63,6 +63,7 @@ The native shells reuse the Web SPA build in `apps/web`.
 pnpm --filter @chatmux/web mobile:add:ios
 pnpm --filter @chatmux/web mobile:add:android
 pnpm --filter @chatmux/web mobile:sync
+pnpm mobile:build:android-apk
 pnpm --filter @chatmux/web mobile:build:android-internal
 pnpm --filter @chatmux/web mobile:build:ios-testflight
 pnpm --filter @chatmux/web desktop:dev
@@ -85,6 +86,18 @@ It runs Docker Compose from `packaging/windows/` and writes a single Windows x64
 portable exe to `.tmp/artifacts/windows-x86_64-pc-windows-msvc/ChatMux.exe`.
 The exe embeds the Go gateway and extracts it into the app data directory at
 runtime, so there is no adjacent gateway exe to distribute.
+
+The canonical Android APK build is:
+
+```bash
+pnpm mobile:build:android-apk
+```
+
+It runs Docker Compose from `packaging/android/` and writes an installable debug
+APK to `.tmp/artifacts/android/ChatMux-android-debug.apk`. The APK embeds the Go
+gateway as an Android native payload for `arm64-v8a` and `x86_64`; at runtime the
+Android shell starts it on `127.0.0.1:19327` with `CHATMUX_LOCAL_NO_AUTH=1`, so
+the Android UI does not ask for a Gateway Token.
 
 Desktop dev and non-Windows desktop bundles still build the Go gateway into
 `apps/web/src-tauri/binaries/` before Tauri starts. The generated binary is
@@ -124,6 +137,8 @@ When biometric unlock is enabled on mobile, the stored token is loaded only
 after Face ID, Touch ID, Android biometrics, or device credentials succeed.
 The desktop app starts its packaged local gateway with `CHATMUX_LOCAL_NO_AUTH=1`
 on `127.0.0.1:19327`, so the desktop UI does not ask for a Gateway Token.
+The Android APK follows the same local gateway model and skips Gateway Token
+entry when installed from the bundled build.
 Hosts are owned by the principal that creates them. Non-admin users can only see
 their own hosts; admins can see all hosts. tmux sessions carry owner metadata.
 Host owners and admins can see all sessions on an owned or admin-visible host;
@@ -188,6 +203,7 @@ Android internal testing builds require signing material in environment
 variables: `ANDROID_KEYSTORE_PATH`, `ANDROID_KEYSTORE_PASSWORD`,
 `ANDROID_KEY_ALIAS`, and `ANDROID_KEY_PASSWORD`. The script writes the AAB to
 `apps/web/android/app/build/outputs/bundle/release/app-release.aab`.
+This AAB flow also bundles the Android gateway before Gradle packages the app.
 
 TestFlight builds require macOS with Xcode. `CHATMUX_IOS_TEAM_ID` can be set for
 automatic signing, and `CHATMUX_IOS_EXPORT_OPTIONS_PLIST` can override the

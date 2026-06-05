@@ -215,6 +215,7 @@ pnpm --filter @chatmux/web desktop:dev
 pnpm --filter @chatmux/web desktop:build
 pnpm desktop:build:windows
 pnpm --filter @chatmux/web mobile:sync
+pnpm mobile:build:android-apk
 pnpm --filter @chatmux/web mobile:build:android-internal
 pnpm --filter @chatmux/web mobile:build:ios-testflight
 ```
@@ -222,6 +223,10 @@ pnpm --filter @chatmux/web mobile:build:ios-testflight
 `pnpm desktop:build:windows` 使用 Docker Compose 打包 Windows x64 单文件便携版，
 产物是 `.tmp/artifacts/windows-x86_64-pc-windows-msvc/ChatMux.exe`。这个 exe
 内嵌 Gateway，复制到 Windows 后双击即可启动本地桌面端。
+`pnpm mobile:build:android-apk` 使用 Docker Compose 打包 Android debug APK，
+产物是 `.tmp/artifacts/android/ChatMux-android-debug.apk`。这个 APK 内嵌
+Gateway，安装后会在应用内启动 `127.0.0.1:19327` 的本地 Gateway，不需要输入
+Gateway Token。
 
 更完整的开发、签名和测试说明见 [docs/development.md](docs/development.md)。
 
@@ -233,6 +238,7 @@ apps/web/src-tauri    Tauri v2 桌面壳和本地 Gateway 配置
 services/gateway      Go SSH / tmux Gateway
 packages/shared       共享 TypeScript contracts
 packaging/windows     Windows 便携 exe Docker 打包入口
+packaging/android     Android APK Docker 打包入口
 deploy/web            生产 Web 自托管部署模板
 docs                  架构、部署、使用和路线图文档
 ```

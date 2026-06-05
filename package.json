@@ -20,6 +20,7 @@
     "desktop:build:windows": "bash packaging/windows/package-portable-exe.sh",
     "desktop:build:windows:portable": "bash packaging/windows/package-portable-exe.sh",
     "desktop:build:windows:signed": "pnpm --filter @chatmux/web desktop:build:windows",
+    "mobile:build:android-apk": "bash packaging/android/package-apk.sh",
     "typecheck": "pnpm --filter @chatmux/web typecheck"
   },
   "devDependencies": {

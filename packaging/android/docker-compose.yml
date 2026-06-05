@@ -1,0 +1,25 @@
+services:
+  android-apk:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    working_dir: /workspace
+    environment:
+      CI: "true"
+      COREPACK_ENABLE_DOWNLOAD_PROMPT: "0"
+      HOST_UID: "${CHATMUX_UID:-1000}"
+      HOST_GID: "${CHATMUX_GID:-1000}"
+      GOCACHE: /go-cache/build
+      GOMODCACHE: /go-cache/mod
+      PNPM_STORE_DIR: /pnpm/store
+    volumes:
+      - ../..:/workspace
+      - android-gradle-cache:/root/.gradle
+      - go-cache:/go-cache
+      - pnpm-cache:/pnpm
+    command: bash /workspace/packaging/android/build-apk.sh
+
+volumes:
+  android-gradle-cache:
+  go-cache:
+  pnpm-cache:

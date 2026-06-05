@@ -43,6 +43,11 @@ android {
             }
         }
     }
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+        }
+    }
 }
 
 repositories {

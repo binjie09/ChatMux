@@ -10,6 +10,14 @@ export function isDesktopShell() {
   return Boolean(tauriWindow.__TAURI__ || tauriWindow.__TAURI_INTERNALS__);
 }
 
+export function isAndroidShell() {
+  return Capacitor.getPlatform() === "android";
+}
+
+export function usesLocalGateway() {
+  return isDesktopShell() || isAndroidShell();
+}
+
 export function isBrowserShell() {
   return !Capacitor.isNativePlatform() && !isDesktopShell();
 }

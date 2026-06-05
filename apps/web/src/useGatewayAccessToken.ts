@@ -11,7 +11,7 @@ import {
   saveGatewayBiometricUnlock,
   saveGatewayAccessToken,
 } from "./gateway-token-store";
-import { isDesktopShell } from "./runtime-platform";
+import { usesLocalGateway } from "./runtime-platform";
 import { errorMessage } from "./view-utils";
 
 export type GatewayTokenStatus = "empty" | "loading" | "locked" | "saving" | "stored";
@@ -30,7 +30,7 @@ export type GatewayTokenState = {
 };
 
 export function useGatewayAccessToken(onError: (message: string) => void): GatewayTokenState {
-  const required = !isDesktopShell();
+  const required = !usesLocalGateway();
   const [biometricAvailable, setBiometricAvailable] = useState(false);
   const [biometricEnabled, setBiometricEnabled] = useState(false);
   const [status, setStatus] = useState<GatewayTokenStatus>("loading");

@@ -21,6 +21,7 @@ repo_root="$(cd "${web_dir}/../.." && pwd)"
 
 cd "${repo_root}"
 pnpm --filter @chatmux/web mobile:sync
+"${web_dir}/scripts/build-android-gateway.sh"
 
 cd "${web_dir}/android"
 ./gradlew :app:bundleRelease
