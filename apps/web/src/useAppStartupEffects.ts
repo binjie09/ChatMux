@@ -6,6 +6,7 @@ type AppStartupEffectsOptions = {
   resetCredential: () => void;
   selectedHostHasCredential: boolean;
   selectedHostId: string;
+  selectedHostSelectionVersion: number;
   selectedHostUpdatedAt: string;
   onAuditRefresh: () => void;
   onHostsRefresh: () => void;
@@ -32,7 +33,12 @@ export function useAppStartupEffects(options: AppStartupEffectsOptions) {
     if (!options.autoListSessions || !options.gatewayReady || !options.selectedHostId || !options.selectedHostHasCredential) {
       return;
     }
-    const autoConnectKey = `${options.selectedHostId}:${options.selectedHostUpdatedAt}:${options.selectedHostHasCredential}`;
+    const autoConnectKey = [
+      options.selectedHostId,
+      options.selectedHostUpdatedAt,
+      options.selectedHostHasCredential,
+      options.selectedHostSelectionVersion,
+    ].join(":");
     if (autoConnectedHostRef.current === autoConnectKey) {
       return;
     }
@@ -43,6 +49,7 @@ export function useAppStartupEffects(options: AppStartupEffectsOptions) {
     options.autoListSessions,
     options.selectedHostHasCredential,
     options.selectedHostId,
+    options.selectedHostSelectionVersion,
     options.selectedHostUpdatedAt,
   ]);
 }
