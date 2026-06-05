@@ -33,6 +33,7 @@ type Session struct {
 	Title       string    `json:"title"`
 	Tags        []string  `json:"tags"`
 	Owner       string    `json:"owner"`
+	Mode        string    `json:"mode"`
 }
 
 func ListSessionsCommand() string {
@@ -59,6 +60,10 @@ func AttachTargetCommand(target Target) (string, error) {
 	command := tmuxPrelude() + tmuxHistoryPrelude(sessionName) + tmuxClipboardPrelude() +
 		"exec \"$TMUX_BIN\" attach-session -t " + shellQuote(formatTarget(target))
 	return loginShellCommand(command), nil
+}
+
+func LoginShellCommand() string {
+	return "exec \"${SHELL:-/bin/sh}\""
 }
 
 func KillSessionCommand(name string) (string, error) {
@@ -209,6 +214,7 @@ func parseSessionLine(line string, now time.Time) (Session, error) {
 		ProcessName: processName,
 		Tags:        []string{},
 		Status:      status,
+		Mode:        "tmux",
 	}, nil
 }
 
@@ -255,6 +261,10 @@ func loginShellCommand(command string) string {
 
 func tmuxNoSessionsPrelude() string {
 	return "chatmux_tmux_no_sessions() { case \"$1\" in *\"no server running\"*|*\"no sessions\"*) return 0;; *) return 1;; esac; }; "
+}
+
+func MissingTmux(output string) bool {
+	return strings.Contains(output, "tmux not found in PATH, CHATMUX_TMUX_BIN, or $HOME/.local/bin")
 }
 
 func tmuxPrelude() string {

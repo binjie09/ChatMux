@@ -119,11 +119,46 @@ func TestTerminalInputBypassesComposerPolicy(t *testing.T) {
 	}
 }
 
+func TestInstallerInputBypassesPolicyOnlyForSSHFallback(t *testing.T) {
+	server, closeServer := newTestServer(t)
+	defer closeServer()
+	server.commandPolicy = mustCommandPolicy(CommandPolicyConfig{
+		Mode:         CommandPolicyEnforce,
+		DenyPatterns: []string{`^sudo`},
+	})
+
+	allowed := server.allowTerminalInput(testTerminalInputContextWithMode(terminalTokenModeSSH), terminalClientMessage{
+		Type: "input", Data: "sudo apt-get install -y tmux\n", Source: "installer",
+	})
+	if !allowed {
+		t.Fatal("expected installer input to run in ssh fallback")
+	}
+	events, err := server.hosts.ListAuditEvents(testContext(t))
+	if err != nil {
+		t.Fatalf("ListAuditEvents failed: %v", err)
+	}
+	if len(events) != 1 || events[0].Type != "terminal.tmux_install.started" {
+		t.Fatalf("expected installer audit event, got %#v", events)
+	}
+
+	blocked := server.allowTerminalInput(testTerminalInputContextWithMode(terminalTokenModeTmux), terminalClientMessage{
+		Type: "input", Data: "sudo apt-get install -y tmux\n", Source: "installer",
+	})
+	if blocked {
+		t.Fatal("expected installer input to be blocked outside ssh fallback")
+	}
+}
+
 func testTerminalInputContext() terminalInputContext {
+	return testTerminalInputContextWithMode(terminalTokenModeTmux)
+}
+
+func testTerminalInputContextWithMode(mode string) terminalInputContext {
 	return terminalInputContext{
 		request: httptest.NewRequest("GET", "/api/terminal", nil),
 		token: terminalToken{
 			HostID:      "host_1",
+			Mode:        mode,
 			SessionName: "deploy",
 		},
 	}

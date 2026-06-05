@@ -1,4 +1,5 @@
 import { type ReactNode } from "react";
+import { Download } from "lucide-react";
 import { type AuditEvent, type Host, type SaveSessionMetadataInput, type TranscriptChunk } from "./api";
 import { AuditPanel } from "./AuditPanel";
 import { Composer, type ComposerMode } from "./Composer";
@@ -36,6 +37,8 @@ type ConversationPaneProps = {
   selectedWindowName: string;
   terminalSessionKey: string;
   target: CredentialTarget;
+  tmuxFallbackActive: boolean;
+  tmuxInstallPending: boolean;
   onBackToSessions: () => void;
   onComposerModeChange: (mode: ComposerMode) => void;
   onComposerSubmit: (data: string) => void;
@@ -49,6 +52,7 @@ type ConversationPaneProps = {
   onDeleteWindow: (sessionName: string, windowIndex: number) => void;
   onDrafted: () => void;
   onHistoryQueryChange: (query: string) => void;
+  onInstallTmux: () => void;
   onMobileSheetChange: (sheet: MobileTerminalSheet | null) => void;
   onOpenWindow: (sessionName: string, windowIndex: number) => void;
   onPasteTerminalImage: ((file: File) => Promise<string>) | null;
@@ -71,6 +75,7 @@ export function ConversationPane(props: ConversationPaneProps) {
         title={sessionTitle(props.selectedSession)}
         windowName={props.selectedWindowName}
         windows={props.selectedSession?.windowList ?? []}
+        tmuxFallbackActive={props.tmuxFallbackActive}
         selectedWindowIndex={props.target.windowIndex}
         onBack={props.onBackToSessions}
         onCreateWindow={() => props.selectedSession ? props.onCreateWindow(props.selectedSession.name) : undefined}
@@ -92,9 +97,15 @@ export function ConversationPane(props: ConversationPaneProps) {
 
       <div className="terminal-workspace">
         <div className="terminal-column">
+          <TmuxFallbackBanner
+            active={props.tmuxFallbackActive}
+            installing={props.tmuxInstallPending}
+            onInstall={props.onInstallTmux}
+          />
           <TerminalWindowTabs
             selectedWindowIndex={props.target.windowIndex}
             session={props.selectedSession}
+            tmuxFallbackActive={props.tmuxFallbackActive}
             onCreateWindow={props.onCreateWindow}
             onDeleteWindow={props.onDeleteWindow}
             onOpenWindow={props.onOpenWindow}
@@ -132,6 +143,24 @@ export function ConversationPane(props: ConversationPaneProps) {
         {draftPanel}
       </MobileSheet>
     </section>
+  );
+}
+
+function TmuxFallbackBanner(props: { active: boolean; installing: boolean; onInstall: () => void }) {
+  if (!props.active) {
+    return null;
+  }
+  return (
+    <div className="tmux-fallback-banner">
+      <div>
+        <strong>Single SSH shell</strong>
+        <span>Install tmux, then reconnect for persistent sessions, windows, history, and summaries.</span>
+      </div>
+      <button type="button" disabled={props.installing} onClick={props.onInstall}>
+        <Download size={15} aria-hidden="true" />
+        {props.installing ? "Installing" : "Install tmux"}
+      </button>
+    </div>
   );
 }
 

@@ -65,6 +65,26 @@
   font-size: 12px;
 }
 
+.session-tmux-fallback {
+  display: grid;
+  gap: 4px;
+  margin: -4px 0 12px;
+  border: 1px solid #e2c48a;
+  border-radius: 8px;
+  padding: 10px;
+  color: #4d3813;
+  background: #fff6df;
+}
+
+.session-tmux-fallback strong {
+  font-size: 13px;
+}
+
+.session-tmux-fallback span {
+  font-size: 12px;
+  line-height: 1.4;
+}
+
 .session-create input {
   width: 100%;
   border: 1px solid #d6cebd;

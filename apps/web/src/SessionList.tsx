@@ -4,6 +4,7 @@ import "./session-controls.css";
 import { SessionGroup } from "./SessionGroup";
 import { SessionWindowList } from "./SessionWindowList";
 import { type DisplayTmuxSession } from "./session-state-machine";
+import { isSSHFallbackSession } from "./tmux-fallback";
 import { windowCountLabel } from "./session-window-utils";
 import { type SessionNotificationStatus } from "./useSessionNotifications";
 import { type SSHCredentialStatus } from "./useSSHCredentialToken";
@@ -19,6 +20,7 @@ type SessionListProps = {
   selectedSessionName: string;
   selectedWindowIndex: number | null;
   sessions: DisplayTmuxSession[];
+  tmuxFallbackActive: boolean;
   windowListSessionName: string;
   onCreateSession: () => void;
   onDeleteWindow: (sessionName: string, windowIndex: number) => void;
@@ -51,6 +53,7 @@ export function SessionList(props: SessionListProps) {
         inWindowList={Boolean(windowListSession)}
         onBack={() => props.onExpandSession("")}
         onNewSessionClick={handleNewSessionClick}
+        showNewSession={!props.tmuxFallbackActive}
       />
 
       {windowListSession ? (
@@ -72,6 +75,7 @@ function SessionListHeader(props: {
   inWindowList: boolean;
   onBack: () => void;
   onNewSessionClick: () => void;
+  showNewSession: boolean;
 }) {
   return (
     <header>
@@ -84,9 +88,11 @@ function SessionListHeader(props: {
         <p>Remote tmux</p>
         <h1>{props.inWindowList ? "Windows" : "Conversations"}</h1>
       </div>
-      <button className="icon-button" type="button" aria-label="New session" onClick={props.onNewSessionClick}>
-        <Plus size={19} aria-hidden="true" />
-      </button>
+      {props.showNewSession ? (
+        <button className="icon-button" type="button" aria-label="New session" onClick={props.onNewSessionClick}>
+          <Plus size={19} aria-hidden="true" />
+        </button>
+      ) : null}
     </header>
   );
 }
@@ -95,12 +101,15 @@ function SessionListBody(props: SessionListProps & { inputRef: RefObject<HTMLInp
   return (
     <>
       <SessionConnectionStatus credentialStatus={props.credentialStatus} onListSessions={props.onListSessions} />
-      <SessionCreate
-        inputRef={props.inputRef}
-        newSessionName={props.newSessionName}
-        onCreateSession={props.onCreateSession}
-        onNewSessionNameChange={props.onNewSessionNameChange}
-      />
+      <TmuxFallbackNotice visible={props.tmuxFallbackActive} />
+      {!props.tmuxFallbackActive ? (
+        <SessionCreate
+          inputRef={props.inputRef}
+          newSessionName={props.newSessionName}
+          onCreateSession={props.onCreateSession}
+          onNewSessionNameChange={props.onNewSessionNameChange}
+        />
+      ) : null}
       <SessionNotificationsToggle
         enabled={props.notificationsEnabled}
         status={props.notificationStatus}
@@ -114,15 +123,27 @@ function SessionListBody(props: SessionListProps & { inputRef: RefObject<HTMLInp
           key={session.id}
           selectedWindowIndex={props.selectedSessionName === session.name ? props.selectedWindowIndex : null}
           session={session}
-          onDeleteWindow={props.onDeleteWindow}
+          onDeleteWindow={isSSHFallbackSession(session) ? undefined : props.onDeleteWindow}
           onExpandSession={props.onExpandSession}
           onOpenWindow={props.onOpenWindow}
-          onRenameSession={props.onRenameSession}
-          onRenameWindow={props.onRenameWindow}
+          onRenameSession={isSSHFallbackSession(session) ? undefined : props.onRenameSession}
+          onRenameWindow={isSSHFallbackSession(session) ? undefined : props.onRenameWindow}
         />
       ))}
       {props.sessions.length === 0 ? <p className="session-empty">No sessions</p> : null}
     </>
+  );
+}
+
+function TmuxFallbackNotice(props: { visible: boolean }) {
+  if (!props.visible) {
+    return null;
+  }
+  return (
+    <div className="session-tmux-fallback">
+      <strong>tmux unavailable</strong>
+      <span>Connected with a single SSH shell. Install tmux and reconnect for sessions and windows.</span>
+    </div>
   );
 }
 
@@ -144,9 +165,9 @@ function MobileWindowListView(props: {
       <SessionWindowList
         selectedWindowIndex={props.selectedWindowIndex}
         windows={props.session.windowList}
-        onDeleteWindow={props.onDeleteWindow}
+        onDeleteWindow={isSSHFallbackSession(props.session) ? undefined : props.onDeleteWindow}
         onOpenWindow={props.onOpenWindow}
-        onRenameWindow={props.onRenameWindow}
+        onRenameWindow={isSSHFallbackSession(props.session) ? undefined : props.onRenameWindow}
       />
     </div>
   );

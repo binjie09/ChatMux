@@ -11,6 +11,7 @@ type MobileTerminalBarProps = {
   selectedWindowIndex: number | null;
   sessionName: string;
   title: string;
+  tmuxFallbackActive: boolean;
   windowName: string;
   windows: TmuxWindow[];
   onBack: () => void;
@@ -48,16 +49,22 @@ export function MobileTerminalBar(props: MobileTerminalBarProps) {
             </option>
           ))}
         </select>
-        <button type="button" aria-label="New window" onClick={props.onCreateWindow}>
-          <Plus size={18} aria-hidden="true" />
-        </button>
+        {!props.tmuxFallbackActive ? (
+          <button type="button" aria-label="New window" onClick={props.onCreateWindow}>
+            <Plus size={18} aria-hidden="true" />
+          </button>
+        ) : null}
       </div>
-      <button type="button" aria-label="Open context" onClick={() => props.onOpenSheet("context")}>
-        <Search size={19} aria-hidden="true" />
-      </button>
-      <button type="button" aria-label="Draft command" onClick={() => props.onOpenSheet("draft")}>
-        <Bot size={19} aria-hidden="true" />
-      </button>
+      {!props.tmuxFallbackActive ? (
+        <>
+          <button type="button" aria-label="Open context" onClick={() => props.onOpenSheet("context")}>
+            <Search size={19} aria-hidden="true" />
+          </button>
+          <button type="button" aria-label="Draft command" onClick={() => props.onOpenSheet("draft")}>
+            <Bot size={19} aria-hidden="true" />
+          </button>
+        </>
+      ) : null}
     </header>
   );
 }

@@ -41,6 +41,7 @@ export type TmuxSession = {
   title: string;
   tags: string[];
   owner: string;
+  mode: "ssh" | "tmux";
 };
 
 export type TmuxWindow = {
@@ -105,6 +106,7 @@ export type TerminalTokenResponse = {
 
 export type CreateTerminalTokenInput = {
   credentialToken: string;
+  mode?: "ssh" | "tmux";
   recovering: boolean;
   windowIndex?: number;
 };

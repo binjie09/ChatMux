@@ -6,10 +6,13 @@ import (
 	"net/http"
 
 	"github.com/chatmux/chatmux/services/gateway/internal/hoststore"
+	"github.com/chatmux/chatmux/services/gateway/internal/sshclient"
+	"github.com/chatmux/chatmux/services/gateway/internal/tmux"
 )
 
 type createTerminalTokenRequest struct {
 	CredentialToken string `json:"credentialToken"`
+	Mode            string `json:"mode"`
 	Recovering      bool   `json:"recovering"`
 	tmuxTargetRequest
 }
@@ -36,12 +39,19 @@ func (s *Server) handleCreateTerminalToken(w http.ResponseWriter, r *http.Reques
 		writeError(w, http.StatusBadRequest, err)
 		return
 	}
+	mode := terminalTokenMode(input.Mode)
 	host, err := s.visibleHost(r, hostID)
 	if err != nil {
 		writeError(w, statusForHostAccessError(err), err)
 		return
 	}
-	if err := s.visibleSession(r, host, sessionName); err != nil {
+	if mode == terminalTokenModeTmux {
+		if err := s.visibleSession(r, host, sessionName); err != nil {
+			writeError(w, statusForSessionAccessError(err), err)
+			return
+		}
+	}
+	if err := validateTerminalTokenMode(mode, sessionName, target); err != nil {
 		writeError(w, statusForSessionAccessError(err), err)
 		return
 	}
@@ -50,9 +60,14 @@ func (s *Server) handleCreateTerminalToken(w http.ResponseWriter, r *http.Reques
 		writeError(w, statusForCredentialError(err), err)
 		return
 	}
+	if err := s.validateFallbackTerminalMode(r, host, credential, mode); err != nil {
+		writeError(w, http.StatusBadGateway, err)
+		return
+	}
 
 	id := s.terminalTokens.Create(terminalToken{
 		HostID:      hostID,
+		Mode:        mode,
 		Recovering:  input.Recovering,
 		SessionName: sessionName,
 		Target:      target,
@@ -66,4 +81,40 @@ func (s *Server) handleCreateTerminalToken(w http.ResponseWriter, r *http.Reques
 		Token:     id,
 		ExpiresIn: int(terminalTokenTTL.Seconds()),
 	})
+}
+
+func terminalTokenMode(input string) string {
+	if input == terminalTokenModeSSH {
+		return terminalTokenModeSSH
+	}
+	return terminalTokenModeTmux
+}
+
+func validateTerminalTokenMode(mode string, sessionName string, target tmux.Target) error {
+	if mode != terminalTokenModeSSH {
+		return nil
+	}
+	if sessionName != fallbackSSHSessionName || target.WindowIndex == nil || *target.WindowIndex != 0 {
+		return errSessionNotVisible
+	}
+	return nil
+}
+
+func (s *Server) validateFallbackTerminalMode(
+	r *http.Request,
+	host hoststore.Host,
+	credential sshclient.Credential,
+	mode string,
+) error {
+	if mode != terminalTokenModeSSH {
+		return nil
+	}
+	_, err := s.ssh.Run(r.Context(), hostToSSHConfig(host), credential, tmux.ListSessionsCommand())
+	if _, ok := fallbackSessionFromTmuxError(err); ok {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	return errSessionNotVisible
 }

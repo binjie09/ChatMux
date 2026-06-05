@@ -1,10 +1,12 @@
 import { useCallback } from "react";
-import { createTerminalToken, terminalWebSocketURL } from "./api";
+import { createTerminalToken, terminalWebSocketURL, type TmuxSession } from "./api";
+import { isSSHFallbackSession } from "./tmux-fallback";
 import { type ConnectionStatus } from "./useTerminalSocket";
 
 type TerminalConnectionURLOptions = {
   getCredentialToken: () => Promise<string>;
   hostId: string;
+  selectedSession: TmuxSession | undefined;
   sessionName: string;
   windowIndex: number | null;
 };
@@ -12,6 +14,7 @@ type TerminalConnectionURLOptions = {
 export function useTerminalConnectionURL({
   getCredentialToken,
   hostId,
+  selectedSession,
   sessionName,
   windowIndex,
 }: TerminalConnectionURLOptions) {
@@ -22,9 +25,10 @@ export function useTerminalConnectionURL({
     const credentialToken = await getCredentialToken();
     const token = await createTerminalToken(hostId, sessionName, {
       credentialToken,
+      mode: isSSHFallbackSession(selectedSession) ? "ssh" : "tmux",
       recovering: status === "recovering",
       windowIndex,
     });
     return terminalWebSocketURL(token);
-  }, [getCredentialToken, hostId, sessionName, windowIndex]);
+  }, [getCredentialToken, hostId, selectedSession, sessionName, windowIndex]);
 }

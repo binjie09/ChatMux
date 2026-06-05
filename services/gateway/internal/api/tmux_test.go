@@ -102,6 +102,30 @@ func TestListTmuxSessionsRejectsPasswordBody(t *testing.T) {
 	}
 }
 
+func TestListTmuxSessionsFallsBackToSSHWhenTmuxMissing(t *testing.T) {
+	server, closeServer := newTestServer(t)
+	defer closeServer()
+	runner := &fakeSSHRunner{
+		outputForCommand: func(command string) string {
+			return "tmux not found in PATH, CHATMUX_TMUX_BIN, or $HOME/.local/bin\n"
+		},
+	}
+	server.ssh = failingCommandRunner{fakeSSHRunner: runner}
+	host := createTrustedTestHost(t, server)
+	token := createCredentialTokenForTest(t, server, testCredentialInput{hostID: host.ID})
+
+	req := httptest.NewRequest(http.MethodPost, "/api/hosts/"+host.ID+"/tmux/sessions/list", credentialTokenBody(token))
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), `"mode":"ssh"`) || !strings.Contains(rec.Body.String(), `"SSH shell"`) {
+		t.Fatalf("expected ssh fallback session, got %s", rec.Body.String())
+	}
+}
+
 func TestCreateTmuxSessionAPI(t *testing.T) {
 	server, closeServer := newTestServer(t)
 	defer closeServer()

@@ -1,6 +1,7 @@
 import { createTmuxSession, listTmuxSessions } from "./tmux-api";
 import { type TmuxSession } from "./api";
 import { type MobilePanel } from "./MobileNavigation";
+import { isSSHFallbackSession } from "./tmux-fallback";
 import { type TerminalHistoryState } from "./useTerminalHistoryState";
 import { type ConnectionStatus } from "./useTerminalSocket";
 import { errorMessage } from "./view-utils";
@@ -21,6 +22,7 @@ type SessionWorkflowOptions = {
   history: TerminalHistoryState;
   isMobileLayout: boolean;
   newSessionName: string;
+  sessions: TmuxSession[];
   selectedHostId: string;
   selection: SessionSelection;
   sshReady: boolean;
@@ -38,7 +40,8 @@ export function useAppSessionWorkflow(options: SessionWorkflowOptions) {
     handleCreateSession: () => createSession(options),
     handleExpandSession: (sessionName: string) => expandSession(options, sessionName),
     handleListSessions: () => listSessions(options),
-    handleOpenSessionWindow: (sessionName: string, windowIndex: number, tokenOverride = "") => openWindow(options, sessionName, windowIndex, tokenOverride),
+    handleOpenSessionWindow: (sessionName: string, windowIndex: number, tokenOverride = "") =>
+      openWindow(options, sessionName, windowIndex, tokenOverride, false),
     handleTerminalConnectionReady: (status: ConnectionStatus) => terminalConnectionReady(options, status),
   };
 }
@@ -71,10 +74,12 @@ async function listSessions(options: SessionWorkflowOptions) {
   }
   await runSessionWorkflow(options, async () => {
     const credentialToken = await options.getCredentialToken();
-    options.onSessionsChange(await listTmuxSessions(options.selectedHostId, credentialToken));
+    const sessions = await listTmuxSessions(options.selectedHostId, credentialToken);
+    options.onSessionsChange(sessions);
     options.selection.clearSelection();
     options.onMobilePanelChange("sessions");
     options.history.clear();
+    await openFallbackSession(options, sessions, credentialToken);
   });
 }
 
@@ -83,11 +88,12 @@ async function openWindow(
   sessionName: string,
   windowIndex: number,
   tokenOverride: string,
+  skipHistory: boolean,
 ) {
   if (!options.selectedHostId) {
     return;
   }
-  if (!ensureWorkflowHostTrusted(options, () => openWindow(options, sessionName, windowIndex, tokenOverride))) {
+  if (!ensureWorkflowHostTrusted(options, () => openWindow(options, sessionName, windowIndex, tokenOverride, skipHistory))) {
     return;
   }
   options.selection.openWindow({ isMobileLayout: options.isMobileLayout, sessionName, windowIndex });
@@ -95,7 +101,9 @@ async function openWindow(
   options.onMobilePanelChange("terminal");
   await runSessionWorkflow(options, async () => {
     const credentialToken = tokenOverride || await options.getCredentialToken();
-    await refreshSessionHistory(options, sessionName, windowIndex, credentialToken);
+    if (!skipHistory && !isFallbackWindow(options, sessionName)) {
+      await refreshSessionHistory(options, sessionName, windowIndex, credentialToken);
+    }
   });
 }
 
@@ -113,6 +121,19 @@ async function createSession(options: SessionWorkflowOptions) {
     options.onNewSessionNameChange("");
     await openCreatedSession(options, session, credentialToken);
   });
+}
+
+async function openFallbackSession(options: SessionWorkflowOptions, sessions: TmuxSession[], credentialToken: string) {
+  const session = sessions.find((item) => isSSHFallbackSession(item));
+  const windowIndex = session?.windowList[0]?.index;
+  if (!session || windowIndex === undefined) {
+    return;
+  }
+  await openWindow(options, session.name, windowIndex, credentialToken, true);
+}
+
+function isFallbackWindow(options: SessionWorkflowOptions, sessionName: string) {
+  return isSSHFallbackSession(options.sessions.find((session) => session.name === sessionName));
 }
 
 async function terminalConnectionReady(options: SessionWorkflowOptions, status: ConnectionStatus) {
@@ -143,7 +164,7 @@ function ensureWorkflowHostTrusted(options: SessionWorkflowOptions, retry: () =>
 async function openCreatedSession(options: SessionWorkflowOptions, session: TmuxSession, credentialToken: string) {
   const windowIndex = session.windowList[0]?.index;
   if (windowIndex !== undefined) {
-    await openWindow(options, session.name, windowIndex, credentialToken);
+    await openWindow(options, session.name, windowIndex, credentialToken, isSSHFallbackSession(session));
   }
 }
 
@@ -158,6 +179,9 @@ async function refreshSessionHistory(
 
 async function refreshRecoveredHistory(options: SessionWorkflowOptions) {
   if (!options.selectedHostId || !options.selection.selectedSessionName || options.selection.selectedWindowIndex === null) {
+    return;
+  }
+  if (isFallbackWindow(options, options.selection.selectedSessionName)) {
     return;
   }
   const credentialToken = await options.getCredentialToken();

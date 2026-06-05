@@ -107,6 +107,54 @@
   display: none;
 }
 
+.tmux-fallback-banner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid #d9b35f;
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: #fff3d2;
+  background: #362914;
+}
+
+.tmux-fallback-banner div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.tmux-fallback-banner strong {
+  font-size: 13px;
+}
+
+.tmux-fallback-banner span {
+  color: #eadab2;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.tmux-fallback-banner button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 30px;
+  border: 1px solid #e5c47d;
+  border-radius: 8px;
+  padding: 0 10px;
+  color: #251b0b;
+  background: #f3c766;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.tmux-fallback-banner button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
 .terminal-window-tab .inline-name-edit {
   grid-template-columns: minmax(0, 1fr) 24px 24px;
 }

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -42,7 +43,8 @@ func (r *fakeSSHRunner) ScanHostKey(_ context.Context, _ sshclient.HostConfig) (
 	return "SHA256:test", nil
 }
 
-func (r *fakeSSHRunner) StartTerminal(_ context.Context, _ sshclient.HostConfig, credential sshclient.Credential, _ string, _ sshclient.TerminalSize) (*sshclient.Terminal, error) {
+func (r *fakeSSHRunner) StartTerminal(_ context.Context, _ sshclient.HostConfig, credential sshclient.Credential, command string, _ sshclient.TerminalSize) (*sshclient.Terminal, error) {
+	r.command = command
 	r.credential = credential
 	r.password = credential.Password
 	r.privateKey = credential.PrivateKey
@@ -56,6 +58,20 @@ func (r *fakeSSHRunner) WriteFile(_ context.Context, _ sshclient.HostConfig, cre
 	r.writePath = path
 	r.writeData = append([]byte(nil), data...)
 	return nil
+}
+
+type failingCommandRunner struct {
+	*fakeSSHRunner
+}
+
+func (r failingCommandRunner) Run(
+	ctx context.Context,
+	host sshclient.HostConfig,
+	credential sshclient.Credential,
+	command string,
+) ([]byte, error) {
+	output, _ := r.fakeSSHRunner.Run(ctx, host, credential, command)
+	return nil, sshclient.CommandError{Command: command, Output: string(output), Err: errors.New("exit status 127")}
 }
 
 func TestSSHProbe(t *testing.T) {

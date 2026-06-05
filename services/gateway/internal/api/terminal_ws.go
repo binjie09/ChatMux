@@ -103,11 +103,18 @@ func (s *Server) openTerminal(r *http.Request, token terminalToken) (*sshclient.
 		return nil, err
 	}
 
-	command, err := tmux.AttachTargetCommand(terminalTokenTarget(token))
+	command, err := terminalCommand(token)
 	if err != nil {
 		return nil, err
 	}
 	return s.ssh.StartTerminal(r.Context(), hostToSSHConfig(host), token.Credential, command, sshclient.TerminalSize{})
+}
+
+func terminalCommand(token terminalToken) (string, error) {
+	if token.Mode == terminalTokenModeSSH {
+		return tmux.LoginShellCommand(), nil
+	}
+	return tmux.AttachTargetCommand(terminalTokenTarget(token))
 }
 
 func terminalTokenTarget(token terminalToken) tmux.Target {
@@ -169,6 +176,9 @@ func (s *Server) readTerminalInput(ctx terminalInputContext) {
 }
 
 func (s *Server) allowTerminalInput(ctx terminalInputContext, message terminalClientMessage) bool {
+	if message.Source == "installer" {
+		return s.allowInstallerInput(ctx)
+	}
 	if message.Source != "composer" {
 		return true
 	}
@@ -183,6 +193,21 @@ func (s *Server) allowTerminalInput(ctx terminalInputContext, message terminalCl
 	}
 	s.logComposerInput(ctx, message, decision)
 	return true
+}
+
+func (s *Server) allowInstallerInput(ctx terminalInputContext) bool {
+	if ctx.token.Mode == terminalTokenModeSSH {
+		_ = s.logAudit(ctx.request.Context(), hoststore.LogAuditEventInput{
+			Type: "terminal.tmux_install.started", HostID: ctx.token.HostID, SessionName: ctx.token.SessionName,
+			Message: "started tmux installer",
+		})
+		return true
+	}
+	_ = s.logAudit(ctx.request.Context(), hoststore.LogAuditEventInput{
+		Type: "terminal.tmux_install.blocked", HostID: ctx.token.HostID, SessionName: ctx.token.SessionName,
+		Message: "blocked tmux installer outside ssh fallback",
+	})
+	return false
 }
 
 func (s *Server) logComposerInput(ctx terminalInputContext, message terminalClientMessage, decision commandPolicyDecision) {

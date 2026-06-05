@@ -8,6 +8,7 @@ import { windowLabel } from "./session-window-utils";
 type TerminalWindowTabsProps = {
   selectedWindowIndex: number | null;
   session: DisplayTmuxSession | undefined;
+  tmuxFallbackActive: boolean;
   onCreateWindow: (sessionName: string) => void;
   onDeleteWindow: (sessionName: string, windowIndex: number) => void;
   onOpenWindow: (sessionName: string, windowIndex: number) => void;
@@ -32,15 +33,22 @@ export function TerminalWindowTabs(props: TerminalWindowTabsProps) {
             sessionName={session.name}
             window={window}
             onDeleteWindow={props.onDeleteWindow}
-            onEdit={() => setEditingWindowIndex(window.index)}
+            onEdit={() => {
+              if (!props.tmuxFallbackActive) {
+                setEditingWindowIndex(window.index);
+              }
+            }}
             onOpenWindow={props.onOpenWindow}
             onRenameWindow={props.onRenameWindow}
+            showActions={!props.tmuxFallbackActive}
             onStopEditing={() => setEditingWindowIndex(null)}
           />
         ))}
-        <button className="terminal-window-add" type="button" aria-label="New window" onClick={() => props.onCreateWindow(session.name)}>
-          <Plus size={16} aria-hidden="true" />
-        </button>
+        {!props.tmuxFallbackActive ? (
+          <button className="terminal-window-add" type="button" aria-label="New window" onClick={() => props.onCreateWindow(session.name)}>
+            <Plus size={16} aria-hidden="true" />
+          </button>
+        ) : null}
       </div>
       <div className="terminal-window-picker">
         <select
@@ -54,21 +62,25 @@ export function TerminalWindowTabs(props: TerminalWindowTabsProps) {
             </option>
           ))}
         </select>
-        <button type="button" aria-label="New window" onClick={() => props.onCreateWindow(session.name)}>
-          <Plus size={16} aria-hidden="true" />
-        </button>
-        <button
-          type="button"
-          aria-label="Delete selected window"
-          disabled={props.selectedWindowIndex === null}
-          onClick={() => {
-            if (props.selectedWindowIndex !== null) {
-              props.onDeleteWindow(session.name, props.selectedWindowIndex);
-            }
-          }}
-        >
-          <Trash2 size={16} aria-hidden="true" />
-        </button>
+        {!props.tmuxFallbackActive ? (
+          <>
+            <button type="button" aria-label="New window" onClick={() => props.onCreateWindow(session.name)}>
+              <Plus size={16} aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              aria-label="Delete selected window"
+              disabled={props.selectedWindowIndex === null}
+              onClick={() => {
+                if (props.selectedWindowIndex !== null) {
+                  props.onDeleteWindow(session.name, props.selectedWindowIndex);
+                }
+              }}
+            >
+              <Trash2 size={16} aria-hidden="true" />
+            </button>
+          </>
+        ) : null}
       </div>
     </nav>
   );
@@ -83,6 +95,7 @@ function WindowTab(props: {
   onEdit: () => void;
   onOpenWindow: (sessionName: string, windowIndex: number) => void;
   onRenameWindow: (sessionName: string, windowIndex: number, name: string) => Promise<void> | void;
+  showActions: boolean;
   onStopEditing: () => void;
 }) {
   if (props.editing) {
@@ -111,9 +124,11 @@ function WindowTab(props: {
         {props.window.active ? <Terminal size={14} aria-hidden="true" /> : <Monitor size={14} aria-hidden="true" />}
         <span>{windowLabel(props.window)}</span>
       </button>
-      <button type="button" aria-label={`Delete ${windowLabel(props.window)}`} onClick={() => props.onDeleteWindow(props.sessionName, props.window.index)}>
-        <Trash2 size={13} aria-hidden="true" />
-      </button>
+      {props.showActions ? (
+        <button type="button" aria-label={`Delete ${windowLabel(props.window)}`} onClick={() => props.onDeleteWindow(props.sessionName, props.window.index)}>
+          <Trash2 size={13} aria-hidden="true" />
+        </button>
+      ) : null}
     </div>
   );
 }

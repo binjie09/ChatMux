@@ -61,6 +61,8 @@ type AppShellProps = {
   showHostForm: boolean;
   target: CredentialTarget;
   terminalSessionKey: string;
+  tmuxFallbackActive: boolean;
+  tmuxInstallPending: boolean;
   windowListSessionName: string;
   sessionHandlers: {
     onBackToSessions: () => void;
@@ -98,6 +100,7 @@ type AppShellProps = {
   onTrustHost: () => void;
   onUpdateHost: (hostId: string, input: CreateHostInput) => Promise<void>;
   onHistoryQueryChange: (query: string) => void;
+  onInstallTmux: () => void;
   terminalReconnectSignal: number;
 };
 
@@ -136,6 +139,7 @@ export function AppShell(props: AppShellProps) {
         selectedSessionName={props.selectedSessionName}
         selectedWindowIndex={props.selectedWindowIndex}
         sessions={props.sessions}
+        tmuxFallbackActive={props.tmuxFallbackActive}
         windowListSessionName={props.windowListSessionName}
         onCreateSession={props.sessionHandlers.onCreateSession}
         onDeleteWindow={props.sessionHandlers.onDeleteWindow}
@@ -164,6 +168,8 @@ export function AppShell(props: AppShellProps) {
         selectedWindowName={props.selectedWindowName}
         target={props.target}
         terminalSessionKey={props.terminalSessionKey}
+        tmuxFallbackActive={props.tmuxFallbackActive}
+        tmuxInstallPending={props.tmuxInstallPending}
         onBackToSessions={props.sessionHandlers.onBackToSessions}
         onComposerModeChange={props.composerHandlers.onComposerModeChange}
         onComposerSubmit={props.composerHandlers.onComposerSubmit}
@@ -177,6 +183,7 @@ export function AppShell(props: AppShellProps) {
         onDeleteWindow={props.sessionHandlers.onDeleteWindow}
         onDrafted={props.onDrafted}
         onHistoryQueryChange={props.onHistoryQueryChange}
+        onInstallTmux={props.onInstallTmux}
         onMobileSheetChange={props.onMobileSheetChange}
         onOpenWindow={props.sessionHandlers.onOpenWindow}
         onPasteTerminalImage={props.onPasteTerminalImage}

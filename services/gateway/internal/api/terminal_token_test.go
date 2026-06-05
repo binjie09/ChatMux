@@ -116,6 +116,71 @@ func TestCreateTerminalTokenStoresWindowTarget(t *testing.T) {
 	}
 }
 
+func TestCreateTerminalTokenStoresSSHFallbackMode(t *testing.T) {
+	server, closeServer := newTestServer(t)
+	defer closeServer()
+	runner := &fakeSSHRunner{
+		outputForCommand: func(command string) string {
+			return "tmux not found in PATH, CHATMUX_TMUX_BIN, or $HOME/.local/bin\n"
+		},
+	}
+	server.ssh = failingCommandRunner{fakeSSHRunner: runner}
+	host := createTrustedTestHost(t, server)
+	credentialID := createCredentialTokenForTest(t, server, testCredentialInput{hostID: host.ID})
+
+	body := bytes.NewBufferString(`{"credentialToken":"` + credentialID + `","mode":"ssh","windowIndex":0}`)
+	req := httptest.NewRequest(http.MethodPost, "/api/hosts/"+host.ID+"/tmux/sessions/ssh/terminal-token", body)
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("expected 201, got %d: %s", rec.Code, rec.Body.String())
+	}
+	var response createTerminalTokenResponse
+	if err := json.NewDecoder(rec.Body).Decode(&response); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	token, ok := server.terminalTokens.Consume(response.Token)
+	if !ok {
+		t.Fatal("expected terminal token to be stored")
+	}
+	if token.Mode != terminalTokenModeSSH {
+		t.Fatalf("expected ssh token mode, got %q", token.Mode)
+	}
+	if command, err := terminalCommand(token); err != nil || command != "exec \"${SHELL:-/bin/sh}\"" {
+		t.Fatalf("expected login shell command, got %q err=%v", command, err)
+	}
+}
+
+func TestCreateTerminalTokenKeepsNamedSSHSessionInTmuxMode(t *testing.T) {
+	server, closeServer := newTestServer(t)
+	defer closeServer()
+	host := createTrustedTestHost(t, server)
+	credentialID := createCredentialTokenForTest(t, server, testCredentialInput{hostID: host.ID})
+
+	req := httptest.NewRequest(http.MethodPost, "/api/hosts/"+host.ID+"/tmux/sessions/ssh/terminal-token", credentialTokenBody(credentialID))
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("expected 201, got %d: %s", rec.Code, rec.Body.String())
+	}
+	var response createTerminalTokenResponse
+	if err := json.NewDecoder(rec.Body).Decode(&response); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	token, ok := server.terminalTokens.Consume(response.Token)
+	if !ok {
+		t.Fatal("expected terminal token to be stored")
+	}
+	if token.Mode != terminalTokenModeTmux {
+		t.Fatalf("expected tmux token mode, got %q", token.Mode)
+	}
+	if command, err := terminalCommand(token); err != nil || !containsLoginShellFragment(command, "attach-session -t '=ssh:'") {
+		t.Fatalf("expected tmux attach command, got %q err=%v", command, err)
+	}
+}
+
 func TestTerminalConnectionAuditEventUsesRecoveryType(t *testing.T) {
 	event := terminalConnectionAuditEvent(terminalToken{
 		HostID: "host_1", Recovering: true, SessionName: "deploy",

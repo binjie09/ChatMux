@@ -11,11 +11,11 @@ type SessionGroupProps = {
   isSelected: boolean;
   selectedWindowIndex: number | null;
   session: DisplayTmuxSession;
-  onDeleteWindow: (sessionName: string, windowIndex: number) => void;
+  onDeleteWindow?: (sessionName: string, windowIndex: number) => void;
   onExpandSession: (name: string) => void;
   onOpenWindow: (name: string, windowIndex: number) => void;
-  onRenameSession: (sessionName: string, name: string) => Promise<void> | void;
-  onRenameWindow: (sessionName: string, windowIndex: number, name: string) => Promise<void> | void;
+  onRenameSession?: (sessionName: string, name: string) => Promise<void> | void;
+  onRenameWindow?: (sessionName: string, windowIndex: number, name: string) => Promise<void> | void;
 };
 
 export function SessionGroup(props: SessionGroupProps) {
@@ -41,15 +41,19 @@ export function SessionGroup(props: SessionGroupProps) {
         onCancelEditing={() => setEditingSession(false)}
         onClick={handleSessionClick}
         onRenameSession={props.onRenameSession}
-        onStartEditing={() => setEditingSession(true)}
+        onStartEditing={() => {
+          if (props.onRenameSession) {
+            setEditingSession(true);
+          }
+        }}
       />
       {props.isExpanded ? (
         <SessionWindowList
           selectedWindowIndex={props.selectedWindowIndex}
           windows={props.session.windowList}
-          onDeleteWindow={(windowIndex) => props.onDeleteWindow(props.session.name, windowIndex)}
+          onDeleteWindow={props.onDeleteWindow ? (windowIndex) => props.onDeleteWindow?.(props.session.name, windowIndex) : undefined}
           onOpenWindow={(windowIndex) => props.onOpenWindow(props.session.name, windowIndex)}
-          onRenameWindow={(windowIndex, name) => props.onRenameWindow(props.session.name, windowIndex, name)}
+          onRenameWindow={props.onRenameWindow ? (windowIndex, name) => props.onRenameWindow?.(props.session.name, windowIndex, name) : undefined}
         />
       ) : null}
     </div>
@@ -72,10 +76,10 @@ function SessionRow({
   session: DisplayTmuxSession;
   onCancelEditing: () => void;
   onClick: () => void;
-  onRenameSession: (sessionName: string, name: string) => Promise<void> | void;
+  onRenameSession?: (sessionName: string, name: string) => Promise<void> | void;
   onStartEditing: () => void;
 }) {
-  if (editing) {
+  if (editing && onRenameSession) {
     return (
       <div className={`session-row editing ${isSelected ? "selected" : ""}`}>
         <Activity size={18} aria-hidden="true" />

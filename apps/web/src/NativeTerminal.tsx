@@ -31,6 +31,7 @@ type NativeTerminalHandlers = TerminalHandlers & TerminalPasteHandlers;
 export type QueuedTerminalInput = {
   data: string;
   id: number;
+  source?: "composer" | "installer" | "terminal";
 };
 
 const statusLabel: Record<ConnectionStatus, string> = {
@@ -293,6 +294,6 @@ function useQueuedInput(queuedInput: QueuedTerminalInput | null, socketRef: Muta
     if (!queuedInput?.data) {
       return;
     }
-    sendTerminalInput(socketRef.current, queuedInput.data, "composer");
+    sendTerminalInput(socketRef.current, queuedInput.data, queuedInput.source ?? "composer");
   }, [queuedInput, socketRef]);
 }

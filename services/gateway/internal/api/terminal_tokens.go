@@ -10,8 +10,14 @@ import (
 
 const terminalTokenTTL = 2 * time.Minute
 
+const (
+	terminalTokenModeTmux = "tmux"
+	terminalTokenModeSSH  = "ssh"
+)
+
 type terminalToken struct {
 	HostID      string
+	Mode        string
 	Recovering  bool
 	SessionName string
 	Target      tmux.Target

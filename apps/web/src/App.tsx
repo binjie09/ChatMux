@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { type TmuxSession, uploadTerminalImage } from "./api";
 import { type ComposerMode } from "./Composer";
 import { AppShell } from "./AppShell";
@@ -26,6 +26,7 @@ import { useHostTrustPrompt } from "./useHostTrustPrompt";
 import { type ConnectionStatus } from "./useTerminalSocket";
 import { findSessionWindow, windowLabel } from "./session-window-utils";
 import { bracketedPaste } from "./terminal-protocol";
+import { hasSSHFallbackSession, isSSHFallbackSession, tmuxInstallScript } from "./tmux-fallback";
 import { errorMessage } from "./view-utils";
 
 const noExpandedSessions: ReadonlySet<string> = new Set();
@@ -39,6 +40,8 @@ export function App() {
   const [mobileSheet, setMobileSheet] = useState<MobileTerminalSheet | null>(null);
   const [queuedInput, setQueuedInput] = useState<QueuedTerminalInput | null>(null);
   const [terminalReconnectSignal, setTerminalReconnectSignal] = useState(0);
+  const [pendingTmuxInstall, setPendingTmuxInstall] = useState(false);
+  const [tmuxInstallPromptHostId, setTmuxInstallPromptHostId] = useState("");
   const [error, setError] = useState("");
   const isMobileLayout = useIsMobileLayout();
   const auditEvents = useAuditEvents(setError);
@@ -93,6 +96,7 @@ export function App() {
     history,
     isMobileLayout,
     newSessionName,
+    sessions,
     selectedHostId,
     selection,
     sshReady: sshCredential.ready,
@@ -119,6 +123,7 @@ export function App() {
   function clearSelectedSession() {
     selection.clearSelection();
     setMobileSheet(null);
+    setPendingTmuxInstall(false);
     sshCredential.resetCredential();
     setSessions([]);
     history.clear();
@@ -197,10 +202,33 @@ export function App() {
   const displaySessions = sessionState.displaySessions;
   const selectedSession = displaySessions.find((session) => session.name === selection.selectedSessionName);
   const selectedWindow = findSessionWindow(selectedSession, selection.selectedWindowIndex);
+  const tmuxFallbackActive = hasSSHFallbackSession(displaySessions);
+  const selectedSessionIsFallback = isSSHFallbackSession(selectedSession);
+
+  const handleInstallTmux = useCallback(() => {
+    const fallbackSession = displaySessions.find((session) => isSSHFallbackSession(session));
+    const windowIndex = fallbackSession?.windowList[0]?.index;
+    if (!selectedSessionIsFallback && fallbackSession && windowIndex !== undefined) {
+      void sessionWorkflow.handleOpenSessionWindow(fallbackSession.name, windowIndex);
+    }
+    setPendingTmuxInstall(true);
+    setMobilePanel("terminal");
+  }, [displaySessions, selectedSessionIsFallback, sessionWorkflow]);
+
+  useEffect(() => {
+    if (!tmuxFallbackActive || !selectedHostId || pendingTmuxInstall || tmuxInstallPromptHostId === selectedHostId) {
+      return;
+    }
+    setTmuxInstallPromptHostId(selectedHostId);
+    if (window.confirm("tmux is not installed on this server. ChatMux is using a single SSH shell. Allow ChatMux to run the built-in tmux installer now?")) {
+      handleInstallTmux();
+    }
+  }, [handleInstallTmux, pendingTmuxInstall, selectedHostId, tmuxFallbackActive, tmuxInstallPromptHostId]);
 
   const createTerminalWebSocketURL = useTerminalConnectionURL({
     getCredentialToken: getSelectedHostCredentialToken,
     hostId: selectedHostId,
+    selectedSession,
     sessionName: selection.selectedSessionName,
     windowIndex: selection.selectedWindowIndex,
   });
@@ -221,14 +249,20 @@ export function App() {
     getCredentialToken: getSelectedHostCredentialToken,
     hostId: selectedHostId,
     sessionName: selection.selectedSessionName,
-    sshReady: sshCredential.ready && hostTrusted,
+    sshReady: sshCredential.ready && hostTrusted && !selectedSessionIsFallback,
     windowIndex: selection.selectedWindowIndex,
   };
   const sessionHandlers = useAppSessionHandlers({
     selectedSession,
     tmuxWindowActions,
     onBackToSessions: sessionWorkflow.handleBackToSessions,
-    onConnectionReady: (status) => void sessionWorkflow.handleTerminalConnectionReady(status),
+    onConnectionReady: (status) => {
+      void sessionWorkflow.handleTerminalConnectionReady(status);
+      if (pendingTmuxInstall && selectedSessionIsFallback) {
+        setQueuedInput({ data: `${tmuxInstallScript}\n`, id: Date.now(), source: "installer" });
+        setPendingTmuxInstall(false);
+      }
+    },
     onCreateSession: () => void sessionWorkflow.handleCreateSession(),
     onExpandSession: sessionWorkflow.handleExpandSession,
     onListSessions: () => void sessionWorkflow.handleListSessions(),
@@ -251,7 +285,7 @@ export function App() {
         hosts={hosts}
         expandedSessionNames={isMobileLayout ? noExpandedSessions : selection.expandedSessionNames}
         isMobileTerminalActive={isMobileTerminalActive}
-        loadScrollbackHistory={terminalSessionKey ? loadTerminalScrollbackHistory : null}
+        loadScrollbackHistory={terminalSessionKey && !selectedSessionIsFallback ? loadTerminalScrollbackHistory : null}
         mobilePanel={mobilePanel}
         mobileSheet={mobileSheet}
         newSessionName={newSessionName}
@@ -266,20 +300,23 @@ export function App() {
         showHostForm={showHostForm}
         target={summaryTarget}
         terminalSessionKey={terminalSessionKey}
+        tmuxFallbackActive={tmuxFallbackActive}
+        tmuxInstallPending={pendingTmuxInstall}
         composerHandlers={{
           onComposerModeChange: setComposerMode,
           onComposerSubmit: handleComposerSubmit,
-          onComposerUploadImage: isMobileLayout && isMobileTerminalActive ? handleMobileTerminalImageUpload : null,
+          onComposerUploadImage: isMobileLayout && isMobileTerminalActive && !selectedSessionIsFallback ? handleMobileTerminalImageUpload : null,
           onComposerValueChange: setComposerValue,
         }}
         sessionHandlers={sessionHandlers}
         onConnectionError={setError}
         onConnectionBlocked={handleTerminalConnectionBlocked}
-        onPasteTerminalImage={terminalSessionKey ? handleTerminalImagePaste : null}
+        onPasteTerminalImage={terminalSessionKey && !selectedSessionIsFallback ? handleTerminalImagePaste : null}
         onCreateHost={handleCreateHost}
         onDeleteHost={handleDeleteHost}
         onDrafted={() => void auditEvents.refresh()}
         onHistoryQueryChange={history.setQuery}
+        onInstallTmux={handleInstallTmux}
         onMobilePanelChange={setMobilePanel}
         onMobileSheetChange={setMobileSheet}
         onNewSessionNameChange={setNewSessionName}

@@ -5,7 +5,7 @@ type TerminalMessage = {
   data?: string;
 };
 
-export type TerminalInputSource = "composer" | "terminal";
+export type TerminalInputSource = "composer" | "installer" | "terminal";
 
 export function sendTerminalInput(socket: WebSocket | null, data: string, source: TerminalInputSource = "terminal") {
   if (socket?.readyState === WebSocket.OPEN) {
