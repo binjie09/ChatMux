@@ -143,6 +143,7 @@ export function AppShell(props: AppShellProps) {
         tmuxFallbackActive={props.tmuxFallbackActive}
         windowListSessionName={props.windowListSessionName}
         onCreateSession={props.sessionHandlers.onCreateSession}
+        onCreateWindow={props.sessionHandlers.onCreateWindow}
         onDeleteWindow={props.sessionHandlers.onDeleteWindow}
         onExpandSession={props.sessionHandlers.onExpandSession}
         onListSessions={props.sessionHandlers.onListSessions}

@@ -23,6 +23,7 @@ type SessionListProps = {
   tmuxFallbackActive: boolean;
   windowListSessionName: string;
   onCreateSession: () => void;
+  onCreateWindow: (sessionName: string) => void;
   onDeleteWindow: (sessionName: string, windowIndex: number) => void;
   onExpandSession: (sessionName: string) => void;
   onListSessions: () => void;
@@ -46,13 +47,21 @@ export function SessionList(props: SessionListProps) {
   const windowListSession = props.mobileWindowList
     ? props.sessions.find((session) => session.name === props.windowListSessionName)
     : undefined;
+  const handleCreateClick = () => {
+    if (windowListSession) {
+      props.onCreateWindow(windowListSession.name);
+      return;
+    }
+    handleNewSessionClick();
+  };
 
   return (
     <section className={`session-list ${props.mobileOpen ? "mobile-open" : ""}`}>
       <SessionListHeader
+        createLabel={windowListSession ? "New window" : "New session"}
         inWindowList={Boolean(windowListSession)}
         onBack={() => props.onExpandSession("")}
-        onNewSessionClick={handleNewSessionClick}
+        onCreateClick={handleCreateClick}
         showNewSession={!props.tmuxFallbackActive}
       />
 
@@ -74,9 +83,10 @@ export function SessionList(props: SessionListProps) {
 }
 
 function SessionListHeader(props: {
+  createLabel: string;
   inWindowList: boolean;
   onBack: () => void;
-  onNewSessionClick: () => void;
+  onCreateClick: () => void;
   showNewSession: boolean;
 }) {
   return (
@@ -91,7 +101,7 @@ function SessionListHeader(props: {
         <h1>{props.inWindowList ? "Windows" : "Conversations"}</h1>
       </div>
       {props.showNewSession ? (
-        <button className="icon-button" type="button" aria-label="New session" onClick={props.onNewSessionClick}>
+        <button className="icon-button" type="button" aria-label={props.createLabel} onClick={props.onCreateClick}>
           <Plus size={19} aria-hidden="true" />
         </button>
       ) : null}
