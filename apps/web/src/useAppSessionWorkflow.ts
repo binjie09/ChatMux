@@ -15,7 +15,9 @@ type SessionSelection = {
 };
 
 type SessionWorkflowOptions = {
+  ensureHostTrusted?: (retry: () => Promise<void> | void, actionLabel?: string) => boolean;
   getCredentialToken: () => Promise<string>;
+  onHostTrustError?: (error: unknown, retry: () => Promise<void> | void, actionLabel?: string) => boolean;
   history: TerminalHistoryState;
   isMobileLayout: boolean;
   newSessionName: string;
@@ -64,6 +66,9 @@ async function listSessions(options: SessionWorkflowOptions) {
   if (!options.selectedHostId || !options.sshReady) {
     return;
   }
+  if (!ensureWorkflowHostTrusted(options, () => listSessions(options))) {
+    return;
+  }
   await runSessionWorkflow(options, async () => {
     const credentialToken = await options.getCredentialToken();
     options.onSessionsChange(await listTmuxSessions(options.selectedHostId, credentialToken));
@@ -82,6 +87,9 @@ async function openWindow(
   if (!options.selectedHostId) {
     return;
   }
+  if (!ensureWorkflowHostTrusted(options, () => openWindow(options, sessionName, windowIndex, tokenOverride))) {
+    return;
+  }
   options.selection.openWindow({ isMobileLayout: options.isMobileLayout, sessionName, windowIndex });
   options.onMobileSheetClear();
   options.onMobilePanelChange("terminal");
@@ -93,6 +101,9 @@ async function openWindow(
 
 async function createSession(options: SessionWorkflowOptions) {
   if (!options.selectedHostId || !options.newSessionName) {
+    return;
+  }
+  if (!ensureWorkflowHostTrusted(options, () => createSession(options))) {
     return;
   }
   await runSessionWorkflow(options, async () => {
@@ -118,8 +129,15 @@ async function runSessionWorkflow(options: SessionWorkflowOptions, action: () =>
     options.onAuditRefresh();
     options.onError("");
   } catch (error) {
+    if (options.onHostTrustError?.(error, () => runSessionWorkflow(options, action))) {
+      return;
+    }
     options.onError(errorMessage(error));
   }
+}
+
+function ensureWorkflowHostTrusted(options: SessionWorkflowOptions, retry: () => Promise<void> | void) {
+  return options.ensureHostTrusted?.(retry, "reconnect") ?? true;
 }
 
 async function openCreatedSession(options: SessionWorkflowOptions, session: TmuxSession, credentialToken: string) {

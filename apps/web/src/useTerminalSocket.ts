@@ -8,6 +8,7 @@ export type TerminalHandlers = {
   onConnectionClosed: () => void;
   onConnectionError: (message: string) => void;
   onConnectionReady: (status: ConnectionStatus) => void;
+  onConnectionBlocked?: (message: string) => boolean;
 };
 
 type TerminalSocketOptions = {
@@ -31,6 +32,11 @@ type TerminalSocketBinding = {
 
 type SocketOpenInput = Pick<TerminalSocketBinding, "isActive" | "options" | "readyStatus" | "socket">;
 
+type SocketOpenResult = {
+  blocked: boolean;
+  socket: WebSocket | null;
+};
+
 const reconnectDelayMs = 1200;
 
 export function useTerminalSocket(options: TerminalSocketOptions) {
@@ -44,7 +50,11 @@ export function useTerminalSocket(options: TerminalSocketOptions) {
     let socket: WebSocket | null = null;
     let reconnectTimer = 0;
     const connect = async (nextStatus: ConnectionStatus) => {
-      socket = await openTerminalSocket(options, () => active, nextStatus);
+      const result = await openTerminalSocket(options, () => active, nextStatus);
+      if (result.blocked) {
+        return;
+      }
+      socket = result.socket;
       if (socket) {
         bindTerminalSocket({
           connect,
@@ -92,23 +102,28 @@ async function openTerminalSocket(
   try {
     const socketURL = await options.connectorRef.current?.(nextStatus);
     if (!isActive() || !socketURL) {
-      return null;
+      return { blocked: false, socket: null };
     }
     const socket = new WebSocket(socketURL);
     options.socketRef.current = socket;
-    return socket;
+    return { blocked: false, socket };
   } catch (error) {
     if (isActive()) {
       options.setStatus("error");
-      options.handlersRef.current.onConnectionError(errorMessage(error));
+      const message = errorMessage(error);
+      if (options.handlersRef.current.onConnectionBlocked?.(message)) {
+        return { blocked: true, socket: null };
+      } else {
+        options.handlersRef.current.onConnectionError(message);
+      }
     }
-    return null;
+    return { blocked: false, socket: null };
   }
 }
 
 function bindTerminalSocket(input: TerminalSocketBinding) {
   input.socket.addEventListener("open", () => handleSocketOpen(input));
-  input.socket.addEventListener("message", (event) => handleSocketMessage(input.options, event.data));
+  input.socket.addEventListener("message", (event) => handleSocketMessage(input, event.data));
   input.socket.addEventListener("error", () => {
     if (input.isActive() && input.options.socketRef.current === input.socket) {
       input.options.setStatus("recovering");
@@ -137,14 +152,19 @@ function handleSocketOpen(input: SocketOpenInput) {
   }
 }
 
-function handleSocketMessage(options: TerminalSocketOptions, data: unknown) {
-  const terminal = options.terminalInstanceRef.current;
+function handleSocketMessage(input: SocketOpenInput, data: unknown) {
+  const terminal = input.options.terminalInstanceRef.current;
   if (!terminal) {
     return;
   }
   const error = writeTerminalMessage(terminal, data);
   if (error) {
-    options.setStatus("error");
-    options.handlersRef.current.onConnectionError(error);
+    input.options.setStatus("error");
+    if (input.options.handlersRef.current.onConnectionBlocked?.(error)) {
+      input.options.socketRef.current = null;
+      input.socket.close();
+      return;
+    }
+    input.options.handlersRef.current.onConnectionError(error);
   }
 }

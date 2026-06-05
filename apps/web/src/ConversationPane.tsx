@@ -44,6 +44,7 @@ type ConversationPaneProps = {
   onConnectionError: (message: string) => void;
   onConnectionReady: (status: ConnectionStatus) => void;
   onConnectionClosed: () => void;
+  onConnectionBlocked?: (message: string) => boolean;
   onCreateWindow: (sessionName: string) => void;
   onDeleteWindow: (sessionName: string, windowIndex: number) => void;
   onDrafted: () => void;
@@ -55,6 +56,7 @@ type ConversationPaneProps = {
   onSaveSessionMetadata: (input: SaveSessionMetadataInput) => Promise<void>;
   onTogglePin: () => void;
   onTrustHost: () => void;
+  terminalReconnectSignal: number;
 };
 
 export function ConversationPane(props: ConversationPaneProps) {
@@ -104,9 +106,11 @@ export function ConversationPane(props: ConversationPaneProps) {
             queuedInput={props.queuedInput}
             sessionKey={props.terminalSessionKey}
             onConnectionClosed={props.onConnectionClosed}
+            onConnectionBlocked={props.onConnectionBlocked}
             onConnectionError={props.onConnectionError}
             onConnectionReady={props.onConnectionReady}
             onPasteImage={props.onPasteTerminalImage}
+            reconnectSignal={props.terminalReconnectSignal}
           />
         </div>
         <div className="context-stack">{contextPanels}</div>

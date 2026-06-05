@@ -1,0 +1,126 @@
+.host-trust-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgb(12 18 14 / 64%);
+}
+
+.host-trust-dialog {
+  width: min(440px, 100%);
+  border: 1px solid #d6cebd;
+  border-radius: 8px;
+  color: #17201b;
+  background: #fffaf0;
+  box-shadow: 0 24px 70px rgb(12 18 14 / 28%);
+}
+
+.host-trust-dialog header,
+.host-trust-dialog footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+}
+
+.host-trust-dialog header {
+  border-bottom: 1px solid #ded8ca;
+}
+
+.host-trust-dialog footer {
+  border-top: 1px solid #ded8ca;
+}
+
+.host-trust-title {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+
+.host-trust-title svg {
+  flex: 0 0 auto;
+  color: #4f8f6f;
+}
+
+.host-trust-dialog h2 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.host-trust-dialog header button {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid #d6cebd;
+  border-radius: 8px;
+  color: #415049;
+  background: #ffffff;
+}
+
+.host-trust-body {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+}
+
+.host-trust-body p {
+  margin: 0;
+  color: #415049;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.host-trust-body code {
+  overflow-wrap: anywhere;
+  border: 1px solid #ded8ca;
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: #ffffff;
+  color: #17201b;
+}
+
+.host-trust-primary,
+.host-trust-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 8px;
+  padding: 10px 13px;
+  font-weight: 700;
+}
+
+.host-trust-primary {
+  border: 0;
+  color: #0d1712;
+  background: #8fd5b2;
+}
+
+.host-trust-secondary {
+  border: 1px solid #d6cebd;
+  color: #17201b;
+  background: #ffffff;
+}
+
+.host-trust-primary:disabled,
+.host-trust-secondary:disabled {
+  cursor: default;
+  opacity: 0.65;
+}
+
+@media (max-width: 560px) {
+  .host-trust-backdrop {
+    align-items: end;
+    padding: 12px;
+  }
+
+  .host-trust-dialog footer {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+}

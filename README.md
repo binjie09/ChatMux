@@ -62,7 +62,7 @@ ChatMux 把 **tmux 会话** 作为远程工作的稳定载体：
 | --- | --- | --- |
 | Host 管理 | 可用 | 添加、编辑、删除、置顶 SSH 主机 |
 | SSH 凭据 | 可用 | 支持密码和私钥；API 响应不回传原始凭据 |
-| 主机指纹信任 | 可用 | 首次连接前需要显式信任 host key |
+| 主机指纹信任 | 可用 | 首次连接未信任 host 时弹窗确认，信任后自动继续连接 |
 | tmux 会话 | 可用 | 列出、创建、打开远程 tmux session |
 | 原生终端 | 可用 | xterm.js + WebSocket PTY，支持交互式终端 |
 | 终端图片粘贴 | 可用 | 桌面端支持把图片粘贴进 Codex 等支持图片输入的原生 TUI；没有 X Server 或桌面图片剪切板的 Linux 服务器也能用，移动端可在输入框上传图片并通过剪切板语义送进终端 |
@@ -172,7 +172,7 @@ docker compose --env-file deploy/web/.env -f deploy/web/docker-compose.yml up -d
 
 1. 登录 Gateway：在 ChatMux 解锁页输入自托管 Gateway 的 token。
 2. 添加 SSH 主机：填写主机名、端口、用户名，选择密码或私钥。
-3. 信任主机指纹：首次连接前点击 `Trust host`。
+3. 信任主机指纹：首次连接未信任 host 时，在弹窗里确认信任并自动继续连接。
 4. 保存 SSH 凭据：点击 `Save SSH credential` 生成短期凭据 token。
 5. 打开 tmux 会话：选择已有 session，或输入名称创建新 session。
 6. 使用终端：主区域是真实终端，底部 composer 可以发送命令或粘贴输入。

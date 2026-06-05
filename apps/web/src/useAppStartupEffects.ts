@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 
 type AppStartupEffectsOptions = {
+  autoListSessions: boolean;
   gatewayReady: boolean;
   resetCredential: () => void;
   selectedHostHasCredential: boolean;
@@ -28,7 +29,7 @@ export function useAppStartupEffects(options: AppStartupEffectsOptions) {
   }, [options.gatewayReady]);
 
   useEffect(() => {
-    if (!options.gatewayReady || !options.selectedHostId || !options.selectedHostHasCredential) {
+    if (!options.autoListSessions || !options.gatewayReady || !options.selectedHostId || !options.selectedHostHasCredential) {
       return;
     }
     const autoConnectKey = `${options.selectedHostId}:${options.selectedHostUpdatedAt}:${options.selectedHostHasCredential}`;
@@ -39,6 +40,7 @@ export function useAppStartupEffects(options: AppStartupEffectsOptions) {
     options.onListSessions();
   }, [
     options.gatewayReady,
+    options.autoListSessions,
     options.selectedHostHasCredential,
     options.selectedHostId,
     options.selectedHostUpdatedAt,

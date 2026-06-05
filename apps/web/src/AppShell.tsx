@@ -82,6 +82,7 @@ type AppShellProps = {
     onComposerValueChange: (value: string) => void;
   };
   onConnectionError: (message: string) => void;
+  onConnectionBlocked?: (message: string) => boolean;
   onCreateHost: (input: CreateHostInput) => Promise<void>;
   onDeleteHost: (hostId: string) => Promise<void>;
   onDrafted: () => void;
@@ -97,6 +98,7 @@ type AppShellProps = {
   onTrustHost: () => void;
   onUpdateHost: (hostId: string, input: CreateHostInput) => Promise<void>;
   onHistoryQueryChange: (query: string) => void;
+  terminalReconnectSignal: number;
 };
 
 export function AppShell(props: AppShellProps) {
@@ -168,6 +170,7 @@ export function AppShell(props: AppShellProps) {
         onComposerUploadImage={props.composerHandlers.onComposerUploadImage}
         onComposerValueChange={props.composerHandlers.onComposerValueChange}
         onConnectionError={props.onConnectionError}
+        onConnectionBlocked={props.onConnectionBlocked}
         onConnectionClosed={props.sessionHandlers.onConnectionClosed}
         onConnectionReady={props.sessionHandlers.onConnectionReady}
         onCreateWindow={props.sessionHandlers.onCreateWindow}
@@ -181,6 +184,7 @@ export function AppShell(props: AppShellProps) {
         onSaveSessionMetadata={props.onSaveSessionMetadata}
         onTogglePin={props.onTogglePin}
         onTrustHost={props.onTrustHost}
+        terminalReconnectSignal={props.terminalReconnectSignal}
       />
       <MobileNavigation activePanel={props.mobilePanel} hidden={props.isMobileTerminalActive} onPanelChange={props.onMobilePanelChange} />
     </main>

@@ -55,13 +55,20 @@ export function useHostWorkspace(options: HostWorkspaceOptions) {
     options.onHostSelected();
   }
 
-  async function handleTrustHost() {
-    if (!selectedHostId) {
-      return;
+  async function handleTrustHost(hostId = selectedHostId) {
+    if (!hostId) {
+      return null;
     }
-    const trusted = await trustHost(selectedHostId);
-    setHosts((current) => current.map((host) => (host.id === trusted.id ? trusted : host)));
-    options.onAuditRefresh();
+    try {
+      const trusted = await trustHost(hostId);
+      setHosts((current) => current.map((host) => (host.id === trusted.id ? trusted : host)));
+      options.onAuditRefresh();
+      options.onError("");
+      return trusted;
+    } catch (err) {
+      options.onError(errorMessage(err));
+      throw err;
+    }
   }
 
   async function handleTogglePin() {

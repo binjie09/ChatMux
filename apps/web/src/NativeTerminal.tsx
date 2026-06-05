@@ -8,6 +8,7 @@ import { bindTerminalClipboard } from "./terminal-clipboard";
 import { bindTerminalPaste, type TerminalPasteHandlers } from "./terminal-image-paste";
 import { sendTerminalInput, sendTerminalResize, terminalSize } from "./terminal-protocol";
 import { terminalTheme } from "./terminal-theme";
+import { useExternalReconnect } from "./useExternalReconnect";
 import { type ConnectionStatus, type TerminalHandlers, useTerminalSocket } from "./useTerminalSocket";
 import "@xterm/xterm/css/xterm.css";
 import "./terminal.css";
@@ -16,10 +17,12 @@ type NativeTerminalProps = {
   createWebSocketURL: ((status: ConnectionStatus) => Promise<string>) | null;
   loadScrollbackHistory?: ((lines: number) => Promise<string>) | null;
   onConnectionClosed: () => void;
+  onConnectionBlocked?: (message: string) => boolean;
   onConnectionError: (message: string) => void;
   onConnectionReady: (status: ConnectionStatus) => void;
   onPasteImage?: ((file: File) => Promise<string>) | null;
   queuedInput: QueuedTerminalInput | null;
+  reconnectSignal: number;
   sessionKey: string;
 };
 
@@ -80,6 +83,7 @@ export function NativeTerminal(props: NativeTerminalProps) {
     terminalInstanceRef,
   });
   useQueuedInput(props.queuedInput, socketRef);
+  useExternalReconnect(props.reconnectSignal, reconnect);
 
   function reconnect() {
     const socket = socketRef.current;

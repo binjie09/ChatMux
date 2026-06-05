@@ -29,7 +29,7 @@ ChatMux 用于连接你自己部署的 Gateway，再由 Gateway 连接你的 SSH
 
 ## 信任主机指纹
 
-首次连接主机前点击 `Trust host`。这一步会记录 SSH host key 指纹，避免无提示连接到被替换的主机。
+首次连接未信任主机时，ChatMux 会弹出确认框。点击 `Trust and reconnect` 后会记录 SSH host key 指纹，并自动继续刚才的连接操作。
 
 如果服务器重装或 SSH host key 合法变化，请先确认变化来源，再重新信任。
 
@@ -108,7 +108,7 @@ Host 和 tmux session 按 owner 隔离。普通用户只能访问自己创建或
 - 确认 Gateway 机器可以访问目标主机和端口。
 - 确认用户名、密码或私钥正确。
 - 确认目标主机 SSH 服务正常。
-- 首次连接前先信任 host key。
+- 首次连接未信任 host 时，在弹窗中确认信任 host key。
 
 ### 看不到 tmux 会话
 

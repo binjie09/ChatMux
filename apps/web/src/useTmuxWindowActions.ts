@@ -22,6 +22,7 @@ type SelectionResult = {
 };
 
 type UseTmuxWindowActionsOptions = {
+  ensureHostTrusted?: (retry: () => Promise<void> | void, actionLabel?: string) => boolean;
   getCredentialToken: () => Promise<string>;
   hostId: string;
   isMobileLayout: boolean;
@@ -30,6 +31,7 @@ type UseTmuxWindowActionsOptions = {
   sessions: TmuxSession[];
   onAuditRefresh: () => void;
   onError: (message: string) => void;
+  onHostTrustError?: (error: unknown, retry: () => Promise<void> | void, actionLabel?: string) => boolean;
   onHistoryClear: () => void;
   onMobilePanelChange: (panel: MobilePanel) => void;
   onMobileSheetClear: () => void;
@@ -57,6 +59,9 @@ export function useTmuxWindowActions(options: UseTmuxWindowActionsOptions) {
   }, []);
 
   const refreshSessionsKeepingSelection = useCallback(async () => {
+    if (!ensureTmuxHostTrusted(optionsRef, refreshSessionsKeepingSelection)) {
+      return;
+    }
     await runTmuxAction(optionsRef, async (current) => {
       const credentialToken = await current.getCredentialToken();
       const nextSessions = await listTmuxSessions(current.hostId, credentialToken);
@@ -66,6 +71,9 @@ export function useTmuxWindowActions(options: UseTmuxWindowActionsOptions) {
   }, []);
 
   const createWindow = useCallback(async (sessionName: string) => {
+    if (!ensureTmuxHostTrusted(optionsRef, () => createWindow(sessionName))) {
+      return;
+    }
     await runTmuxAction(optionsRef, async (current) => {
       const credentialToken = await current.getCredentialToken();
       const windowName = nextWindowName(current.sessions.find((session) => session.name === sessionName));
@@ -80,6 +88,9 @@ export function useTmuxWindowActions(options: UseTmuxWindowActionsOptions) {
   }, []);
 
   const deleteWindow = useCallback(async (sessionName: string, windowIndex: number) => {
+    if (!ensureTmuxHostTrusted(optionsRef, () => deleteWindow(sessionName, windowIndex))) {
+      return;
+    }
     await runTmuxAction(optionsRef, async (current) => {
       const credentialToken = await current.getCredentialToken();
       const nextSessions = await deleteTmuxWindow(current.hostId, sessionName, credentialToken, windowIndex);
@@ -89,6 +100,9 @@ export function useTmuxWindowActions(options: UseTmuxWindowActionsOptions) {
   }, []);
 
   const renameWindow = useCallback(async (sessionName: string, windowIndex: number, name: string) => {
+    if (!ensureTmuxHostTrusted(optionsRef, () => renameWindow(sessionName, windowIndex, name))) {
+      return;
+    }
     await runTmuxAction(optionsRef, async (current) => {
       const credentialToken = await current.getCredentialToken();
       const nextSessions = await renameTmuxWindow(current.hostId, sessionName, credentialToken, windowIndex, name);
@@ -97,6 +111,9 @@ export function useTmuxWindowActions(options: UseTmuxWindowActionsOptions) {
   }, []);
 
   const renameSession = useCallback(async (sessionName: string, name: string) => {
+    if (!ensureTmuxHostTrusted(optionsRef, () => renameSession(sessionName, name))) {
+      return;
+    }
     await runTmuxAction(optionsRef, async (current) => {
       const credentialToken = await current.getCredentialToken();
       const nextSessions = await renameTmuxSession(current.hostId, sessionName, credentialToken, name);
@@ -130,8 +147,18 @@ async function runTmuxAction(
     current.onAuditRefresh();
     current.onError("");
   } catch (error) {
+    if (current.onHostTrustError?.(error, () => runTmuxAction(optionsRef, action))) {
+      return;
+    }
     current.onError(errorMessage(error));
   }
+}
+
+function ensureTmuxHostTrusted(
+  optionsRef: MutableRefObject<UseTmuxWindowActionsOptions>,
+  retry: () => Promise<void> | void,
+) {
+  return optionsRef.current.ensureHostTrusted?.(retry, "reconnect") ?? true;
 }
 
 function applySessions(
