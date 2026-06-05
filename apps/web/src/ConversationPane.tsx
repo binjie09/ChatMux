@@ -1,5 +1,5 @@
 import { type ReactNode } from "react";
-import { type AuditEvent, type Host, type SaveSessionMetadataInput, type TranscriptChunk, type TmuxSession } from "./api";
+import { type AuditEvent, type Host, type SaveSessionMetadataInput, type TranscriptChunk } from "./api";
 import { AuditPanel } from "./AuditPanel";
 import { Composer, type ComposerMode } from "./Composer";
 import { CommandDraftPanel } from "./CommandDraftPanel";
@@ -8,6 +8,8 @@ import { HostActions } from "./HostActions";
 import { MobileTerminalBar, MobileTerminalSheetPanel, type MobileTerminalSheet } from "./MobileTerminalChrome";
 import { NativeTerminal, type QueuedTerminalInput } from "./NativeTerminal";
 import { SessionMetadataEditor } from "./SessionMetadataEditor";
+import { TerminalWindowTabs } from "./TerminalWindowTabs";
+import { type DisplayTmuxSession } from "./session-state-machine";
 import { type ConnectionStatus } from "./useTerminalSocket";
 
 type CredentialTarget = {
@@ -15,6 +17,7 @@ type CredentialTarget = {
   hostId: string;
   sessionName: string;
   sshReady: boolean;
+  windowIndex: number | null;
 };
 
 type ConversationPaneProps = {
@@ -29,7 +32,8 @@ type ConversationPaneProps = {
   loadScrollbackHistory: ((lines: number) => Promise<string>) | null;
   mobileSheet: MobileTerminalSheet | null;
   queuedInput: QueuedTerminalInput | null;
-  selectedSession: TmuxSession | undefined;
+  selectedSession: DisplayTmuxSession | undefined;
+  selectedWindowName: string;
   terminalSessionKey: string;
   target: CredentialTarget;
   onBackToSessions: () => void;
@@ -38,9 +42,14 @@ type ConversationPaneProps = {
   onComposerValueChange: (value: string) => void;
   onConnectionError: (message: string) => void;
   onConnectionReady: (status: ConnectionStatus) => void;
+  onConnectionClosed: () => void;
+  onCreateWindow: (sessionName: string) => void;
+  onDeleteWindow: (sessionName: string, windowIndex: number) => void;
   onDrafted: () => void;
   onHistoryQueryChange: (query: string) => void;
   onMobileSheetChange: (sheet: MobileTerminalSheet | null) => void;
+  onOpenWindow: (sessionName: string, windowIndex: number) => void;
+  onRenameWindow: (sessionName: string, windowIndex: number, name: string) => Promise<void> | void;
   onSaveSessionMetadata: (input: SaveSessionMetadataInput) => Promise<void>;
   onTogglePin: () => void;
   onToggleShare: () => void;
@@ -57,12 +66,21 @@ export function ConversationPane(props: ConversationPaneProps) {
         hostName={props.host?.name ?? "No host"}
         sessionName={props.selectedSession?.name ?? "No session"}
         title={sessionTitle(props.selectedSession)}
+        windowName={props.selectedWindowName}
+        windows={props.selectedSession?.windowList ?? []}
+        selectedWindowIndex={props.target.windowIndex}
         onBack={props.onBackToSessions}
+        onCreateWindow={() => props.selectedSession ? props.onCreateWindow(props.selectedSession.name) : undefined}
         onOpenSheet={props.onMobileSheetChange}
+        onOpenWindow={(windowIndex) => {
+          if (props.selectedSession) {
+            props.onOpenWindow(props.selectedSession.name, windowIndex);
+          }
+        }}
       />
       <header className="conversation-header">
         <div>
-          <p>{props.host?.name ?? "No host"}</p>
+          <p>{conversationSubtitle(props.host?.name, props.selectedWindowName)}</p>
           <h2>{sessionTitle(props.selectedSession)}</h2>
           <SessionMetadataEditor session={props.selectedSession} onSave={props.onSaveSessionMetadata} />
         </div>
@@ -70,14 +88,25 @@ export function ConversationPane(props: ConversationPaneProps) {
       </header>
 
       <div className="terminal-workspace">
-        <NativeTerminal
-          createWebSocketURL={props.terminalSessionKey ? props.createTerminalWebSocketURL : null}
-          loadScrollbackHistory={props.loadScrollbackHistory}
-          queuedInput={props.queuedInput}
-          sessionKey={props.terminalSessionKey}
-          onConnectionError={props.onConnectionError}
-          onConnectionReady={props.onConnectionReady}
-        />
+        <div className="terminal-column">
+          <TerminalWindowTabs
+            selectedWindowIndex={props.target.windowIndex}
+            session={props.selectedSession}
+            onCreateWindow={props.onCreateWindow}
+            onDeleteWindow={props.onDeleteWindow}
+            onOpenWindow={props.onOpenWindow}
+            onRenameWindow={props.onRenameWindow}
+          />
+          <NativeTerminal
+            createWebSocketURL={props.terminalSessionKey ? props.createTerminalWebSocketURL : null}
+            loadScrollbackHistory={props.loadScrollbackHistory}
+            queuedInput={props.queuedInput}
+            sessionKey={props.terminalSessionKey}
+            onConnectionClosed={props.onConnectionClosed}
+            onConnectionError={props.onConnectionError}
+            onConnectionReady={props.onConnectionReady}
+          />
+        </div>
         <div className="context-stack">{contextPanels}</div>
       </div>
 
@@ -137,6 +166,13 @@ function MobileSheet(props: { children: ReactNode; open: boolean; title: string;
   );
 }
 
-function sessionTitle(session: TmuxSession | undefined) {
+function sessionTitle(session: DisplayTmuxSession | undefined) {
   return session?.title || session?.name || "Terminal";
+}
+
+function conversationSubtitle(hostName: string | undefined, windowName: string) {
+  if (windowName) {
+    return `${hostName ?? "No host"} · ${windowName}`;
+  }
+  return hostName ?? "No host";
 }

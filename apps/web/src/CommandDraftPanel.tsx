@@ -9,6 +9,7 @@ type CommandDraftTarget = {
   hostId: string;
   sessionName: string;
   sshReady: boolean;
+  windowIndex: number | null;
 };
 
 type CommandDraftPanelProps = {
@@ -22,7 +23,7 @@ export function CommandDraftPanel({ target, onDrafted, onInsert }: CommandDraftP
   const [drafting, setDrafting] = useState(false);
   const [error, setError] = useState("");
   const [prompt, setPrompt] = useState("");
-  const canDraft = Boolean(target.hostId && target.sessionName && target.sshReady && prompt.trim());
+  const canDraft = Boolean(target.hostId && target.sessionName && target.windowIndex !== null && target.sshReady && prompt.trim());
 
   async function handleDraft() {
     if (!canDraft) {
@@ -31,7 +32,9 @@ export function CommandDraftPanel({ target, onDrafted, onInsert }: CommandDraftP
     try {
       setDrafting(true);
       const credentialToken = await target.getCredentialToken();
-      setDraft(await draftTmuxCommand(target.hostId, target.sessionName, credentialToken, prompt));
+      setDraft(await draftTmuxCommand(target.hostId, target.sessionName, credentialToken, prompt, {
+        windowIndex: target.windowIndex ?? undefined,
+      }));
       setError("");
       onDrafted();
     } catch (err) {

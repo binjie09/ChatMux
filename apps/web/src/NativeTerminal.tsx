@@ -14,6 +14,7 @@ import "./terminal.css";
 type NativeTerminalProps = {
   createWebSocketURL: ((status: ConnectionStatus) => Promise<string>) | null;
   loadScrollbackHistory?: ((lines: number) => Promise<string>) | null;
+  onConnectionClosed: () => void;
   onConnectionError: (message: string) => void;
   onConnectionReady: (status: ConnectionStatus) => void;
   queuedInput: QueuedTerminalInput | null;

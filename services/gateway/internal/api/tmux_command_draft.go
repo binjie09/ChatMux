@@ -13,6 +13,7 @@ import (
 type tmuxCommandDraftRequest struct {
 	CredentialToken string `json:"credentialToken"`
 	Prompt          string `json:"prompt"`
+	tmuxTargetRequest
 }
 
 type draftSessionCommandInput struct {
@@ -21,6 +22,7 @@ type draftSessionCommandInput struct {
 	prompt      string
 	request     *http.Request
 	sessionName string
+	target      tmux.Target
 }
 
 func (s *Server) handleDraftTmuxCommand(w http.ResponseWriter, r *http.Request) {
@@ -34,6 +36,11 @@ func (s *Server) handleDraftTmuxCommand(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	input, err := decodeCommandDraftRequest(r)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+	target, err := targetFromSessionRequest(sessionName, input.tmuxTargetRequest)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err)
 		return
@@ -54,6 +61,7 @@ func (s *Server) handleDraftTmuxCommand(w http.ResponseWriter, r *http.Request) 
 	}
 	draft, err := s.draftSessionCommand(draftSessionCommandInput{
 		host: host, credential: credential, prompt: input.Prompt, request: r, sessionName: sessionName,
+		target: target,
 	})
 	if err != nil {
 		writeError(w, statusForDraftError(err), err)
@@ -81,7 +89,7 @@ func decodeCommandDraftRequest(r *http.Request) (tmuxCommandDraftRequest, error)
 }
 
 func (s *Server) draftSessionCommand(input draftSessionCommandInput) (CommandDraft, error) {
-	command, err := tmux.CapturePaneCommand(input.sessionName)
+	command, err := tmux.CaptureTargetPaneCommand(input.target, tmux.CapturePaneOptions{Lines: 200})
 	if err != nil {
 		return CommandDraft{}, err
 	}
@@ -95,7 +103,7 @@ func (s *Server) draftSessionCommand(input draftSessionCommandInput) (CommandDra
 }
 
 func statusForDraftError(err error) int {
-	if errors.Is(err, errEmptyCommandGoal) || errors.Is(err, tmux.ErrInvalidSessionName) {
+	if errors.Is(err, errEmptyCommandGoal) || errors.Is(err, tmux.ErrInvalidSessionName) || errors.Is(err, tmux.ErrInvalidWindowTarget) {
 		return http.StatusBadRequest
 	}
 	return http.StatusBadGateway

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/chatmux/chatmux/services/gateway/internal/sshclient"
+	"github.com/chatmux/chatmux/services/gateway/internal/tmux"
 )
 
 const terminalTokenTTL = 2 * time.Minute
@@ -13,6 +14,7 @@ type terminalToken struct {
 	HostID      string
 	Recovering  bool
 	SessionName string
+	Target      tmux.Target
 	Credential  sshclient.Credential
 	ExpiresAt   time.Time
 }

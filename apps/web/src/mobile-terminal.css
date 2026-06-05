@@ -52,14 +52,29 @@
 
   .mobile-terminal-bar {
     display: grid;
+    grid-template-areas:
+      "back title context draft"
+      ". picker picker picker";
     grid-template-columns: 44px minmax(0, 1fr) 44px 44px;
     align-items: center;
-    gap: 2px;
-    min-height: 52px;
+    gap: 5px 4px;
+    min-height: 88px;
     border-bottom: 1px solid #203029;
-    padding: 4px 8px;
+    padding: 6px 8px 8px;
     color: #eff7f1;
     background: #111a15;
+  }
+
+  .mobile-terminal-bar > button:first-child {
+    grid-area: back;
+  }
+
+  .mobile-terminal-bar > button:nth-of-type(2) {
+    grid-area: context;
+  }
+
+  .mobile-terminal-bar > button:nth-of-type(3) {
+    grid-area: draft;
   }
 
   .mobile-terminal-bar button {
@@ -73,7 +88,8 @@
     background: #18231d;
   }
 
-  .mobile-terminal-bar div {
+  .mobile-terminal-title {
+    grid-area: title;
     min-width: 0;
   }
 
@@ -94,6 +110,25 @@
     margin-top: 2px;
     color: #91a79b;
     font-size: 12px;
+  }
+
+  .mobile-terminal-window-picker {
+    grid-area: picker;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 40px;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .mobile-terminal-window-picker select {
+    min-width: 0;
+    height: 38px;
+    border: 1px solid #293a32;
+    border-radius: 8px;
+    padding: 0 9px;
+    color: #eff7f1;
+    background: #0f1713;
+    font-size: 13px;
   }
 
   .mobile-terminal-sheet-layer {

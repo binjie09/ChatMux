@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { type TmuxSession } from "./api";
+import { type SessionStatus } from "./api";
+import { type DisplayTmuxSession } from "./session-state-machine";
 import {
   ensureSessionNotificationPermission,
   sendSessionStatusNotification,
@@ -12,19 +13,15 @@ export type SessionNotificationStatus = "credential-error" | "credential-needed"
 type SessionNotificationsOptions = {
   hostId: string;
   hostName: string;
-  sessions: TmuxSession[];
+  sessions: DisplayTmuxSession[];
   sshReady: boolean;
   onError: (message: string) => void;
-  onSessionsChange: (sessions: TmuxSession[]) => void;
-  refreshSessions: () => Promise<TmuxSession[]>;
 };
 
 type SessionSnapshot = {
   hostId: string;
-  statuses: Map<string, TmuxSession["status"]>;
+  statuses: Map<string, SessionStatus>;
 };
-
-const sessionNotificationPollIntervalMs = 30000;
 
 export function useSessionNotifications(options: SessionNotificationsOptions) {
   const [enabled, setEnabledState] = useState(false);
@@ -36,13 +33,6 @@ export function useSessionNotifications(options: SessionNotificationsOptions) {
   }, [enabled, options.hostId, options.hostName, options.onError, options.sessions]);
 
   useEffect(() => {
-    if (!enabled || !options.hostId || !options.sshReady) {
-      return;
-    }
-    return pollSessionStatuses(options, setStatus);
-  }, [enabled, options.hostId, options.onError, options.onSessionsChange, options.refreshSessions, options.sshReady]);
-
-  useEffect(() => {
     syncCredentialStatus(enabled, options.hostId, options.sshReady, setStatus);
   }, [enabled, options.hostId, options.sshReady]);
 
@@ -50,34 +40,18 @@ export function useSessionNotifications(options: SessionNotificationsOptions) {
     await updateNotificationEnabled(nextEnabled, setEnabledState, setStatus, options.onError);
   }, [options.onError]);
 
-  return { enabled, setEnabled, status };
-}
-
-function pollSessionStatuses(
-  options: SessionNotificationsOptions,
-  setStatus: (status: SessionNotificationStatus) => void,
-) {
-  let active = true;
-  const refresh = async () => {
-    try {
-      const nextSessions = await options.refreshSessions();
-      if (active) {
-        options.onSessionsChange(nextSessions);
-        setStatus("watching");
-      }
-    } catch (error) {
-      if (active) {
-        setStatus("credential-error");
-        options.onError(errorMessage(error));
-      }
+  const markRefreshError = useCallback(() => {
+    if (enabled) {
+      setStatus("credential-error");
     }
-  };
-  void refresh();
-  const timer = window.setInterval(() => void refresh(), sessionNotificationPollIntervalMs);
-  return () => {
-    active = false;
-    window.clearInterval(timer);
-  };
+  }, [enabled]);
+  const markRefreshSuccess = useCallback(() => {
+    if (enabled && options.hostId && options.sshReady) {
+      setStatus("watching");
+    }
+  }, [enabled, options.hostId, options.sshReady]);
+
+  return { enabled, markRefreshError, markRefreshSuccess, setEnabled, status };
 }
 
 function syncCredentialStatus(
@@ -91,7 +65,9 @@ function syncCredentialStatus(
   }
   if (!sshReady) {
     setStatus("credential-needed");
+    return;
   }
+  setStatus("watching");
 }
 
 async function updateNotificationEnabled(
@@ -140,17 +116,17 @@ function sessionStatusChanges(options: SessionNotificationsOptions, snapshot: Se
   const changes: SessionStatusChange[] = [];
   for (const session of options.sessions) {
     const previousStatus = snapshot.statuses.get(session.id);
-    if (previousStatus && previousStatus !== session.status) {
+    if (previousStatus && previousStatus !== session.displayStatus) {
       changes.push({ hostName: options.hostName, previousStatus, session });
     }
   }
   return changes;
 }
 
-function sessionSnapshot(hostId: string, sessions: TmuxSession[]): SessionSnapshot {
+function sessionSnapshot(hostId: string, sessions: DisplayTmuxSession[]): SessionSnapshot {
   return {
     hostId,
-    statuses: new Map(sessions.map((session) => [session.id, session.status])),
+    statuses: new Map(sessions.map((session) => [session.id, session.displayStatus])),
   };
 }
 

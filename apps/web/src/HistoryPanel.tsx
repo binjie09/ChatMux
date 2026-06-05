@@ -9,6 +9,7 @@ type SummaryTarget = {
   hostId: string;
   sessionName: string;
   sshReady: boolean;
+  windowIndex: number | null;
 };
 
 type HistoryPanelProps = {
@@ -25,12 +26,12 @@ export function HistoryPanel({ chunks, query, summaryTarget, text, onQueryChange
   const [summary, setSummary] = useState<TranscriptSummary | null>(null);
   const [summaryError, setSummaryError] = useState("");
   const [summarizing, setSummarizing] = useState(false);
-  const canSummarize = Boolean(summaryTarget.hostId && summaryTarget.sessionName && summaryTarget.sshReady && text.trim());
+  const canSummarize = Boolean(summaryTarget.hostId && summaryTarget.sessionName && summaryTarget.windowIndex !== null && summaryTarget.sshReady && text.trim());
 
   useEffect(() => {
     setSummary(null);
     setSummaryError("");
-  }, [summaryTarget.hostId, summaryTarget.sessionName, text]);
+  }, [summaryTarget.hostId, summaryTarget.sessionName, summaryTarget.windowIndex, text]);
 
   async function handleSummarize() {
     if (!canSummarize) {
@@ -39,7 +40,9 @@ export function HistoryPanel({ chunks, query, summaryTarget, text, onQueryChange
     try {
       setSummarizing(true);
       const credentialToken = await summaryTarget.getCredentialToken();
-      setSummary(await summarizeTmuxHistory(summaryTarget.hostId, summaryTarget.sessionName, credentialToken));
+      setSummary(await summarizeTmuxHistory(summaryTarget.hostId, summaryTarget.sessionName, credentialToken, {
+        windowIndex: summaryTarget.windowIndex ?? undefined,
+      }));
       setSummaryError("");
       onSummarized();
     } catch (err) {

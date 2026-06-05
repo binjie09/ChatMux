@@ -154,3 +154,8 @@ const getSessionMetadataSQL = `
 SELECT host_id, session_name, title, tags, owner, shared, collaborators, updated_at
 FROM session_metadata
 WHERE host_id = ? AND session_name = ?;`
+
+const renameSessionMetadataSQL = `
+UPDATE session_metadata
+SET session_name = ?, updated_at = ?
+WHERE host_id = ? AND session_name = ?;`

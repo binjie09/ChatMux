@@ -1,15 +1,22 @@
-import { ArrowLeft, Bot, ListTree, Search, X } from "lucide-react";
+import { ArrowLeft, Bot, ListTree, Plus, Search, X } from "lucide-react";
 import { type ReactNode } from "react";
+import { type TmuxWindow } from "./api";
+import { windowLabel } from "./session-window-utils";
 import "./mobile-terminal.css";
 
 export type MobileTerminalSheet = "context" | "draft";
 
 type MobileTerminalBarProps = {
   hostName: string;
+  selectedWindowIndex: number | null;
   sessionName: string;
   title: string;
+  windowName: string;
+  windows: TmuxWindow[];
   onBack: () => void;
+  onCreateWindow: () => void;
   onOpenSheet: (sheet: MobileTerminalSheet) => void;
+  onOpenWindow: (windowIndex: number) => void;
 };
 
 type MobileTerminalSheetPanelProps = {
@@ -25,9 +32,25 @@ export function MobileTerminalBar(props: MobileTerminalBarProps) {
       <button type="button" aria-label="Back to sessions" onClick={props.onBack}>
         <ArrowLeft size={20} aria-hidden="true" />
       </button>
-      <div>
+      <div className="mobile-terminal-title">
         <strong>{props.title}</strong>
-        <span>{props.hostName} · {props.sessionName}</span>
+        <span>{terminalSubtitle(props.hostName, props.sessionName, props.windowName)}</span>
+      </div>
+      <div className="mobile-terminal-window-picker">
+        <select
+          aria-label="Select terminal window"
+          value={props.selectedWindowIndex ?? ""}
+          onChange={(event) => props.onOpenWindow(Number(event.target.value))}
+        >
+          {props.windows.map((window) => (
+            <option key={window.id || window.index} value={window.index}>
+              #{window.index} {windowLabel(window)}
+            </option>
+          ))}
+        </select>
+        <button type="button" aria-label="New window" onClick={props.onCreateWindow}>
+          <Plus size={18} aria-hidden="true" />
+        </button>
       </div>
       <button type="button" aria-label="Open context" onClick={() => props.onOpenSheet("context")}>
         <Search size={19} aria-hidden="true" />
@@ -37,6 +60,13 @@ export function MobileTerminalBar(props: MobileTerminalBarProps) {
       </button>
     </header>
   );
+}
+
+function terminalSubtitle(hostName: string, sessionName: string, windowName: string) {
+  if (windowName) {
+    return `${hostName} · ${sessionName} · ${windowName}`;
+  }
+  return `${hostName} · ${sessionName}`;
 }
 
 export function MobileTerminalSheetPanel(props: MobileTerminalSheetPanelProps) {

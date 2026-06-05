@@ -1,24 +1,33 @@
 import { useRef, type RefObject } from "react";
-import { Activity, Bell, ChevronRight, KeyRound, Plus, RefreshCw } from "lucide-react";
-import { type TmuxSession } from "./api";
+import { Bell, ChevronLeft, KeyRound, Plus, RefreshCw } from "lucide-react";
 import "./session-controls.css";
+import { SessionGroup } from "./SessionGroup";
+import { SessionWindowList } from "./SessionWindowList";
+import { type DisplayTmuxSession } from "./session-state-machine";
+import { windowCountLabel } from "./session-window-utils";
 import { type SessionNotificationStatus } from "./useSessionNotifications";
 import { type SSHCredentialStatus } from "./useSSHCredentialToken";
-import { formatTime } from "./view-utils";
 
 type SessionListProps = {
   credentialStatus: SSHCredentialStatus;
   mobileOpen: boolean;
+  mobileWindowList: boolean;
   newSessionName: string;
   notificationsEnabled: boolean;
   notificationStatus: SessionNotificationStatus;
   selectedSessionName: string;
-  sessions: TmuxSession[];
+  selectedWindowIndex: number | null;
+  sessions: DisplayTmuxSession[];
+  windowListSessionName: string;
   onCreateSession: () => void;
+  onDeleteWindow: (sessionName: string, windowIndex: number) => void;
+  onExpandSession: (sessionName: string) => void;
   onListSessions: () => void;
   onNewSessionNameChange: (value: string) => void;
   onNotificationsEnabledChange: (enabled: boolean) => void;
-  onOpenSession: (sessionName: string) => void;
+  onOpenWindow: (sessionName: string, windowIndex: number) => void;
+  onRenameSession: (sessionName: string, name: string) => Promise<void> | void;
+  onRenameWindow: (sessionName: string, windowIndex: number, name: string) => Promise<void> | void;
 };
 
 export function SessionList(props: SessionListProps) {
@@ -31,21 +40,62 @@ export function SessionList(props: SessionListProps) {
     newSessionInputRef.current?.focus();
   };
 
+  const windowListSession = props.mobileWindowList
+    ? props.sessions.find((session) => session.name === props.windowListSessionName)
+    : undefined;
+
   return (
     <section className={`session-list ${props.mobileOpen ? "mobile-open" : ""}`}>
-      <header>
-        <div>
-          <p>Remote tmux</p>
-          <h1>Conversations</h1>
-        </div>
-        <button className="icon-button" type="button" aria-label="New session" onClick={handleNewSessionClick}>
-          <Plus size={19} aria-hidden="true" />
-        </button>
-      </header>
+      <SessionListHeader
+        inWindowList={Boolean(windowListSession)}
+        onBack={() => props.onExpandSession("")}
+        onNewSessionClick={handleNewSessionClick}
+      />
 
+      {windowListSession ? (
+        <MobileWindowListView
+          selectedWindowIndex={props.selectedSessionName === windowListSession.name ? props.selectedWindowIndex : null}
+          session={windowListSession}
+          onDeleteWindow={(windowIndex) => props.onDeleteWindow(windowListSession.name, windowIndex)}
+          onOpenWindow={(windowIndex) => props.onOpenWindow(windowListSession.name, windowIndex)}
+          onRenameWindow={(windowIndex, name) => props.onRenameWindow(windowListSession.name, windowIndex, name)}
+        />
+      ) : (
+        <SessionListBody {...props} inputRef={newSessionInputRef} />
+      )}
+    </section>
+  );
+}
+
+function SessionListHeader(props: {
+  inWindowList: boolean;
+  onBack: () => void;
+  onNewSessionClick: () => void;
+}) {
+  return (
+    <header>
+      {props.inWindowList ? (
+        <button className="icon-button" type="button" aria-label="Back to conversations" onClick={props.onBack}>
+          <ChevronLeft size={20} aria-hidden="true" />
+        </button>
+      ) : null}
+      <div>
+        <p>Remote tmux</p>
+        <h1>{props.inWindowList ? "Windows" : "Conversations"}</h1>
+      </div>
+      <button className="icon-button" type="button" aria-label="New session" onClick={props.onNewSessionClick}>
+        <Plus size={19} aria-hidden="true" />
+      </button>
+    </header>
+  );
+}
+
+function SessionListBody(props: SessionListProps & { inputRef: RefObject<HTMLInputElement | null> }) {
+  return (
+    <>
       <SessionConnectionStatus credentialStatus={props.credentialStatus} onListSessions={props.onListSessions} />
       <SessionCreate
-        inputRef={newSessionInputRef}
+        inputRef={props.inputRef}
         newSessionName={props.newSessionName}
         onCreateSession={props.onCreateSession}
         onNewSessionNameChange={props.onNewSessionNameChange}
@@ -57,15 +107,47 @@ export function SessionList(props: SessionListProps) {
       />
       <SessionNotificationPrompt status={props.notificationStatus} />
       {props.sessions.map((session) => (
-        <SessionRow
-          key={session.id}
+        <SessionGroup
+          isExpanded={!props.mobileWindowList && props.windowListSessionName === session.name}
           isSelected={props.selectedSessionName === session.name}
+          key={session.id}
+          selectedWindowIndex={props.selectedSessionName === session.name ? props.selectedWindowIndex : null}
           session={session}
-          onOpenSession={props.onOpenSession}
+          onDeleteWindow={props.onDeleteWindow}
+          onExpandSession={props.onExpandSession}
+          onOpenWindow={props.onOpenWindow}
+          onRenameSession={props.onRenameSession}
+          onRenameWindow={props.onRenameWindow}
         />
       ))}
       {props.sessions.length === 0 ? <p className="session-empty">No sessions</p> : null}
-    </section>
+    </>
+  );
+}
+
+function MobileWindowListView(props: {
+  selectedWindowIndex: number | null;
+  session: DisplayTmuxSession;
+  onDeleteWindow: (windowIndex: number) => void;
+  onOpenWindow: (windowIndex: number) => void;
+  onRenameWindow: (windowIndex: number, name: string) => Promise<void> | void;
+}) {
+  return (
+    <div className="session-mobile-windows">
+      <div className="session-window-heading">
+        <div>
+          <strong>{props.session.title || props.session.name}</strong>
+          <small>{props.session.name} · {windowCountLabel(props.session.windowList.length)}</small>
+        </div>
+      </div>
+      <SessionWindowList
+        selectedWindowIndex={props.selectedWindowIndex}
+        windows={props.session.windowList}
+        onDeleteWindow={props.onDeleteWindow}
+        onOpenWindow={props.onOpenWindow}
+        onRenameWindow={props.onRenameWindow}
+      />
+    </div>
   );
 }
 
@@ -145,39 +227,4 @@ function SessionCreate(props: Pick<SessionListProps, "newSessionName" | "onCreat
       />
     </form>
   );
-}
-
-function SessionRow({
-  isSelected,
-  session,
-  onOpenSession,
-}: {
-  isSelected: boolean;
-  session: TmuxSession;
-  onOpenSession: (name: string) => void;
-}) {
-  return (
-    <button
-      aria-current={isSelected ? "true" : undefined}
-      className={`session-row ${isSelected ? "selected" : ""}`}
-      type="button"
-      onClick={() => onOpenSession(session.name)}
-    >
-      <Activity size={18} aria-hidden="true" />
-      <span>
-        <strong>{session.title || session.name}</strong>
-        <small>{session.name} · {session.windows} windows · {sessionAccessLabel(session)} · {formatTime(session.updatedAt)}</small>
-        {session.tags.length > 0 ? <i>{session.tags.join(", ")}</i> : null}
-      </span>
-      <em className={session.status}>{session.status}</em>
-      <ChevronRight size={17} aria-hidden="true" />
-    </button>
-  );
-}
-
-function sessionAccessLabel(session: TmuxSession) {
-  if (session.shared) {
-    return "shared";
-  }
-  return session.owner || "private";
 }

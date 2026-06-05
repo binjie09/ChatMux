@@ -10,33 +10,26 @@ import (
 	"unicode/utf8"
 )
 
-const listSessionFormat = "#{session_id}\t#{session_name}\t#{session_windows}\t#{session_attached}\t#{session_activity}\t#{pane_current_command}\t#{pane_dead}\t#{pane_dead_status}"
+const listSessionFormat = "session\t#{session_id}\t#{session_name}\t#{session_windows}\t#{session_attached}\t#{session_activity}\t#{pane_current_command}\t#{pane_dead}\t#{pane_dead_status}"
+const listWindowFormat = "window\t#{session_name}\t#{window_id}\t#{window_index}\t#{window_name}\t#{window_active}\t#{window_activity}\t#{pane_current_command}\t#{pane_dead}\t#{pane_dead_status}"
+const listSessionNowPrefix = "__chatmux_now\t"
 const terminalOverridesClipboardSlot = "terminal-overrides[900]"
 const tmuxDefaultHistoryLimit = 100000
 const maxSessionNameRunes = 64
-
-const (
-	SessionStatusFailed  = "failed"
-	SessionStatusIdle    = "idle"
-	SessionStatusRunning = "running"
-	SessionStatusUnknown = "unknown"
-	SessionStatusWaiting = "waiting"
-)
-
-var waitingPaneCommands = map[string]struct{}{
-	"ash": {}, "bash": {}, "dash": {}, "fish": {}, "ksh": {}, "nu": {},
-	"pwsh": {}, "sh": {}, "zsh": {},
-}
+const maxWindowNameRunes = 256
 
 var ErrInvalidSessionName = errors.New("session name must be 1-64 Unicode letters or numbers, underscore, dot, or dash")
+var ErrInvalidWindowTarget = errors.New("window target must have a non-negative window index")
 
 type Session struct {
 	ID            string    `json:"id"`
 	Name          string    `json:"name"`
 	Windows       int       `json:"windows"`
+	WindowList    []Window  `json:"windowList"`
 	Attached      bool      `json:"attached"`
 	UpdatedAt     time.Time `json:"updatedAt"`
 	Status        string    `json:"status"`
+	ProcessName   string    `json:"processName"`
 	Title         string    `json:"title"`
 	Tags          []string  `json:"tags"`
 	Owner         string    `json:"owner"`
@@ -52,15 +45,21 @@ func CreateSessionCommand(name string) (string, error) {
 	if err := ValidateSessionName(name); err != nil {
 		return "", err
 	}
-	command := tmuxPrelude() + tmuxCreateSessionCommand(name) + " && " + rawListSessionsCommand()
+	command := tmuxPrelude() + tmuxCreateSessionCommand(name) + rawListSessionsAfterSuccessCommand()
 	return loginShellCommand(command), nil
 }
 
 func AttachSessionCommand(name string) (string, error) {
-	if err := ValidateSessionName(name); err != nil {
+	return AttachTargetCommand(Target{SessionName: name})
+}
+
+func AttachTargetCommand(target Target) (string, error) {
+	if err := ValidateTarget(target); err != nil {
 		return "", err
 	}
-	command := tmuxPrelude() + tmuxHistoryPrelude(name) + tmuxClipboardPrelude() + "exec \"$TMUX_BIN\" attach-session -t " + shellQuote(name)
+	sessionName := target.SessionName
+	command := tmuxPrelude() + tmuxHistoryPrelude(sessionName) + tmuxClipboardPrelude() +
+		"exec \"$TMUX_BIN\" attach-session -t " + shellQuote(formatTarget(target))
 	return loginShellCommand(command), nil
 }
 
@@ -82,7 +81,11 @@ type CapturePaneOptions struct {
 }
 
 func CapturePaneCommandWithOptions(name string, options CapturePaneOptions) (string, error) {
-	if err := ValidateSessionName(name); err != nil {
+	return CaptureTargetPaneCommand(Target{SessionName: name}, options)
+}
+
+func CaptureTargetPaneCommand(target Target, options CapturePaneOptions) (string, error) {
+	if err := ValidateTarget(target); err != nil {
 		return "", err
 	}
 	lines := normalizeCapturePaneLines(options.Lines)
@@ -90,7 +93,9 @@ func CapturePaneCommandWithOptions(name string, options CapturePaneOptions) (str
 	if options.PreserveANSI {
 		ansiFlag = " -e -C"
 	}
-	command := tmuxPrelude() + tmuxHistoryPrelude(name) + "\"$TMUX_BIN\" capture-pane -p" + ansiFlag + " -t " + shellQuote(name) + " -S -" + strconv.Itoa(lines)
+	sessionName := target.SessionName
+	command := tmuxPrelude() + tmuxHistoryPrelude(sessionName) + "\"$TMUX_BIN\" capture-pane -p" + ansiFlag +
+		" -t " + shellQuote(formatTarget(target)) + " -S -" + strconv.Itoa(lines)
 	return loginShellCommand(command), nil
 }
 
@@ -118,26 +123,55 @@ func isSessionNameRune(value rune) bool {
 }
 
 func ParseSessions(output string) ([]Session, error) {
+	return ParseSessionsAt(output, time.Now())
+}
+
+func ParseSessionsAt(output string, now time.Time) ([]Session, error) {
 	trimmed := strings.TrimRight(output, "\r\n")
 	if strings.TrimSpace(trimmed) == "" {
 		return []Session{}, nil
 	}
 	lines := strings.Split(trimmed, "\n")
+	lines, now = parseSessionNow(lines, now)
 	sessions := []Session{}
+	sessionIndexes := map[string]int{}
+	pendingWindows := map[string][]Window{}
 	for _, line := range lines {
 		if strings.TrimSpace(line) == "" {
 			continue
 		}
-		session, err := parseSessionLine(line)
+		if strings.HasPrefix(line, "window\t") {
+			window, sessionName, err := parseWindowLine(line, now)
+			if err != nil {
+				return nil, err
+			}
+			pendingWindows[sessionName] = append(pendingWindows[sessionName], window)
+			continue
+		}
+		session, err := parseSessionLine(line, now)
 		if err != nil {
 			return nil, err
 		}
+		sessionIndexes[session.Name] = len(sessions)
 		sessions = append(sessions, session)
 	}
+	sessions = applyParsedWindows(sessions, pendingWindows, sessionIndexes)
 	return sessions, nil
 }
 
-func parseSessionLine(line string) (Session, error) {
+func parseSessionNow(lines []string, fallback time.Time) ([]string, time.Time) {
+	if len(lines) == 0 || !strings.HasPrefix(lines[0], listSessionNowPrefix) {
+		return lines, fallback
+	}
+	epoch, err := strconv.ParseInt(strings.TrimPrefix(lines[0], listSessionNowPrefix), 10, 64)
+	if err != nil {
+		return lines[1:], fallback
+	}
+	return lines[1:], time.Unix(epoch, 0).UTC()
+}
+
+func parseSessionLine(line string, now time.Time) (Session, error) {
+	line = strings.TrimPrefix(line, "session\t")
 	parts := strings.Split(line, "\t")
 	if len(parts) != 8 {
 		return Session{}, fmt.Errorf("invalid tmux session line: %q", line)
@@ -158,73 +192,27 @@ func parseSessionLine(line string) (Session, error) {
 	if err != nil {
 		return Session{}, err
 	}
+	updatedAt := time.Unix(activity, 0).UTC()
+	processName := normalizePaneCommand(parts[5])
+	status := sessionStatus(sessionStatusInput{
+		currentCommand: parts[5],
+		now:            now,
+		paneDead:       paneDead,
+		paneDeadStatus: parts[7],
+		updatedAt:      updatedAt,
+	})
 	return Session{
 		ID:            parts[0],
 		Name:          parts[1],
 		Windows:       windows,
+		WindowList:    defaultWindowList(parts[1], updatedAt, processName, status),
 		Attached:      attached,
-		UpdatedAt:     time.Unix(activity, 0).UTC(),
+		UpdatedAt:     updatedAt,
+		ProcessName:   processName,
 		Tags:          []string{},
 		Collaborators: []string{},
-		Status: sessionStatus(sessionStatusInput{
-			attached:       attached,
-			currentCommand: parts[5],
-			paneDead:       paneDead,
-			paneDeadStatus: parts[7],
-		}),
+		Status:        status,
 	}, nil
-}
-
-type sessionStatusInput struct {
-	attached       bool
-	currentCommand string
-	paneDead       bool
-	paneDeadStatus string
-}
-
-func sessionStatus(input sessionStatusInput) string {
-	if input.paneDead {
-		return deadPaneStatus(input.paneDeadStatus)
-	}
-	command := normalizePaneCommand(input.currentCommand)
-	if command == "" {
-		return SessionStatusUnknown
-	}
-	if isWaitingPaneCommand(command) {
-		if input.attached {
-			return SessionStatusWaiting
-		}
-		return SessionStatusIdle
-	}
-	return SessionStatusRunning
-}
-
-func deadPaneStatus(status string) string {
-	trimmed := strings.TrimSpace(status)
-	if trimmed == "" {
-		return SessionStatusUnknown
-	}
-	exitCode, err := strconv.Atoi(trimmed)
-	if err != nil {
-		return SessionStatusUnknown
-	}
-	if exitCode == 0 {
-		return SessionStatusIdle
-	}
-	return SessionStatusFailed
-}
-
-func normalizePaneCommand(command string) string {
-	command = strings.ToLower(strings.TrimSpace(command))
-	if index := strings.LastIndex(command, "/"); index >= 0 {
-		command = command[index+1:]
-	}
-	return strings.TrimPrefix(command, "-")
-}
-
-func isWaitingPaneCommand(command string) bool {
-	_, ok := waitingPaneCommands[command]
-	return ok
 }
 
 func parseTmuxAttached(value string) (bool, error) {
@@ -250,11 +238,26 @@ func parseTmuxBool(value string, name string) (bool, error) {
 }
 
 func rawListSessionsCommand() string {
-	return tmuxPrelude() + "\"$TMUX_BIN\" list-sessions -F " + shellQuote(listSessionFormat)
+	return tmuxPrelude() + tmuxNoSessionsPrelude() +
+		"sessions_output=$(\"$TMUX_BIN\" list-sessions -F " + shellQuote(listSessionFormat) + " 2>&1); " +
+		"sessions_status=$?; " +
+		"if [ \"$sessions_status\" -ne 0 ]; then if chatmux_tmux_no_sessions \"$sessions_output\"; then exit 0; fi; printf '%s\\n' \"$sessions_output\" >&2; exit \"$sessions_status\"; fi; " +
+		"windows_output=$(\"$TMUX_BIN\" list-windows -a -F " + shellQuote(listWindowFormat) + " 2>&1); " +
+		"windows_status=$?; " +
+		"if [ \"$windows_status\" -ne 0 ]; then if chatmux_tmux_no_sessions \"$windows_output\"; then exit 0; fi; printf '%s\\n' \"$windows_output\" >&2; exit \"$windows_status\"; fi; " +
+		"printf '__chatmux_now\\t%s\\n' \"$(date +%s)\"; printf '%s\\n' \"$sessions_output\"; printf '%s\\n' \"$windows_output\""
+}
+
+func rawListSessionsAfterSuccessCommand() string {
+	return " && { " + rawListSessionsCommand() + "; }"
 }
 
 func loginShellCommand(command string) string {
 	return "exec ${SHELL:-/bin/sh} -lc " + shellQuote(command)
+}
+
+func tmuxNoSessionsPrelude() string {
+	return "chatmux_tmux_no_sessions() { case \"$1\" in *\"no server running\"*|*\"no sessions\"*) return 0;; *) return 1;; esac; }; "
 }
 
 func tmuxPrelude() string {

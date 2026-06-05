@@ -48,7 +48,7 @@ ChatMux 把远程 tmux session 当作可恢复的工作会话：
 
 - 点击已有 session 可打开终端。
 - 在 `New session` 输入名称可创建新 session。
-- Session 会展示运行状态，例如 `running`、`waiting`、`idle`、`failed`。
+- Session 会展示运行状态，例如 `codex running`、`done`、`idle`、`failed`。只有近 30 秒有终端输出变化的 session 会显示为 running；已查看并切走 30 分钟的 done session 会变为 idle。
 - 可以编辑标题、标签、共享状态和协作者。
 
 目标 SSH 主机必须安装 `tmux`。如果远程 `tmux` 不在 PATH 中，可在远程环境里配置 `CHATMUX_TMUX_BIN`。

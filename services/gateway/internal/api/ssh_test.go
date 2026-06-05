@@ -14,11 +14,12 @@ import (
 )
 
 type fakeSSHRunner struct {
-	command    string
-	credential sshclient.Credential
-	output     string
-	password   string
-	privateKey string
+	command          string
+	credential       sshclient.Credential
+	output           string
+	outputForCommand func(string) string
+	password         string
+	privateKey       string
 }
 
 func (r *fakeSSHRunner) Run(_ context.Context, _ sshclient.HostConfig, credential sshclient.Credential, command string) ([]byte, error) {
@@ -26,6 +27,9 @@ func (r *fakeSSHRunner) Run(_ context.Context, _ sshclient.HostConfig, credentia
 	r.credential = credential
 	r.password = credential.Password
 	r.privateKey = credential.PrivateKey
+	if r.outputForCommand != nil {
+		return []byte(r.outputForCommand(command)), nil
+	}
 	if r.output != "" {
 		return []byte(r.output), nil
 	}

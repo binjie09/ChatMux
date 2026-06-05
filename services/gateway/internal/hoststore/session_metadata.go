@@ -82,6 +82,16 @@ func (s *Store) GetSessionMetadata(ctx context.Context, hostID string, sessionNa
 	return metadata, nil
 }
 
+func (s *Store) RenameSessionMetadata(ctx context.Context, hostID string, oldName string, newName string) error {
+	if strings.TrimSpace(hostID) == "" || strings.TrimSpace(oldName) == "" || strings.TrimSpace(newName) == "" {
+		return errors.New("host id, old session name, and new session name are required")
+	}
+	if _, err := s.db.ExecContext(ctx, renameSessionMetadataSQL, newName, time.Now().UTC(), hostID, oldName); err != nil {
+		return fmt.Errorf("rename session metadata: %w", err)
+	}
+	return nil
+}
+
 func (s *Store) existingSessionMetadata(ctx context.Context, hostID string, sessionName string) (*SessionMetadata, error) {
 	metadata, err := s.GetSessionMetadata(ctx, hostID, sessionName)
 	if err == nil {

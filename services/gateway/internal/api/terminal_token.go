@@ -6,12 +6,12 @@ import (
 	"net/http"
 
 	"github.com/chatmux/chatmux/services/gateway/internal/hoststore"
-	"github.com/chatmux/chatmux/services/gateway/internal/tmux"
 )
 
 type createTerminalTokenRequest struct {
 	CredentialToken string `json:"credentialToken"`
 	Recovering      bool   `json:"recovering"`
+	tmuxTargetRequest
 }
 
 type createTerminalTokenResponse struct {
@@ -25,13 +25,14 @@ func (s *Server) handleCreateTerminalToken(w http.ResponseWriter, r *http.Reques
 		writeError(w, http.StatusNotFound, errors.New("route not found"))
 		return
 	}
-	if err := tmux.ValidateSessionName(sessionName); err != nil {
-		writeError(w, http.StatusBadRequest, err)
-		return
-	}
 
 	var input createTerminalTokenRequest
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+	target, err := targetFromSessionRequest(sessionName, input.tmuxTargetRequest)
+	if err != nil {
 		writeError(w, http.StatusBadRequest, err)
 		return
 	}
@@ -54,6 +55,7 @@ func (s *Server) handleCreateTerminalToken(w http.ResponseWriter, r *http.Reques
 		HostID:      hostID,
 		Recovering:  input.Recovering,
 		SessionName: sessionName,
+		Target:      target,
 		Credential:  credential,
 	})
 	if err := s.logAudit(r.Context(), hoststore.LogAuditEventInput{Type: "terminal.token.created", HostID: hostID, SessionName: sessionName, Message: "created terminal token"}); err != nil {

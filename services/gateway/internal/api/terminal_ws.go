@@ -103,11 +103,18 @@ func (s *Server) openTerminal(r *http.Request, token terminalToken) (*sshclient.
 		return nil, err
 	}
 
-	command, err := tmux.AttachSessionCommand(token.SessionName)
+	command, err := tmux.AttachTargetCommand(terminalTokenTarget(token))
 	if err != nil {
 		return nil, err
 	}
 	return s.ssh.StartTerminal(r.Context(), hostToSSHConfig(host), token.Credential, command, sshclient.TerminalSize{})
+}
+
+func terminalTokenTarget(token terminalToken) tmux.Target {
+	if token.Target.SessionName != "" {
+		return token.Target
+	}
+	return tmux.Target{SessionName: token.SessionName}
 }
 
 type terminalWriter struct {

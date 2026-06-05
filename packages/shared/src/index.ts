@@ -12,10 +12,24 @@ export type TmuxSession = {
   hostId: string;
   name: string;
   windows: number;
+  windowList: TmuxWindow[];
   attached: boolean;
   updatedAt: string;
-  status: "idle" | "running" | "waiting" | "failed" | "unknown";
+  status: SessionStatus;
+  processName: string;
 };
+
+export type TmuxWindow = {
+  id: string;
+  index: number;
+  name: string;
+  active: boolean;
+  updatedAt: string;
+  status: SessionStatus;
+  processName: string;
+};
+
+export type SessionStatus = "done" | "failed" | "idle" | "running" | "unknown" | "waiting";
 
 export type TranscriptEntry = {
   id: string;

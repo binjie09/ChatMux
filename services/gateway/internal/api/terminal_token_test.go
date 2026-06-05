@@ -89,6 +89,33 @@ func TestCreateTerminalTokenStoresRecoveryFlag(t *testing.T) {
 	}
 }
 
+func TestCreateTerminalTokenStoresWindowTarget(t *testing.T) {
+	server, closeServer := newTestServer(t)
+	defer closeServer()
+	host := createTrustedTestHost(t, server)
+	credentialID := createCredentialTokenForTest(t, server, testCredentialInput{hostID: host.ID})
+
+	body := bytes.NewBufferString(`{"credentialToken":"` + credentialID + `","windowIndex":2}`)
+	req := httptest.NewRequest(http.MethodPost, "/api/hosts/"+host.ID+"/tmux/sessions/deploy/terminal-token", body)
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("expected 201, got %d: %s", rec.Code, rec.Body.String())
+	}
+	var response createTerminalTokenResponse
+	if err := json.NewDecoder(rec.Body).Decode(&response); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	token, ok := server.terminalTokens.Consume(response.Token)
+	if !ok {
+		t.Fatal("expected terminal token to be stored")
+	}
+	if token.Target.WindowIndex == nil || *token.Target.WindowIndex != 2 {
+		t.Fatalf("expected window target 2, got %#v", token.Target)
+	}
+}
+
 func TestTerminalConnectionAuditEventUsesRecoveryType(t *testing.T) {
 	event := terminalConnectionAuditEvent(terminalToken{
 		HostID: "host_1", Recovering: true, SessionName: "deploy",

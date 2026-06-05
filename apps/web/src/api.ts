@@ -39,15 +39,29 @@ export type TmuxSession = {
   id: string;
   name: string;
   windows: number;
+  windowList: TmuxWindow[];
   attached: boolean;
   updatedAt: string;
-  status: "idle" | "running" | "waiting" | "failed" | "unknown";
+  status: SessionStatus;
+  processName: string;
   title: string;
   tags: string[];
   owner: string;
   shared: boolean;
   collaborators: string[];
 };
+
+export type TmuxWindow = {
+  id: string;
+  index: number;
+  name: string;
+  active: boolean;
+  updatedAt: string;
+  status: SessionStatus;
+  processName: string;
+};
+
+export type SessionStatus = "done" | "failed" | "idle" | "running" | "unknown" | "waiting";
 
 export type AuditEvent = {
   id: string;
@@ -72,6 +86,7 @@ export type TmuxHistory = {
 export type CaptureTmuxHistoryOptions = {
   lines?: number;
   preserveAnsi?: boolean;
+  windowIndex?: number;
 };
 
 export type TranscriptSummary = {
@@ -99,6 +114,7 @@ type TerminalTokenResponse = {
 export type CreateTerminalTokenInput = {
   credentialToken: string;
   recovering: boolean;
+  windowIndex?: number;
 };
 
 export async function listHosts(): Promise<Host[]> {
@@ -157,20 +173,6 @@ export async function setHostShared(hostId: string, shared: boolean): Promise<Ho
   });
 }
 
-export async function listTmuxSessions(hostId: string, credentialToken: string): Promise<TmuxSession[]> {
-  return request<TmuxSession[]>(`/api/hosts/${hostId}/tmux/sessions/list`, {
-    method: "POST",
-    body: JSON.stringify({ credentialToken }),
-  });
-}
-
-export async function createTmuxSession(hostId: string, credentialToken: string, name: string): Promise<TmuxSession> {
-  return request<TmuxSession>(`/api/hosts/${hostId}/tmux/sessions`, {
-    method: "POST",
-    body: JSON.stringify({ credentialToken, name }),
-  });
-}
-
 export type SaveSessionMetadataInput = {
   title: string;
   tags: string[];
@@ -216,17 +218,28 @@ export async function captureTmuxHistory(
   });
 }
 
-export async function summarizeTmuxHistory(hostId: string, sessionName: string, credentialToken: string): Promise<TranscriptSummary> {
+export async function summarizeTmuxHistory(
+  hostId: string,
+  sessionName: string,
+  credentialToken: string,
+  options: { windowIndex?: number } = {},
+): Promise<TranscriptSummary> {
   return request<TranscriptSummary>(`${tmuxSessionPath(hostId, sessionName)}/summary`, {
     method: "POST",
-    body: JSON.stringify({ credentialToken }),
+    body: JSON.stringify({ credentialToken, ...options }),
   });
 }
 
-export async function draftTmuxCommand(hostId: string, sessionName: string, credentialToken: string, prompt: string): Promise<CommandDraft> {
+export async function draftTmuxCommand(
+  hostId: string,
+  sessionName: string,
+  credentialToken: string,
+  prompt: string,
+  options: { windowIndex?: number } = {},
+): Promise<CommandDraft> {
   return request<CommandDraft>(`${tmuxSessionPath(hostId, sessionName)}/command-draft`, {
     method: "POST",
-    body: JSON.stringify({ credentialToken, prompt }),
+    body: JSON.stringify({ credentialToken, prompt, ...options }),
   });
 }
 
@@ -243,7 +256,7 @@ export function terminalWebSocketURL(token: string) {
   return url.toString();
 }
 
-async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+export async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const response = await fetch(gatewayURL + path, {
     ...init,
     headers: requestHeaders(init.headers),
@@ -273,7 +286,7 @@ function requestHeaders(initHeaders?: HeadersInit) {
   return headers;
 }
 
-function tmuxSessionPath(hostId: string, sessionName: string) {
+export function tmuxSessionPath(hostId: string, sessionName: string) {
   return `/api/hosts/${hostId}/tmux/sessions/${encodeURIComponent(sessionName)}`;
 }
 

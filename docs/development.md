@@ -118,17 +118,20 @@ sessions where their principal name is listed as a collaborator. Collaborators
 can use the session but cannot edit its metadata or grants. tmux sessions
 without ChatMux metadata are visible only to the host owner and admins.
 Session alerts use local notifications on iOS and Android, and browser
-notifications on the web. When enabled, the SPA polls the selected host's tmux
-sessions every 30 seconds and notifies on status changes. If the in-memory SSH
+notifications on the web. When enabled, the SPA notifies on status changes from
+the selected host's 30-second session status refresh. If the in-memory SSH
 credential is missing or rejected during background polling, the session sidebar
 keeps alerts enabled and shows a recoverable saved-credential prompt.
 When the native terminal WebSocket reconnects from recovery, the SPA captures
 the selected tmux pane history again so the history/context panel reflects the
 current session state. The gateway records those successful recovery attaches as
 `terminal.recovered` audit events.
-Session status is inferred from tmux session attachment plus the active pane
-command and pane exit state: shell panes are idle or waiting, non-shell panes are
-running, and dead panes with non-zero exit status are failed.
+Session status is inferred with a state machine. A tmux session is running only
+when its session activity changed in the last 30 seconds; after that window it is
+done unless the pane is failed or unknown. The SPA records viewed sessions, and a
+viewed session becomes idle after the user leaves it for 30 minutes without newer
+terminal activity. Running labels include the active pane process name, such as
+`codex running`.
 Touch and narrow-screen terminal views show quick keys for Esc, Tab, Ctrl-C,
 Ctrl-D, and arrow navigation. These keys write directly to the native PTY stream.
 

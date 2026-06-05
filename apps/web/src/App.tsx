@@ -1,15 +1,5 @@
 import { useCallback, useState } from "react";
-import {
-  captureTmuxHistory,
-  createTmuxSession,
-  listAuditEvents,
-  listTmuxSessions,
-  saveSessionMetadata,
-  type AuditEvent,
-  type SaveSessionMetadataInput,
-  type TranscriptChunk,
-  type TmuxSession,
-} from "./api";
+import { type TmuxSession } from "./api";
 import { type ComposerMode } from "./Composer";
 import { AppShell } from "./AppShell";
 import { type MobilePanel } from "./MobileNavigation";
@@ -18,27 +8,33 @@ import { type QueuedTerminalInput } from "./NativeTerminal";
 import { useGatewayAccessToken } from "./useGatewayAccessToken";
 import { useHostWorkspace } from "./useHostWorkspace";
 import { useAppStartupEffects } from "./useAppStartupEffects";
-import { useSessionNotifications } from "./useSessionNotifications";
+import { useSessionWorkspaceState } from "./useSessionWorkspaceState";
 import { useTerminalConnectionURL } from "./useTerminalConnectionURL";
 import { useTerminalScrollbackHistory } from "./useTerminalScrollbackHistory";
 import { useSSHCredentialToken } from "./useSSHCredentialToken";
-import { type ConnectionStatus } from "./useTerminalSocket";
-import { errorMessage } from "./view-utils";
+import { useIsMobileLayout } from "./useIsMobileLayout";
+import { useSessionWindowSelection } from "./useSessionWindowSelection";
+import { useAuditEvents } from "./useAuditEvents";
+import { useTerminalHistoryState } from "./useTerminalHistoryState";
+import { useSessionMetadataSaver } from "./useSessionMetadataSaver";
+import { useTmuxWindowActions } from "./useTmuxWindowActions";
+import { useAppSessionHandlers } from "./useAppSessionHandlers";
+import { useAppSessionWorkflow } from "./useAppSessionWorkflow";
+import { findSessionWindow, windowLabel } from "./session-window-utils";
 
 export function App() {
-  const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([]);
   const [sessions, setSessions] = useState<TmuxSession[]>([]);
-  const [selectedSessionName, setSelectedSessionName] = useState("");
   const [newSessionName, setNewSessionName] = useState("");
   const [composerMode, setComposerMode] = useState<ComposerMode>("enter");
   const [composerValue, setComposerValue] = useState("");
-  const [historyChunks, setHistoryChunks] = useState<TranscriptChunk[]>([]);
-  const [historyText, setHistoryText] = useState("");
-  const [historyQuery, setHistoryQuery] = useState("");
   const [mobilePanel, setMobilePanel] = useState<MobilePanel>("hosts");
   const [mobileSheet, setMobileSheet] = useState<MobileTerminalSheet | null>(null);
   const [queuedInput, setQueuedInput] = useState<QueuedTerminalInput | null>(null);
   const [error, setError] = useState("");
+  const isMobileLayout = useIsMobileLayout();
+  const auditEvents = useAuditEvents(setError);
+  const history = useTerminalHistoryState();
+  const selection = useSessionWindowSelection();
   const gatewayToken = useGatewayAccessToken(setError);
   const {
     handleCreateHost,
@@ -55,239 +51,179 @@ export function App() {
     setShowHostForm,
     showHostForm,
   } = useHostWorkspace({
-    onAuditRefresh: () => void refreshAuditEvents(),
+    onAuditRefresh: () => void auditEvents.refresh(),
     onError: setError,
     onHostCreated: () => setMobilePanel("sessions"),
     onHostSelected: clearSelectedSession,
   });
   const sshCredential = useSSHCredentialToken(Boolean(selectedHost?.hasCredential));
-  useAppStartupEffects({
-    gatewayReady: gatewayToken.ready,
-    resetCredential: sshCredential.resetCredential,
-    selectedHostHasCredential: Boolean(selectedHost?.hasCredential),
-    selectedHostId,
-    selectedHostUpdatedAt: selectedHost?.updatedAt ?? "",
-    onAuditRefresh: () => void refreshAuditEvents(),
-    onHostsRefresh: () => void refreshHosts(),
-    onListSessions: () => void handleListSessions(),
-  });
-
-  async function refreshAuditEvents() {
-    try {
-      setAuditEvents(await listAuditEvents());
-    } catch (err) {
-      setError(errorMessage(err));
-    }
-  }
-
-  function clearSelectedSession() {
-    setSelectedSessionName("");
-    setMobileSheet(null);
-    sshCredential.resetCredential();
-    setSessions([]);
-    setHistoryChunks([]);
-    setHistoryText("");
-    setMobilePanel("sessions");
-  }
-
-  async function handleListSessions() {
-    if (!selectedHostId || !sshCredential.ready) {
-      return;
-    }
-    try {
-      const credentialToken = await getSelectedHostCredentialToken();
-      const nextSessions = await listTmuxSessions(selectedHostId, credentialToken);
-      setSessions(nextSessions);
-      setSelectedSessionName("");
-      setMobilePanel("sessions");
-      setHistoryChunks([]);
-      setHistoryText("");
-      void refreshAuditEvents();
-      setError("");
-    } catch (err) {
-      setError(errorMessage(err));
-    }
-  }
-
-  async function handleOpenSession(sessionName: string, tokenOverride = "") {
-    if (!selectedHostId) {
-      return;
-    }
-    setSelectedSessionName(sessionName);
-    setMobileSheet(null);
-    setMobilePanel("terminal");
-    try {
-      const credentialToken = tokenOverride || await getSelectedHostCredentialToken();
-      await refreshSessionHistory(sessionName, credentialToken);
-      void refreshAuditEvents();
-      setError("");
-    } catch (err) {
-      setError(errorMessage(err));
-    }
-  }
-  async function handleCreateSession() {
-    if (!selectedHostId || !newSessionName) {
-      return;
-    }
-    try {
-      const credentialToken = await getSelectedHostCredentialToken();
-      const session = await createTmuxSession(selectedHostId, credentialToken, newSessionName);
-      setSessions((current) => [session, ...current.filter((item) => item.name !== session.name)]);
-      setNewSessionName("");
-      await handleOpenSession(session.name, credentialToken);
-      void refreshAuditEvents();
-    } catch (err) {
-      setError(errorMessage(err));
-    }
-  }
-
-  function handleComposerSubmit(data: string) {
-    setQueuedInput({ data, id: Date.now() });
-    setComposerValue("");
-  }
-  async function refreshSessionHistory(sessionName: string, credentialToken: string) {
-    if (!selectedHostId) {
-      return;
-    }
-    const history = await captureTmuxHistory(selectedHostId, sessionName, credentialToken);
-    setHistoryChunks(history.chunks);
-    setHistoryText(history.text);
-  }
-
-  function handleTerminalConnectionReady(status: ConnectionStatus) {
-    setError("");
-    void refreshAuditEvents();
-    if (status === "recovering") {
-      void refreshRecoveredHistory();
-    }
-  }
-
-  async function refreshRecoveredHistory() {
-    if (!selectedHostId || !selectedSessionName) {
-      return;
-    }
-    try {
-      const credentialToken = await getSelectedHostCredentialToken();
-      await refreshSessionHistory(selectedSessionName, credentialToken);
-    } catch (err) {
-      setError(errorMessage(err));
-    }
-  }
-
-  async function handleSaveSessionMetadata(input: SaveSessionMetadataInput) {
-    if (!selectedHostId || !selectedSessionName) {
-      return;
-    }
-    try {
-      const metadata = await saveSessionMetadata(selectedHostId, selectedSessionName, input);
-      setSessions((current) => current.map((session) => (
-        session.name === metadata.sessionName ? {
-          ...session,
-          collaborators: metadata.collaborators,
-          owner: metadata.owner,
-          shared: metadata.shared,
-          tags: metadata.tags,
-          title: metadata.title,
-        } : session
-      )));
-      void refreshAuditEvents();
-      setError("");
-    } catch (err) {
-      setError(errorMessage(err));
-    }
-  }
-
-  const selectedSession = sessions.find((session) => session.name === selectedSessionName);
-  const terminalSessionKey = selectedHostId && selectedSessionName ? `${selectedHostId}:${selectedSessionName}` : "";
-  const isMobileTerminalActive = Boolean(terminalSessionKey && mobilePanel === "terminal");
   const getSelectedHostCredentialToken = useCallback(async () => {
     if (!selectedHostId) {
       throw new Error("Host is required");
     }
     return sshCredential.ensureSSHCredentialToken(selectedHostId);
   }, [selectedHostId, sshCredential.ensureSSHCredentialToken]);
+  const saveSessionMetadata = useSessionMetadataSaver({
+    hostId: selectedHostId,
+    selectedSessionName: selection.selectedSessionName,
+    onAuditRefresh: () => void auditEvents.refresh(),
+    onError: setError,
+    onSessionsChange: setSessions,
+  });
+  const sessionWorkflow = useAppSessionWorkflow({
+    getCredentialToken: getSelectedHostCredentialToken,
+    history,
+    isMobileLayout,
+    newSessionName,
+    selectedHostId,
+    selection,
+    sshReady: sshCredential.ready,
+    onAuditRefresh: () => void auditEvents.refresh(),
+    onError: setError,
+    onMobilePanelChange: setMobilePanel,
+    onMobileSheetClear: () => setMobileSheet(null),
+    onNewSessionNameChange: setNewSessionName,
+    onSessionsChange: setSessions,
+  });
+  useAppStartupEffects({
+    gatewayReady: gatewayToken.ready,
+    resetCredential: sshCredential.resetCredential,
+    selectedHostHasCredential: Boolean(selectedHost?.hasCredential),
+    selectedHostId,
+    selectedHostUpdatedAt: selectedHost?.updatedAt ?? "",
+    onAuditRefresh: () => void auditEvents.refresh(),
+    onHostsRefresh: () => void refreshHosts(),
+    onListSessions: () => void sessionWorkflow.handleListSessions(),
+  });
+
+  function clearSelectedSession() {
+    selection.clearSelection();
+    setMobileSheet(null);
+    sshCredential.resetCredential();
+    setSessions([]);
+    history.clear();
+    setMobilePanel("sessions");
+  }
+
+  function handleComposerSubmit(data: string) {
+    setQueuedInput({ data, id: Date.now() });
+    setComposerValue("");
+  }
+
+  const terminalSessionKey = selectedHostId && selection.selectedSessionName && selection.selectedWindowIndex !== null
+    ? `${selectedHostId}:${selection.selectedSessionName}:${selection.selectedWindowIndex}`
+    : "";
+  const isMobileTerminalActive = Boolean(terminalSessionKey && mobilePanel === "terminal");
   const loadTerminalScrollbackHistory = useTerminalScrollbackHistory({
     getCredentialToken: getSelectedHostCredentialToken,
     hostId: selectedHostId,
-    sessionName: selectedSessionName,
+    sessionName: selection.selectedSessionName,
+    windowIndex: selection.selectedWindowIndex,
   });
 
-  const refreshSelectedSessions = useCallback(async () => {
-    if (!selectedHostId || !sshCredential.ready) {
-      return [];
-    }
-    const credentialToken = await getSelectedHostCredentialToken();
-    return listTmuxSessions(selectedHostId, credentialToken);
-  }, [getSelectedHostCredentialToken, selectedHostId, sshCredential.ready]);
+  const tmuxWindowActions = useTmuxWindowActions({
+    expandedSessionName: selection.expandedSessionName,
+    getCredentialToken: getSelectedHostCredentialToken,
+    hostId: selectedHostId,
+    isMobileLayout,
+    selectedSessionName: selection.selectedSessionName,
+    selectedWindowIndex: selection.selectedWindowIndex,
+    sessions,
+    onAuditRefresh: () => void auditEvents.refresh(),
+    onError: setError,
+    onHistoryClear: history.clear,
+    onMobilePanelChange: setMobilePanel,
+    onMobileSheetClear: () => setMobileSheet(null),
+    onOpenWindow: sessionWorkflow.handleOpenSessionWindow,
+    onSelectionClear: selection.clearSelection,
+    onSelectionExpand: selection.expandSession,
+    onSelectionOpen: selection.openWindow,
+    onSessionsChange: setSessions,
+  });
 
-  const sessionNotifications = useSessionNotifications({
+  const sessionState = useSessionWorkspaceState({
+    getCredentialToken: getSelectedHostCredentialToken,
     hostId: selectedHostId,
     hostName: selectedHost?.name ?? "ChatMux",
+    mobilePanel,
     onError: setError,
-    onSessionsChange: setSessions,
-    refreshSessions: refreshSelectedSessions,
+    onSessionsChange: tmuxWindowActions.applySessionRefresh,
+    selectedSessionName: selection.selectedSessionName,
     sessions,
     sshReady: Boolean(selectedHostId && sshCredential.ready),
   });
+  const displaySessions = sessionState.displaySessions;
+  const selectedSession = displaySessions.find((session) => session.name === selection.selectedSessionName);
+  const selectedWindow = findSessionWindow(selectedSession, selection.selectedWindowIndex);
 
   const createTerminalWebSocketURL = useTerminalConnectionURL({
     getCredentialToken: getSelectedHostCredentialToken,
     hostId: selectedHostId,
-    sessionName: selectedSessionName,
+    sessionName: selection.selectedSessionName,
+    windowIndex: selection.selectedWindowIndex,
   });
 
   const summaryTarget = {
     getCredentialToken: getSelectedHostCredentialToken,
     hostId: selectedHostId,
-    sessionName: selectedSessionName,
+    sessionName: selection.selectedSessionName,
     sshReady: sshCredential.ready,
+    windowIndex: selection.selectedWindowIndex,
   };
+  const sessionHandlers = useAppSessionHandlers({
+    selectedSession,
+    tmuxWindowActions,
+    onBackToSessions: sessionWorkflow.handleBackToSessions,
+    onConnectionReady: (status) => void sessionWorkflow.handleTerminalConnectionReady(status),
+    onCreateSession: () => void sessionWorkflow.handleCreateSession(),
+    onExpandSession: sessionWorkflow.handleExpandSession,
+    onListSessions: () => void sessionWorkflow.handleListSessions(),
+    onMobileSheetClear: () => setMobileSheet(null),
+    onOpenWindow: (sessionName, windowIndex) => void sessionWorkflow.handleOpenSessionWindow(sessionName, windowIndex),
+  });
   return (
     <AppShell
-      auditEvents={auditEvents}
+      auditEvents={auditEvents.events}
       composerMode={composerMode}
       composerValue={composerValue}
       createTerminalWebSocketURL={terminalSessionKey ? createTerminalWebSocketURL : null}
       credentialStatus={sshCredential.status}
       error={error}
       gatewayToken={gatewayToken}
-      historyChunks={historyChunks}
-      historyQuery={historyQuery}
-      historyText={historyText}
+      historyChunks={history.chunks}
+      historyQuery={history.query}
+      historyText={history.text}
       hosts={hosts}
       isMobileTerminalActive={isMobileTerminalActive}
       loadScrollbackHistory={terminalSessionKey ? loadTerminalScrollbackHistory : null}
       mobilePanel={mobilePanel}
       mobileSheet={mobileSheet}
       newSessionName={newSessionName}
-      notifications={{ enabled: sessionNotifications.enabled, status: sessionNotifications.status }}
+      notifications={{ enabled: sessionState.notifications.enabled, status: sessionState.notifications.status }}
       queuedInput={queuedInput}
       selectedHost={selectedHost}
       selectedSession={selectedSession}
-      selectedSessionName={selectedSessionName}
-      sessions={sessions}
+      selectedSessionName={selection.selectedSessionName}
+      selectedWindowIndex={selection.selectedWindowIndex}
+      selectedWindowName={selectedWindow ? windowLabel(selectedWindow) : ""}
+      sessions={displaySessions}
       showHostForm={showHostForm}
       target={summaryTarget}
       terminalSessionKey={terminalSessionKey}
       composerHandlers={{ onComposerModeChange: setComposerMode, onComposerSubmit: handleComposerSubmit, onComposerValueChange: setComposerValue }}
-      sessionHandlers={{
-        onBackToSessions: () => {
-          setMobileSheet(null);
-          setMobilePanel("sessions");
-        },
-        onConnectionReady: handleTerminalConnectionReady, onCreateSession: () => void handleCreateSession(),
-        onListSessions: () => void handleListSessions(), onOpenSession: (sessionName) => void handleOpenSession(sessionName),
-      }}
+      sessionHandlers={sessionHandlers}
       onConnectionError={setError}
       onCreateHost={handleCreateHost}
       onDeleteHost={handleDeleteHost}
-      onDrafted={() => void refreshAuditEvents()}
-      onHistoryQueryChange={setHistoryQuery}
+      onDrafted={() => void auditEvents.refresh()}
+      onHistoryQueryChange={history.setQuery}
       onMobilePanelChange={setMobilePanel}
       onMobileSheetChange={setMobileSheet}
       onNewSessionNameChange={setNewSessionName}
-      onNotificationsEnabledChange={(enabled) => void sessionNotifications.setEnabled(enabled)}
-      onSaveSessionMetadata={handleSaveSessionMetadata}
+      onNotificationsEnabledChange={(enabled) => void sessionState.notifications.setEnabled(enabled)}
+      mobileWindowList={isMobileLayout && Boolean(selection.expandedSessionName)}
+      windowListSessionName={selection.expandedSessionName}
+      onSaveSessionMetadata={saveSessionMetadata}
       onSelectHost={handleSelectHost}
       onShowHostForm={setShowHostForm}
       onTogglePin={handleTogglePin}

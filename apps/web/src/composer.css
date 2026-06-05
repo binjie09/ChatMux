@@ -1,6 +1,7 @@
 .composer {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: stretch;
   gap: 10px;
   min-width: 0;
   border-top: 1px solid #ded8ca;
@@ -17,39 +18,91 @@
   background: #ffffff;
 }
 
-.composer-modes button {
+.composer-mode {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 26px;
+  min-width: 0;
+  border-right: 1px solid #d6cebd;
+}
+
+.composer-mode:last-child {
+  border-right: 0;
+}
+
+.composer-mode button {
+  min-width: 0;
+  border: 0;
+  color: #415049;
+  background: transparent;
+}
+
+.composer-mode-choice {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
   height: 44px;
-  border: 0;
-  border-right: 1px solid #d6cebd;
-  padding: 0 10px;
-  color: #415049;
-  background: transparent;
+  padding: 0 3px 0 9px;
   font-size: 13px;
 }
 
-.composer-modes button:last-child {
-  border-right: 0;
+.composer-mode-help {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 44px;
+  padding: 0;
+  color: #68756f;
 }
 
-.composer-modes button.active {
-  color: #f7f2e8;
+.composer-mode.active {
   background: #17201b;
 }
 
-.composer input {
-  min-width: 0;
-  border: 1px solid #d6cebd;
-  border-radius: 8px;
-  padding: 12px 13px;
-  color: #17201b;
-  background: #ffffff;
+.composer-mode.active button {
+  color: #f7f2e8;
 }
 
-.composer > button[type="submit"] {
+.composer-input-shell {
+  position: relative;
+  min-width: 0;
+}
+
+.composer textarea {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  max-height: 168px;
+  resize: vertical;
+  border: 1px solid #d6cebd;
+  border-radius: 8px;
+  padding: 10px 44px 9px 13px;
+  color: #17201b;
+  background: #ffffff;
+  font: inherit;
+  line-height: 1.35;
+}
+
+.composer-expand-button {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid #d6cebd;
+  border-radius: 8px;
+  color: #415049;
+  background: #fffaf0;
+}
+
+.composer-send-button {
+  min-height: 44px;
+}
+
+.composer-send-button,
+.composer-primary-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -106,37 +159,60 @@
   }
 
   .mobile-terminal-active .composer-modes button {
-    flex: 1 0 88px;
     height: 36px;
-    border-right-color: #26372f;
     color: #c3d1c9;
     font-size: 12px;
   }
 
-  .mobile-terminal-active .composer-modes button.active {
-    color: #0b110e;
+  .mobile-terminal-active .composer-mode {
+    flex: 1 0 98px;
+    border-right-color: #26372f;
+  }
+
+  .mobile-terminal-active .composer-mode.active {
     background: #8fd5b2;
   }
 
-  .mobile-terminal-active .composer input {
-    height: 44px;
+  .mobile-terminal-active .composer-mode.active button {
+    color: #0b110e;
+  }
+
+  .mobile-terminal-active .composer-mode-choice {
+    padding-left: 8px;
+  }
+
+  .mobile-terminal-active .composer-mode-help {
+    width: 24px;
+    color: #90a198;
+  }
+
+  .mobile-terminal-active .composer textarea {
+    min-height: 44px;
+    max-height: 126px;
     border-color: #26372f;
+    padding: 7px 42px 7px 11px;
     color: #edf7f1;
     background: #0d1510;
   }
 
-  .mobile-terminal-active .composer input::placeholder {
+  .mobile-terminal-active .composer textarea::placeholder {
     color: #7f9187;
   }
 
-  .mobile-terminal-active .composer > button[type="submit"] {
+  .mobile-terminal-active .composer-expand-button {
+    border-color: #26372f;
+    color: #c3d1c9;
+    background: #16231c;
+  }
+
+  .mobile-terminal-active .composer-send-button {
     width: 48px;
-    height: 44px;
+    min-height: 44px;
     padding: 0;
     font-size: 0;
   }
 
-  .mobile-terminal-active .composer > button[type="submit"] svg {
+  .mobile-terminal-active .composer-send-button svg {
     width: 20px;
     height: 20px;
   }

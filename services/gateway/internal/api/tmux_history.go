@@ -14,6 +14,7 @@ type tmuxHistoryRequest struct {
 	CredentialToken string `json:"credentialToken"`
 	Lines           int    `json:"lines"`
 	PreserveANSI    bool   `json:"preserveAnsi"`
+	tmuxTargetRequest
 }
 
 type tmuxHistoryResponse struct {
@@ -26,6 +27,7 @@ type summarizeSessionRequest struct {
 	credential  sshclient.Credential
 	request     *http.Request
 	sessionName string
+	target      tmux.Target
 }
 
 func (s *Server) handleCaptureTmuxHistory(w http.ResponseWriter, r *http.Request) {
@@ -41,7 +43,12 @@ func (s *Server) handleCaptureTmuxHistory(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	command, err := tmux.CapturePaneCommandWithOptions(sessionName, capturePaneOptions(input))
+	target, err := targetFromSessionRequest(sessionName, input.tmuxTargetRequest)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+	command, err := tmux.CaptureTargetPaneCommand(target, capturePaneOptions(input))
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err)
 		return
@@ -92,6 +99,11 @@ func (s *Server) handleSummarizeTmuxHistory(w http.ResponseWriter, r *http.Reque
 		writeError(w, http.StatusBadRequest, err)
 		return
 	}
+	target, err := targetFromSessionRequest(sessionName, input.tmuxTargetRequest)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
 	host, err := s.visibleHost(r, hostID)
 	if err != nil {
 		writeError(w, statusForHostAccessError(err), err)
@@ -108,6 +120,7 @@ func (s *Server) handleSummarizeTmuxHistory(w http.ResponseWriter, r *http.Reque
 	}
 	summary, err := s.summarizeSessionHistory(summarizeSessionRequest{
 		host: host, credential: credential, request: r, sessionName: sessionName,
+		target: target,
 	})
 	if err != nil {
 		writeError(w, statusForSummaryError(err), err)
@@ -132,7 +145,7 @@ func decodeTmuxHistoryRequest(r *http.Request) (tmuxHistoryRequest, error) {
 }
 
 func (s *Server) summarizeSessionHistory(input summarizeSessionRequest) (TranscriptSummary, error) {
-	command, err := tmux.CapturePaneCommand(input.sessionName)
+	command, err := tmux.CaptureTargetPaneCommand(input.target, tmux.CapturePaneOptions{Lines: 200})
 	if err != nil {
 		return TranscriptSummary{}, err
 	}
@@ -146,7 +159,7 @@ func (s *Server) summarizeSessionHistory(input summarizeSessionRequest) (Transcr
 }
 
 func statusForSummaryError(err error) int {
-	if errors.Is(err, errEmptyTranscript) || errors.Is(err, tmux.ErrInvalidSessionName) {
+	if errors.Is(err, errEmptyTranscript) || errors.Is(err, tmux.ErrInvalidSessionName) || errors.Is(err, tmux.ErrInvalidWindowTarget) {
 		return http.StatusBadRequest
 	}
 	return http.StatusBadGateway

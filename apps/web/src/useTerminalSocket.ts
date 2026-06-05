@@ -5,6 +5,7 @@ import { errorMessage, sendTerminalResize, writeTerminalMessage } from "./termin
 export type ConnectionStatus = "idle" | "connecting" | "connected" | "recovering" | "error";
 
 export type TerminalHandlers = {
+  onConnectionClosed: () => void;
   onConnectionError: (message: string) => void;
   onConnectionReady: (status: ConnectionStatus) => void;
 };
@@ -119,6 +120,7 @@ function bindTerminalSocket(input: TerminalSocketBinding) {
     }
     input.options.socketRef.current = null;
     input.options.setStatus("recovering");
+    input.options.handlersRef.current.onConnectionClosed();
     input.setReconnectTimer(scheduleReconnect(input.isActive, input.connect));
   });
 }

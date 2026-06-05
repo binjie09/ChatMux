@@ -1,11 +1,12 @@
 import { Capacitor } from "@capacitor/core";
 import { LocalNotifications } from "@capacitor/local-notifications";
-import { type TmuxSession } from "./api";
+import { type SessionStatus } from "./api";
+import { type DisplayTmuxSession } from "./session-state-machine";
 
 export type SessionStatusChange = {
   hostName: string;
-  previousStatus: TmuxSession["status"];
-  session: TmuxSession;
+  previousStatus: SessionStatus;
+  session: DisplayTmuxSession;
 };
 
 const notificationChannelId = "chatmux-session-status";
@@ -36,8 +37,8 @@ export async function sendSessionStatusNotification(change: SessionStatusChange)
 function sessionNotificationPayload(change: SessionStatusChange) {
   const sessionName = change.session.title || change.session.name;
   return {
-    body: `${change.hostName}: ${change.previousStatus} -> ${change.session.status}`,
-    id: notificationId(`${change.hostName}:${change.session.id}:${change.session.status}`),
+    body: `${change.hostName}: ${change.previousStatus} -> ${change.session.statusLabel}`,
+    id: notificationId(`${change.hostName}:${change.session.id}:${change.session.displayStatus}`),
     title: `${sessionName} changed state`,
   };
 }
