@@ -422,10 +422,13 @@
   .mobile-terminal-active .terminal-screen {
     border: 1px solid #18251f;
     border-radius: 8px;
-    padding: 4px;
     background: #101713;
     touch-action: none;
     user-select: none;
+  }
+
+  .mobile-terminal-active .terminal-screen .xterm {
+    padding: 4px;
   }
 
   .mobile-terminal-active .terminal-select-mode .terminal-screen {
