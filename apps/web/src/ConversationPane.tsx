@@ -56,6 +56,7 @@ type ConversationPaneProps = {
   onMobileSheetChange: (sheet: MobileTerminalSheet | null) => void;
   onOpenWindow: (sessionName: string, windowIndex: number) => void;
   onPasteTerminalImage: ((file: File) => Promise<string>) | null;
+  onQueuedInputSent: (inputId: number) => void;
   onRenameWindow: (sessionName: string, windowIndex: number, name: string) => Promise<void> | void;
   onSaveSessionMetadata: (input: SaveSessionMetadataInput) => Promise<void>;
   onTogglePin: () => void;
@@ -76,9 +77,11 @@ export function ConversationPane(props: ConversationPaneProps) {
         windowName={props.selectedWindowName}
         windows={props.selectedSession?.windowList ?? []}
         tmuxFallbackActive={props.tmuxFallbackActive}
+        tmuxInstallPending={props.tmuxInstallPending}
         selectedWindowIndex={props.target.windowIndex}
         onBack={props.onBackToSessions}
         onCreateWindow={() => props.selectedSession ? props.onCreateWindow(props.selectedSession.name) : undefined}
+        onInstallTmux={props.onInstallTmux}
         onOpenSheet={props.onMobileSheetChange}
         onOpenWindow={(windowIndex) => {
           if (props.selectedSession) {
@@ -96,7 +99,7 @@ export function ConversationPane(props: ConversationPaneProps) {
       </header>
 
       <div className="terminal-workspace">
-        <div className="terminal-column">
+        <div className={`terminal-column ${props.tmuxFallbackActive ? "tmux-fallback" : ""}`}>
           <TmuxFallbackBanner
             active={props.tmuxFallbackActive}
             installing={props.tmuxInstallPending}
@@ -121,6 +124,7 @@ export function ConversationPane(props: ConversationPaneProps) {
             onConnectionError={props.onConnectionError}
             onConnectionReady={props.onConnectionReady}
             onPasteImage={props.onPasteTerminalImage}
+            onQueuedInputSent={props.onQueuedInputSent}
             reconnectSignal={props.terminalReconnectSignal}
           />
         </div>

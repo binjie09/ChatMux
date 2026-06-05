@@ -1,4 +1,4 @@
-import { ArrowLeft, Bot, ListTree, Plus, Search, X } from "lucide-react";
+import { ArrowLeft, Bot, Download, ListTree, Plus, Search, X } from "lucide-react";
 import { type ReactNode } from "react";
 import { type TmuxWindow } from "./api";
 import { windowLabel } from "./session-window-utils";
@@ -12,10 +12,12 @@ type MobileTerminalBarProps = {
   sessionName: string;
   title: string;
   tmuxFallbackActive: boolean;
+  tmuxInstallPending: boolean;
   windowName: string;
   windows: TmuxWindow[];
   onBack: () => void;
   onCreateWindow: () => void;
+  onInstallTmux: () => void;
   onOpenSheet: (sheet: MobileTerminalSheet) => void;
   onOpenWindow: (windowIndex: number) => void;
 };
@@ -29,7 +31,7 @@ type MobileTerminalSheetPanelProps = {
 
 export function MobileTerminalBar(props: MobileTerminalBarProps) {
   return (
-    <header className="mobile-terminal-bar">
+    <header className={`mobile-terminal-bar ${props.tmuxFallbackActive ? "tmux-fallback" : ""}`}>
       <button type="button" aria-label="Back to sessions" onClick={props.onBack}>
         <ArrowLeft size={20} aria-hidden="true" />
       </button>
@@ -37,26 +39,35 @@ export function MobileTerminalBar(props: MobileTerminalBarProps) {
         <strong>{props.title}</strong>
         <span>{terminalSubtitle(props.hostName, props.sessionName, props.windowName)}</span>
       </div>
-      <div className="mobile-terminal-window-picker">
-        <select
-          aria-label="Select terminal window"
-          value={props.selectedWindowIndex ?? ""}
-          onChange={(event) => props.onOpenWindow(Number(event.target.value))}
+      {props.tmuxFallbackActive ? (
+        <button
+          className="mobile-terminal-install"
+          type="button"
+          aria-label="Install tmux"
+          disabled={props.tmuxInstallPending}
+          onClick={props.onInstallTmux}
         >
-          {props.windows.map((window) => (
-            <option key={window.id || window.index} value={window.index}>
-              #{window.index} {windowLabel(window)}
-            </option>
-          ))}
-        </select>
-        {!props.tmuxFallbackActive ? (
-          <button type="button" aria-label="New window" onClick={props.onCreateWindow}>
-            <Plus size={18} aria-hidden="true" />
-          </button>
-        ) : null}
-      </div>
-      {!props.tmuxFallbackActive ? (
+          <Download size={18} aria-hidden="true" />
+          <span>{props.tmuxInstallPending ? "Installing" : "Install tmux"}</span>
+        </button>
+      ) : (
         <>
+          <div className="mobile-terminal-window-picker">
+            <select
+              aria-label="Select terminal window"
+              value={props.selectedWindowIndex ?? ""}
+              onChange={(event) => props.onOpenWindow(Number(event.target.value))}
+            >
+              {props.windows.map((window) => (
+                <option key={window.id || window.index} value={window.index}>
+                  #{window.index} {windowLabel(window)}
+                </option>
+              ))}
+            </select>
+            <button type="button" aria-label="New window" onClick={props.onCreateWindow}>
+              <Plus size={18} aria-hidden="true" />
+            </button>
+          </div>
           <button type="button" aria-label="Open context" onClick={() => props.onOpenSheet("context")}>
             <Search size={19} aria-hidden="true" />
           </button>
@@ -64,7 +75,7 @@ export function MobileTerminalBar(props: MobileTerminalBarProps) {
             <Bot size={19} aria-hidden="true" />
           </button>
         </>
-      ) : null}
+      )}
     </header>
   );
 }

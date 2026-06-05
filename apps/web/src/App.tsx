@@ -135,6 +135,10 @@ export function App() {
     setComposerValue("");
   }
 
+  const clearQueuedInput = useCallback((inputId: number) => {
+    setQueuedInput((current) => current?.id === inputId ? null : current);
+  }, []);
+
   async function handleTerminalImagePaste(file: File) {
     if (!selectedHostId || !selection.selectedSessionName) {
       throw new Error("Host and session are required");
@@ -205,15 +209,24 @@ export function App() {
   const tmuxFallbackActive = hasSSHFallbackSession(displaySessions);
   const selectedSessionIsFallback = isSSHFallbackSession(selectedSession);
 
+  const queueTmuxInstall = useCallback(() => {
+    setQueuedInput({ data: `${tmuxInstallScript}\n`, id: Date.now(), source: "installer" });
+    setPendingTmuxInstall(false);
+  }, []);
+
   const handleInstallTmux = useCallback(() => {
     const fallbackSession = displaySessions.find((session) => isSSHFallbackSession(session));
     const windowIndex = fallbackSession?.windowList[0]?.index;
+    setMobilePanel("terminal");
+    setPendingTmuxInstall(true);
+    if (selectedSessionIsFallback) {
+      queueTmuxInstall();
+      return;
+    }
     if (!selectedSessionIsFallback && fallbackSession && windowIndex !== undefined) {
       void sessionWorkflow.handleOpenSessionWindow(fallbackSession.name, windowIndex);
     }
-    setPendingTmuxInstall(true);
-    setMobilePanel("terminal");
-  }, [displaySessions, selectedSessionIsFallback, sessionWorkflow]);
+  }, [displaySessions, queueTmuxInstall, selectedSessionIsFallback, sessionWorkflow]);
 
   useEffect(() => {
     if (!tmuxFallbackActive || !selectedHostId || pendingTmuxInstall || tmuxInstallPromptHostId === selectedHostId) {
@@ -259,8 +272,7 @@ export function App() {
     onConnectionReady: (status) => {
       void sessionWorkflow.handleTerminalConnectionReady(status);
       if (pendingTmuxInstall && selectedSessionIsFallback) {
-        setQueuedInput({ data: `${tmuxInstallScript}\n`, id: Date.now(), source: "installer" });
-        setPendingTmuxInstall(false);
+        queueTmuxInstall();
       }
     },
     onCreateSession: () => void sessionWorkflow.handleCreateSession(),
@@ -321,6 +333,7 @@ export function App() {
         onMobileSheetChange={setMobileSheet}
         onNewSessionNameChange={setNewSessionName}
         onNotificationsEnabledChange={(enabled) => void sessionState.notifications.setEnabled(enabled)}
+        onQueuedInputSent={clearQueuedInput}
         mobileWindowList={isMobileLayout && Boolean(selection.windowListSessionName)}
         windowListSessionName={selection.windowListSessionName}
         onSaveSessionMetadata={saveSessionMetadata}

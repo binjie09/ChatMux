@@ -22,6 +22,7 @@ type NativeTerminalProps = {
   onConnectionReady: (status: ConnectionStatus) => void;
   onPasteImage?: ((file: File) => Promise<string>) | null;
   queuedInput: QueuedTerminalInput | null;
+  onQueuedInputSent: (inputId: number) => void;
   reconnectSignal: number;
   sessionKey: string;
 };
@@ -83,7 +84,7 @@ export function NativeTerminal(props: NativeTerminalProps) {
     socketRef,
     terminalInstanceRef,
   });
-  useQueuedInput(props.queuedInput, socketRef);
+  useQueuedInput(props.queuedInput, socketRef, status, props.onQueuedInputSent);
   useExternalReconnect(props.reconnectSignal, reconnect);
 
   function reconnect() {
@@ -289,11 +290,24 @@ function useSessionReset(sessionKey: string, terminalRef: MutableRefObject<Termi
   }, [sessionKey, terminalRef]);
 }
 
-function useQueuedInput(queuedInput: QueuedTerminalInput | null, socketRef: MutableRefObject<WebSocket | null>) {
+function useQueuedInput(
+  queuedInput: QueuedTerminalInput | null,
+  socketRef: MutableRefObject<WebSocket | null>,
+  status: ConnectionStatus,
+  onQueuedInputSent: (inputId: number) => void,
+) {
+  const lastSentIdRef = useRef(0);
+
   useEffect(() => {
-    if (!queuedInput?.data) {
+    if (!queuedInput?.data || queuedInput.id === lastSentIdRef.current) {
       return;
     }
-    sendTerminalInput(socketRef.current, queuedInput.data, queuedInput.source ?? "composer");
-  }, [queuedInput, socketRef]);
+    const socket = socketRef.current;
+    if (status !== "connected" || socket?.readyState !== WebSocket.OPEN) {
+      return;
+    }
+    sendTerminalInput(socket, queuedInput.data, queuedInput.source ?? "composer");
+    lastSentIdRef.current = queuedInput.id;
+    onQueuedInputSent(queuedInput.id);
+  }, [onQueuedInputSent, queuedInput, socketRef, status]);
 }

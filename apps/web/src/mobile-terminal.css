@@ -65,15 +65,22 @@
     background: #111a15;
   }
 
+  .mobile-terminal-bar.tmux-fallback {
+    grid-template-areas: "back title install";
+    grid-template-columns: 44px minmax(0, 1fr) auto;
+    min-height: 56px;
+    padding: 7px 8px;
+  }
+
   .mobile-terminal-bar > button:first-child {
     grid-area: back;
   }
 
-  .mobile-terminal-bar > button:nth-of-type(2) {
+  .mobile-terminal-bar:not(.tmux-fallback) > button:nth-of-type(2) {
     grid-area: context;
   }
 
-  .mobile-terminal-bar > button:nth-of-type(3) {
+  .mobile-terminal-bar:not(.tmux-fallback) > button:nth-of-type(3) {
     grid-area: draft;
   }
 
@@ -129,6 +136,35 @@
     color: #eff7f1;
     background: #0f1713;
     font-size: 13px;
+  }
+
+  .mobile-terminal-bar > button.mobile-terminal-install {
+    grid-area: install;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: auto;
+    height: 40px;
+    min-width: 112px;
+    padding: 0 11px;
+    color: #251b0b;
+    background: #f3c766;
+    border-color: #e5c47d;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .mobile-terminal-bar > button.mobile-terminal-install:disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+
+  .mobile-terminal-bar > button.mobile-terminal-install span {
+    margin-top: 0;
+    color: inherit;
+    font-size: inherit;
   }
 
   .mobile-terminal-sheet-layer {

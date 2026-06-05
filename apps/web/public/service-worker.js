@@ -1,4 +1,4 @@
-const CACHE_VERSION = "chatmux-pwa-v1";
+const CACHE_VERSION = "chatmux-pwa-v2";
 const APP_SHELL = [
   "/",
   "/manifest.webmanifest",
