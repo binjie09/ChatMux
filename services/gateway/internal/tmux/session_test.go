@@ -176,11 +176,11 @@ func TestAttachSessionCommand(t *testing.T) {
 	if err != nil {
 		t.Fatalf("AttachSessionCommand failed: %v", err)
 	}
-	if !containsLoginShellFragment(command, "attach-session -t 'deploy_1'") {
+	if !containsLoginShellFragment(command, "attach-session -t '=deploy_1:'") {
 		t.Fatalf("expected attach command, got %q", command)
 	}
 	if !strings.Contains(command, "set-option -gq history-limit \"$CHATMUX_TMUX_HISTORY_LIMIT\"") ||
-		!containsLoginShellFragment(command, "set-option -t 'deploy_1' -q history-limit \"$CHATMUX_TMUX_HISTORY_LIMIT\"") {
+		!containsLoginShellFragment(command, "set-option -t '=deploy_1' -q history-limit \"$CHATMUX_TMUX_HISTORY_LIMIT\"") {
 		t.Fatalf("expected history limit prelude, got %q", command)
 	}
 	if !strings.Contains(command, "set-clipboard external") {
@@ -197,7 +197,7 @@ func TestAttachTargetCommandTargetsWindow(t *testing.T) {
 	if err != nil {
 		t.Fatalf("AttachTargetCommand failed: %v", err)
 	}
-	if !containsLoginShellFragment(command, "attach-session -t 'deploy_1:1'") {
+	if !containsLoginShellFragment(command, "attach-session -t '=deploy_1:1'") {
 		t.Fatalf("expected attach window target, got %q", command)
 	}
 }
@@ -207,7 +207,7 @@ func TestKillSessionCommand(t *testing.T) {
 	if err != nil {
 		t.Fatalf("KillSessionCommand failed: %v", err)
 	}
-	if !containsLoginShellFragment(command, "kill-session -t 'deploy_1'") {
+	if !containsLoginShellFragment(command, "kill-session -t '=deploy_1'") {
 		t.Fatalf("expected kill command, got %q", command)
 	}
 }
@@ -217,10 +217,10 @@ func TestCapturePaneCommand(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CapturePaneCommand failed: %v", err)
 	}
-	if !containsLoginShellFragment(command, "capture-pane -p -t 'deploy_1' -S -200") {
+	if !containsLoginShellFragment(command, "capture-pane -p -t '=deploy_1:' -S -200") {
 		t.Fatalf("expected capture command, got %q", command)
 	}
-	if !containsLoginShellFragment(command, "set-option -t 'deploy_1' -q history-limit \"$CHATMUX_TMUX_HISTORY_LIMIT\"") {
+	if !containsLoginShellFragment(command, "set-option -t '=deploy_1' -q history-limit \"$CHATMUX_TMUX_HISTORY_LIMIT\"") {
 		t.Fatalf("expected capture command to refresh history limit, got %q", command)
 	}
 }
@@ -240,7 +240,7 @@ func TestCapturePaneCommandWithOptions(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CapturePaneCommandWithOptions failed: %v", err)
 	}
-	if !containsLoginShellFragment(command, "capture-pane -p -e -C -t 'deploy_1' -S -800") {
+	if !containsLoginShellFragment(command, "capture-pane -p -e -C -t '=deploy_1:' -S -800") {
 		t.Fatalf("expected capture command with ANSI history, got %q", command)
 	}
 }
@@ -251,7 +251,7 @@ func TestCaptureTargetPaneCommandTargetsWindow(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CaptureTargetPaneCommand failed: %v", err)
 	}
-	if !containsLoginShellFragment(command, "capture-pane -p -e -C -t 'deploy_1:2' -S -800") {
+	if !containsLoginShellFragment(command, "capture-pane -p -e -C -t '=deploy_1:2' -S -800") {
 		t.Fatalf("expected capture command with window target, got %q", command)
 	}
 }
@@ -261,11 +261,24 @@ func TestCreateWindowCommand(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CreateWindowCommand failed: %v", err)
 	}
-	if !containsLoginShellFragment(command, "new-window -d -t 'deploy_1' -n 'logs'") {
+	if !containsLoginShellFragment(command, "new-window -d -t '=deploy_1:' -n 'logs'") {
 		t.Fatalf("expected new-window command, got %q", command)
 	}
 	if !strings.Contains(command, "list-windows -a") {
 		t.Fatalf("expected refreshed list command, got %q", command)
+	}
+}
+
+func TestCreateWindowCommandTargetsNumericSessionName(t *testing.T) {
+	command, err := CreateWindowCommand("14", "logs")
+	if err != nil {
+		t.Fatalf("CreateWindowCommand failed: %v", err)
+	}
+	if !containsLoginShellFragment(command, "set-option -t '=14' -q history-limit \"$CHATMUX_TMUX_HISTORY_LIMIT\"") {
+		t.Fatalf("expected exact numeric session target in history prelude, got %q", command)
+	}
+	if !containsLoginShellFragment(command, "new-window -d -t '=14:' -n 'logs'") {
+		t.Fatalf("expected exact numeric session target for new-window, got %q", command)
 	}
 }
 
@@ -275,7 +288,7 @@ func TestRenameWindowCommand(t *testing.T) {
 	if err != nil {
 		t.Fatalf("RenameWindowCommand failed: %v", err)
 	}
-	if !containsLoginShellFragment(command, "rename-window -t 'deploy_1:1' 'api'") {
+	if !containsLoginShellFragment(command, "rename-window -t '=deploy_1:1' 'api'") {
 		t.Fatalf("expected rename-window command, got %q", command)
 	}
 }
@@ -286,7 +299,7 @@ func TestKillWindowCommand(t *testing.T) {
 	if err != nil {
 		t.Fatalf("KillWindowCommand failed: %v", err)
 	}
-	if !containsLoginShellFragment(command, "kill-window -t 'deploy_1:1'") {
+	if !containsLoginShellFragment(command, "kill-window -t '=deploy_1:1'") {
 		t.Fatalf("expected kill-window command, got %q", command)
 	}
 	if !containsLoginShellFragment(command, "&& { TMUX_BIN=") {
@@ -299,7 +312,7 @@ func TestRenameSessionCommand(t *testing.T) {
 	if err != nil {
 		t.Fatalf("RenameSessionCommand failed: %v", err)
 	}
-	if !containsLoginShellFragment(command, "rename-session -t 'deploy_1' 'deploy_2'") {
+	if !containsLoginShellFragment(command, "rename-session -t '=deploy_1' 'deploy_2'") {
 		t.Fatalf("expected rename-session command, got %q", command)
 	}
 }

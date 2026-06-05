@@ -67,7 +67,7 @@ func KillSessionCommand(name string) (string, error) {
 	if err := ValidateSessionName(name); err != nil {
 		return "", err
 	}
-	command := tmuxPrelude() + "\"$TMUX_BIN\" kill-session -t " + shellQuote(name)
+	command := tmuxPrelude() + "\"$TMUX_BIN\" kill-session -t " + shellQuote(formatSessionTarget(name))
 	return loginShellCommand(command), nil
 }
 
@@ -269,16 +269,17 @@ func tmuxPrelude() string {
 
 func tmuxCreateSessionCommand(name string) string {
 	quotedName := shellQuote(name)
+	quotedTarget := shellQuote(formatSessionTarget(name))
 	return "\"$TMUX_BIN\" start-server \\; " +
 		"set-option -gq history-limit \"$CHATMUX_TMUX_HISTORY_LIMIT\" \\; " +
 		"new-session -d -s " + quotedName + " \\; " +
-		"set-option -t " + quotedName + " -q history-limit \"$CHATMUX_TMUX_HISTORY_LIMIT\""
+		"set-option -t " + quotedTarget + " -q history-limit \"$CHATMUX_TMUX_HISTORY_LIMIT\""
 }
 
 func tmuxHistoryPrelude(name string) string {
-	quotedName := shellQuote(name)
+	quotedTarget := shellQuote(formatSessionTarget(name))
 	return "\"$TMUX_BIN\" set-option -gq history-limit \"$CHATMUX_TMUX_HISTORY_LIMIT\" || exit $?; " +
-		"\"$TMUX_BIN\" set-option -t " + quotedName + " -q history-limit \"$CHATMUX_TMUX_HISTORY_LIMIT\" || exit $?; "
+		"\"$TMUX_BIN\" set-option -t " + quotedTarget + " -q history-limit \"$CHATMUX_TMUX_HISTORY_LIMIT\" || exit $?; "
 }
 
 func tmuxClipboardPrelude() string {

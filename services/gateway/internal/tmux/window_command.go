@@ -12,7 +12,7 @@ func CreateWindowCommand(sessionName string, windowName string) (string, error) 
 		return "", err
 	}
 	command := tmuxPrelude() + tmuxHistoryPrelude(sessionName) +
-		"\"$TMUX_BIN\" new-window -d -t " + shellQuote(sessionName) + " -n " + shellQuote(windowName) + rawListSessionsAfterSuccessCommand()
+		"\"$TMUX_BIN\" new-window -d -t " + shellQuote(formatNewWindowTarget(sessionName)) + " -n " + shellQuote(windowName) + rawListSessionsAfterSuccessCommand()
 	return loginShellCommand(command), nil
 }
 
@@ -43,7 +43,7 @@ func RenameSessionCommand(sessionName string, newName string) (string, error) {
 	if err := ValidateSessionName(newName); err != nil {
 		return "", err
 	}
-	command := tmuxPrelude() + "\"$TMUX_BIN\" rename-session -t " + shellQuote(sessionName) + " " + shellQuote(newName) +
+	command := tmuxPrelude() + "\"$TMUX_BIN\" rename-session -t " + shellQuote(formatSessionTarget(sessionName)) + " " + shellQuote(newName) +
 		rawListSessionsAfterSuccessCommand()
 	return loginShellCommand(command), nil
 }

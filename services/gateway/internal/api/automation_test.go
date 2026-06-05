@@ -142,7 +142,7 @@ func TestRunAutomationTmuxHistoryCapture(t *testing.T) {
 	if !strings.Contains(history.Text, "chatmux history") || len(history.Chunks) == 0 {
 		t.Fatalf("expected normalized history, got %#v", history)
 	}
-	if !containsLoginShellFragment(runner.command, "capture-pane -p -t 'deploy' -S -200") {
+	if !containsLoginShellFragment(runner.command, "capture-pane -p -t '=deploy:' -S -200") {
 		t.Fatalf("unexpected tmux command: %q", runner.command)
 	}
 	if strings.Contains(runner.command, "secret") {

@@ -130,7 +130,7 @@ func TestCaptureTmuxHistoryAllowsCollaboratorGrant(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
 	}
-	if !containsLoginShellFragment(runner.command, "capture-pane -p -t 'private' -S -200") {
+	if !containsLoginShellFragment(runner.command, "capture-pane -p -t '=private:' -S -200") {
 		t.Fatalf("expected capture-pane command, got %q", runner.command)
 	}
 }

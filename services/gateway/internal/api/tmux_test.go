@@ -165,7 +165,7 @@ func TestCaptureTmuxHistoryAPI(t *testing.T) {
 	if !strings.Contains(responseBody, `"chunks"`) || !strings.Contains(responseBody, `"kind":"command"`) {
 		t.Fatalf("expected transcript chunks, got %s", responseBody)
 	}
-	if !containsLoginShellFragment(runner.command, "capture-pane -p -t 'deploy' -S -200") {
+	if !containsLoginShellFragment(runner.command, "capture-pane -p -t '=deploy:' -S -200") {
 		t.Fatalf("expected default capture command, got %q", runner.command)
 	}
 }
@@ -208,7 +208,7 @@ func TestCaptureTmuxHistoryAPIWithScrollbackOptions(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
 	}
-	if !containsLoginShellFragment(runner.command, "capture-pane -p -e -C -t 'deploy' -S -800") {
+	if !containsLoginShellFragment(runner.command, "capture-pane -p -e -C -t '=deploy:' -S -800") {
 		t.Fatalf("expected ANSI capture command, got %q", runner.command)
 	}
 }
@@ -229,7 +229,7 @@ func TestCaptureTmuxHistoryAPITargetsWindow(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
 	}
-	if !containsLoginShellFragment(runner.command, "capture-pane -p -t 'deploy:1' -S -200") {
+	if !containsLoginShellFragment(runner.command, "capture-pane -p -t '=deploy:1' -S -200") {
 		t.Fatalf("expected window capture command, got %q", runner.command)
 	}
 }
@@ -249,7 +249,7 @@ func TestCaptureTmuxHistoryAPIAllowsUnicodeSessionPath(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
 	}
-	if !containsLoginShellFragment(runner.command, "capture-pane -p -t '部署' -S -200") {
+	if !containsLoginShellFragment(runner.command, "capture-pane -p -t '=部署:' -S -200") {
 		t.Fatalf("expected unicode capture command, got %q", runner.command)
 	}
 }
@@ -288,7 +288,7 @@ func TestCreateTmuxWindowAPI(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
 	}
-	if !containsLoginShellFragment(runner.command, "new-window -d -t 'deploy' -n 'logs'") {
+	if !containsLoginShellFragment(runner.command, "new-window -d -t '=deploy:' -n 'logs'") {
 		t.Fatalf("expected new-window command, got %q", runner.command)
 	}
 	if !strings.Contains(rec.Body.String(), `"logs"`) {
@@ -312,7 +312,7 @@ func TestRenameTmuxWindowAPI(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
 	}
-	if !containsLoginShellFragment(runner.command, "rename-window -t 'deploy:1' 'renamed'") {
+	if !containsLoginShellFragment(runner.command, "rename-window -t '=deploy:1' 'renamed'") {
 		t.Fatalf("expected rename-window command, got %q", runner.command)
 	}
 	if !strings.Contains(rec.Body.String(), `"renamed"`) {
@@ -336,7 +336,7 @@ func TestDeleteTmuxWindowAPI(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
 	}
-	if !containsLoginShellFragment(runner.command, "kill-window -t 'deploy:1'") {
+	if !containsLoginShellFragment(runner.command, "kill-window -t '=deploy:1'") {
 		t.Fatalf("expected kill-window command, got %q", runner.command)
 	}
 	if strings.Contains(rec.Body.String(), `"worker"`) {
@@ -365,7 +365,7 @@ func TestRenameTmuxSessionAPIUpdatesMetadata(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
 	}
-	if !containsLoginShellFragment(runner.command, "rename-session -t 'deploy' 'deploy2'") {
+	if !containsLoginShellFragment(runner.command, "rename-session -t '=deploy' 'deploy2'") {
 		t.Fatalf("expected rename-session command, got %q", runner.command)
 	}
 	if !strings.Contains(rec.Body.String(), "Deploy shell") {

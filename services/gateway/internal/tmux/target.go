@@ -19,7 +19,19 @@ func ValidateTarget(target Target) error {
 
 func formatTarget(target Target) string {
 	if target.WindowIndex == nil {
-		return target.SessionName
+		return formatSessionWindowTarget(target.SessionName)
 	}
-	return target.SessionName + ":" + strconv.Itoa(*target.WindowIndex)
+	return formatSessionTarget(target.SessionName) + ":" + strconv.Itoa(*target.WindowIndex)
+}
+
+func formatSessionTarget(sessionName string) string {
+	return "=" + sessionName
+}
+
+func formatSessionWindowTarget(sessionName string) string {
+	return formatSessionTarget(sessionName) + ":"
+}
+
+func formatNewWindowTarget(sessionName string) string {
+	return formatSessionWindowTarget(sessionName)
 }
