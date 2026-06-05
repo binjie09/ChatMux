@@ -34,7 +34,7 @@ const noExpandedSessions: ReadonlySet<string> = new Set();
 export function App() {
   const [sessions, setSessions] = useState<TmuxSession[]>([]);
   const [newSessionName, setNewSessionName] = useState("");
-  const [composerMode, setComposerMode] = useState<ComposerMode>("enter");
+  const [composerMode, setComposerMode] = useState<ComposerMode>("paste");
   const [composerValue, setComposerValue] = useState("");
   const [mobilePanel, setMobilePanel] = useState<MobilePanel>("hosts");
   const [mobileSheet, setMobileSheet] = useState<MobileTerminalSheet | null>(null);

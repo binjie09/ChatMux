@@ -155,7 +155,7 @@ function ComposerTextArea(props: {
     <div className={`composer-input-shell ${props.onUploadImage ? "has-image-upload" : ""}`}>
       <textarea
         aria-label="Command"
-        placeholder="Send command or terminal input..."
+        placeholder="Input..."
         rows={1}
         value={props.value}
         onChange={(event) => props.onValueChange(event.target.value)}
