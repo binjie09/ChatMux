@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   type AuditEvent,
   type CreateHostInput,
@@ -107,14 +108,21 @@ type AppShellProps = {
 
 export function AppShell(props: AppShellProps) {
   const pwaInstallPrompt = usePWAInstallPrompt();
+  const [hostsCollapsed, setHostsCollapsed] = useState(false);
+  const [sessionsCollapsed, setSessionsCollapsed] = useState(false);
 
   if (!props.gatewayToken.ready) {
     return <GatewayUnlockPage error={props.error} tokenState={props.gatewayToken} />;
   }
 
   return (
-    <main className={`app-shell ${props.isMobileTerminalActive ? "mobile-terminal-active" : ""}`}>
+    <main className={appShellClassName({
+      hostsCollapsed,
+      isMobileTerminalActive: props.isMobileTerminalActive,
+      sessionsCollapsed,
+    })}>
       <Sidebar
+        desktopCollapsed={hostsCollapsed}
         error={props.error}
         gatewayToken={props.gatewayToken}
         hosts={props.hosts}
@@ -126,11 +134,13 @@ export function AppShell(props: AppShellProps) {
         onDeleteHost={props.onDeleteHost}
         onSelectHost={props.onSelectHost}
         onShowHostForm={props.onShowHostForm}
+        onDesktopCollapsedChange={setHostsCollapsed}
         onUpdateHost={props.onUpdateHost}
       />
 
       <SessionList
         credentialStatus={props.credentialStatus}
+        desktopCollapsed={sessionsCollapsed}
         expandedSessionNames={props.expandedSessionNames}
         mobileOpen={props.mobilePanel === "sessions"}
         mobileWindowList={props.mobileWindowList}
@@ -145,6 +155,7 @@ export function AppShell(props: AppShellProps) {
         onCreateSession={props.sessionHandlers.onCreateSession}
         onCreateWindow={props.sessionHandlers.onCreateWindow}
         onDeleteWindow={props.sessionHandlers.onDeleteWindow}
+        onDesktopCollapsedChange={setSessionsCollapsed}
         onExpandSession={props.sessionHandlers.onExpandSession}
         onListSessions={props.sessionHandlers.onListSessions}
         onNewSessionNameChange={props.onNewSessionNameChange}
@@ -199,4 +210,17 @@ export function AppShell(props: AppShellProps) {
       <MobileNavigation activePanel={props.mobilePanel} hidden={props.isMobileTerminalActive} onPanelChange={props.onMobilePanelChange} />
     </main>
   );
+}
+
+function appShellClassName(options: {
+  hostsCollapsed: boolean;
+  isMobileTerminalActive: boolean;
+  sessionsCollapsed: boolean;
+}) {
+  return [
+    "app-shell",
+    options.hostsCollapsed ? "hosts-collapsed" : "",
+    options.sessionsCollapsed ? "sessions-collapsed" : "",
+    options.isMobileTerminalActive ? "mobile-terminal-active" : "",
+  ].filter(Boolean).join(" ");
 }

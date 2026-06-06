@@ -1,5 +1,5 @@
 import { useRef, useState, type RefObject } from "react";
-import { Bell, ChevronLeft, KeyRound, Pencil, Plus, RefreshCw } from "lucide-react";
+import { Bell, ChevronLeft, KeyRound, PanelLeftClose, PanelLeftOpen, Pencil, Plus, RefreshCw } from "lucide-react";
 import "./session-controls.css";
 import { InlineNameEdit } from "./InlineNameEdit";
 import { SessionGroup } from "./SessionGroup";
@@ -12,6 +12,7 @@ import { type SSHCredentialStatus } from "./useSSHCredentialToken";
 
 type SessionListProps = {
   credentialStatus: SSHCredentialStatus;
+  desktopCollapsed: boolean;
   expandedSessionNames: ReadonlySet<string>;
   mobileOpen: boolean;
   mobileWindowList: boolean;
@@ -26,6 +27,7 @@ type SessionListProps = {
   onCreateSession: () => void;
   onCreateWindow: (sessionName: string) => void;
   onDeleteWindow: (sessionName: string, windowIndex: number) => void;
+  onDesktopCollapsedChange: (collapsed: boolean) => void;
   onExpandSession: (sessionName: string) => void;
   onListSessions: () => void;
   onNewSessionNameChange: (value: string) => void;
@@ -57,12 +59,14 @@ export function SessionList(props: SessionListProps) {
   };
 
   return (
-    <section className={`session-list ${props.mobileOpen ? "mobile-open" : ""}`}>
+    <section className={`session-list ${props.desktopCollapsed ? "desktop-collapsed" : ""} ${props.mobileOpen ? "mobile-open" : ""}`}>
       <SessionListHeader
         createLabel={windowListSession ? "New window" : "New session"}
+        desktopCollapsed={props.desktopCollapsed}
         inWindowList={Boolean(windowListSession)}
         onBack={() => props.onExpandSession("")}
         onCreateClick={handleCreateClick}
+        onDesktopCollapsedChange={props.onDesktopCollapsedChange}
         showNewSession={!props.tmuxFallbackActive}
       />
 
@@ -86,9 +90,11 @@ export function SessionList(props: SessionListProps) {
 
 function SessionListHeader(props: {
   createLabel: string;
+  desktopCollapsed: boolean;
   inWindowList: boolean;
   onBack: () => void;
   onCreateClick: () => void;
+  onDesktopCollapsedChange: (collapsed: boolean) => void;
   showNewSession: boolean;
 }) {
   return (
@@ -98,10 +104,19 @@ function SessionListHeader(props: {
           <ChevronLeft size={20} aria-hidden="true" />
         </button>
       ) : null}
-      <div>
+      <div className="session-list-title">
         <p>Remote tmux</p>
         <h1>{props.inWindowList ? "Windows" : "Conversations"}</h1>
       </div>
+      <button
+        className="desktop-collapse-button session-list-collapse-button"
+        type="button"
+        aria-label={props.desktopCollapsed ? "Expand conversations sidebar" : "Collapse conversations sidebar"}
+        title={props.desktopCollapsed ? "Expand conversations sidebar" : "Collapse conversations sidebar"}
+        onClick={() => props.onDesktopCollapsedChange(!props.desktopCollapsed)}
+      >
+        {props.desktopCollapsed ? <PanelLeftOpen size={20} aria-hidden="true" /> : <PanelLeftClose size={20} aria-hidden="true" />}
+      </button>
       {props.showNewSession ? (
         <button className="icon-button" type="button" aria-label={props.createLabel} onClick={props.onCreateClick}>
           <Plus size={19} aria-hidden="true" />

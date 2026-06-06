@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { KeyRound, Monitor, Pencil, Plus, Server, ShieldCheck, Smartphone, TerminalSquare, Trash2 } from "lucide-react";
+import { KeyRound, Monitor, PanelLeftClose, PanelLeftOpen, Pencil, Plus, Server, ShieldCheck, Smartphone, TerminalSquare, Trash2 } from "lucide-react";
 import { type CreateHostInput, type Host } from "./api";
 import { GatewayTokenControl } from "./GatewayTokenControl";
 import { HostForm } from "./HostForm";
@@ -9,6 +9,7 @@ import { type PWAInstallPromptState } from "./usePWAInstallPrompt";
 import "./sidebar-host-actions.css";
 
 type SidebarProps = {
+  desktopCollapsed: boolean;
   error: string;
   hosts: Host[];
   gatewayToken: GatewayTokenState;
@@ -18,6 +19,7 @@ type SidebarProps = {
   showHostForm: boolean;
   onCreateHost: (input: CreateHostInput) => Promise<void>;
   onDeleteHost: (hostId: string) => Promise<void>;
+  onDesktopCollapsedChange: (collapsed: boolean) => void;
   onSelectHost: (hostId: string) => void;
   onShowHostForm: (show: boolean) => void;
   onUpdateHost: (hostId: string, input: CreateHostInput) => Promise<void>;
@@ -25,13 +27,22 @@ type SidebarProps = {
 
 export function Sidebar(props: SidebarProps) {
   return (
-    <aside className={`sidebar ${props.mobileOpen ? "mobile-open" : ""}`}>
+    <aside className={`sidebar ${props.desktopCollapsed ? "desktop-collapsed" : ""} ${props.mobileOpen ? "mobile-open" : ""}`}>
       <div className="brand">
         <TerminalSquare aria-hidden="true" />
         <div>
           <strong>ChatMux</strong>
           <span>SSH tmux workspaces</span>
         </div>
+        <button
+          className="desktop-collapse-button sidebar-collapse-button"
+          type="button"
+          aria-label={props.desktopCollapsed ? "Expand hosts sidebar" : "Collapse hosts sidebar"}
+          title={props.desktopCollapsed ? "Expand hosts sidebar" : "Collapse hosts sidebar"}
+          onClick={() => props.onDesktopCollapsedChange(!props.desktopCollapsed)}
+        >
+          {props.desktopCollapsed ? <PanelLeftOpen size={20} aria-hidden="true" /> : <PanelLeftClose size={20} aria-hidden="true" />}
+        </button>
       </div>
 
       <button className="primary-action" type="button" onClick={() => props.onShowHostForm(true)}>
