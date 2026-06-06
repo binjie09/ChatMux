@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { KeyRound, Monitor, PanelLeftClose, PanelLeftOpen, Pencil, Plus, Server, ShieldCheck, Smartphone, TerminalSquare, Trash2 } from "lucide-react";
+import { Github, KeyRound, Monitor, PanelLeftClose, PanelLeftOpen, Pencil, Plus, Server, ShieldCheck, Smartphone, TerminalSquare, Trash2 } from "lucide-react";
 import { type CreateHostInput, type Host } from "./api";
 import { GatewayTokenControl } from "./GatewayTokenControl";
 import { HostForm } from "./HostForm";
@@ -85,6 +85,10 @@ export function Sidebar(props: SidebarProps) {
           <ShieldCheck size={16} aria-hidden="true" />
           Gateway secured SSH
         </div>
+        <a className="platform-link" href="https://github.com/binjie09/ChatMux" target="_blank" rel="noreferrer">
+          <Github size={16} aria-hidden="true" />
+          GitHub
+        </a>
       </section>
     </aside>
   );
