@@ -62,8 +62,8 @@ struct GatewaySidecar(Mutex<Option<GatewayChild>>);
 impl Drop for GatewaySidecar {
     fn drop(&mut self) {
         if let Ok(mut child) = self.0.lock() {
-            if let Some(mut child) = child.take() {
-                terminate_gateway_child(&mut child);
+            if let Some(child) = child.take() {
+                terminate_gateway_child(child);
             }
         }
     }
@@ -193,11 +193,9 @@ fn gateway_binary_path(app_data_dir: &Path) -> PathBuf {
 
 #[cfg(target_os = "windows")]
 fn gateway_binary_fingerprint() -> String {
-    let hash = GATEWAY_BINARY
-        .iter()
-        .fold(FNV_OFFSET_BASIS, |hash, byte| {
-            (hash ^ u64::from(*byte)).wrapping_mul(FNV_PRIME)
-        });
+    let hash = GATEWAY_BINARY.iter().fold(FNV_OFFSET_BASIS, |hash, byte| {
+        (hash ^ u64::from(*byte)).wrapping_mul(FNV_PRIME)
+    });
     format!("{hash:016x}")
 }
 
@@ -225,11 +223,15 @@ fn gateway_temp_path(gateway_path: &Path) -> PathBuf {
 
 #[cfg(target_os = "windows")]
 fn wait_gateway_ready(child: &mut GatewayChild) -> io::Result<()> {
-    let gateway_addr = GATEWAY_ADDR.parse::<SocketAddr>().map_err(io::Error::other)?;
+    let gateway_addr = GATEWAY_ADDR
+        .parse::<SocketAddr>()
+        .map_err(io::Error::other)?;
     let deadline = Instant::now() + Duration::from_millis(GATEWAY_READY_TIMEOUT_MS);
     while Instant::now() < deadline {
         if let Some(status) = child.try_wait()? {
-            return Err(io::Error::other(format!("gateway exited before listening: {status}")));
+            return Err(io::Error::other(format!(
+                "gateway exited before listening: {status}"
+            )));
         }
         if gateway_port_ready(gateway_addr) {
             return Ok(());
@@ -252,12 +254,12 @@ fn gateway_port_ready(gateway_addr: SocketAddr) -> bool {
 }
 
 #[cfg(target_os = "windows")]
-fn terminate_gateway_child(child: &mut GatewayChild) {
+fn terminate_gateway_child(mut child: GatewayChild) {
     let _ = child.kill();
     let _ = child.wait();
 }
 
 #[cfg(not(target_os = "windows"))]
-fn terminate_gateway_child(child: &mut GatewayChild) {
+fn terminate_gateway_child(child: GatewayChild) {
     let _ = child.kill();
 }
