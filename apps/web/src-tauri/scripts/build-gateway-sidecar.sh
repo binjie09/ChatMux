@@ -18,7 +18,7 @@ cxx=""
 cgo_cflags=""
 cgo_ldflags=""
 macosx_deployment_target=""
-ldflags=()
+go_ldflags=""
 case "$target_triple" in
   x86_64-apple-darwin)
     goos="darwin"
@@ -43,7 +43,7 @@ case "$target_triple" in
     cgo_enabled="1"
     cc="x86_64-w64-mingw32-gcc"
     cxx="x86_64-w64-mingw32-g++"
-    ldflags=(-ldflags '-linkmode external -extldflags "-static"')
+    go_ldflags='-linkmode external -extldflags "-static"'
     ;;
   aarch64-pc-windows-*)
     goos="windows"
@@ -52,7 +52,7 @@ case "$target_triple" in
     cgo_enabled="1"
     cc="aarch64-w64-mingw32-gcc"
     cxx="aarch64-w64-mingw32-g++"
-    ldflags=(-ldflags '-linkmode external -extldflags "-static"')
+    go_ldflags='-linkmode external -extldflags "-static"'
     ;;
   x86_64-unknown-linux-*) goos="linux"; goarch="amd64" ;;
   aarch64-unknown-linux-*) goos="linux"; goarch="arm64" ;;
@@ -78,7 +78,11 @@ mkdir -p "$out_dir"
   if [[ -n "$macosx_deployment_target" ]]; then
     build_env+=(MACOSX_DEPLOYMENT_TARGET="$macosx_deployment_target")
   fi
-  env "${build_env[@]}" go build "${ldflags[@]}" -o "$out_file" ./cmd/chatmux-gateway
+  go_build_args=(-o "$out_file" ./cmd/chatmux-gateway)
+  if [[ -n "$go_ldflags" ]]; then
+    go_build_args=(-ldflags "$go_ldflags" "${go_build_args[@]}")
+  fi
+  env "${build_env[@]}" go build "${go_build_args[@]}"
 )
 
 echo "$out_file"

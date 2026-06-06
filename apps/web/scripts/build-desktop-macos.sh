@@ -134,6 +134,9 @@ write_artifact_checksums() {
 }
 
 cleanup() {
+  if [[ "${#temp_configs[@]}" -eq 0 ]]; then
+    return
+  fi
   for path in "${temp_configs[@]}"; do
     rm -f "$path"
   done
@@ -195,7 +198,9 @@ TAURI_TARGET_TRIPLE="$target" pnpm --filter @chatmux/web desktop:sidecar "$targe
 
 cd "${web_dir}"
 tauri_args=(--target "$target" --ci)
-tauri_args+=("${tauri_config_args[@]}")
+if [[ "${#tauri_config_args[@]}" -gt 0 ]]; then
+  tauri_args+=("${tauri_config_args[@]}")
+fi
 if [[ "${CHATMUX_MACOS_SKIP_STAPLING:-}" == "1" ]]; then
   tauri_args+=(--skip-stapling)
 fi
