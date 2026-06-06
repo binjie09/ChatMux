@@ -1,6 +1,6 @@
 {
   "name": "chatmux",
-  "version": "0.1.0",
+  "version": "0.0.1",
   "description": "Self-hosted SSH and tmux workspace client.",
   "private": true,
   "license": "MIT",

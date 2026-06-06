@@ -1,6 +1,6 @@
 {
   "name": "@chatmux/web",
-  "version": "0.1.0",
+  "version": "0.0.1",
   "description": "Shared ChatMux React SPA for web, desktop, and mobile shells.",
   "private": true,
   "license": "MIT",
