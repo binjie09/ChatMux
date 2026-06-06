@@ -41,6 +41,7 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: services/gateway/go.sum
 
       - name: Install Rust
         run: |
@@ -58,14 +59,36 @@ jobs:
         env:
           CHATMUX_MACOS_AD_HOC: "1"
           CHATMUX_MACOS_SKIP_STAPLING: "1"
+          CHATMUX_TRACE_BUILD: "1"
           TAURI_TARGET_TRIPLE: ${{ matrix.target }}
-        run: pnpm --filter @chatmux/web desktop:build:macos
+        run: |
+          set -o pipefail
+          mkdir -p .tmp/logs
+          log_path=".tmp/logs/macos-${{ matrix.target }}.log"
+          if pnpm --filter @chatmux/web desktop:build:macos 2>&1 | tee "$log_path"; then
+            exit 0
+          fi
+
+          tail_output="$(tail -n 80 "$log_path")"
+          tail_output="${tail_output//'%'/'%25'}"
+          tail_output="${tail_output//$'\r'/'%0D'}"
+          tail_output="${tail_output//$'\n'/'%0A'}"
+          echo "::error title=macOS artifact build failed::$tail_output"
+          exit 1
 
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact }}
           path: .tmp/artifacts/macos-${{ matrix.target }}/
           if-no-files-found: error
+
+      - name: Upload macOS failure log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}-failure-log
+          path: .tmp/logs/macos-${{ matrix.target }}.log
+          if-no-files-found: ignore
 
   linux:
     name: chatmux-linux-x64
@@ -97,6 +120,7 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: services/gateway/go.sum
 
       - name: Install Rust
         run: |

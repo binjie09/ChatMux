@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
+if [[ "${CHATMUX_TRACE_BUILD:-}" == "1" ]]; then
+  set -x
+fi
 
 usage() {
   cat <<'USAGE'

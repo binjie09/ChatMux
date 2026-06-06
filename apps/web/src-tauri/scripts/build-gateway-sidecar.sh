@@ -24,20 +24,16 @@ case "$target_triple" in
     goos="darwin"
     goarch="amd64"
     cgo_enabled="1"
-    cc="${CC:-clang}"
-    cxx="${CXX:-clang++}"
-    cgo_cflags="-arch x86_64"
-    cgo_ldflags="-arch x86_64"
+    cc="${CC:-clang -arch x86_64}"
+    cxx="${CXX:-clang++ -arch x86_64}"
     macosx_deployment_target="10.13"
     ;;
   aarch64-apple-darwin)
     goos="darwin"
     goarch="arm64"
     cgo_enabled="1"
-    cc="${CC:-clang}"
-    cxx="${CXX:-clang++}"
-    cgo_cflags="-arch arm64"
-    cgo_ldflags="-arch arm64"
+    cc="${CC:-clang -arch arm64}"
+    cxx="${CXX:-clang++ -arch arm64}"
     macosx_deployment_target="11.0"
     ;;
   x86_64-pc-windows-*)
