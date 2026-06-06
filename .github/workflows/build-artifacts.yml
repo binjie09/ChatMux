@@ -1,0 +1,154 @@
+name: Build Artifacts
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: "24.14.1"
+  PNPM_VERSION: "10.33.2"
+  GO_VERSION: "1.24.x"
+  RUST_TOOLCHAIN: "1.96.0"
+  COREPACK_ENABLE_DOWNLOAD_PROMPT: "0"
+
+jobs:
+  macos:
+    name: ${{ matrix.artifact }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - artifact: chatmux-macos-x64
+            runner: macos-15-intel
+            target: x86_64-apple-darwin
+          - artifact: chatmux-macos-arm64
+            runner: macos-15
+            target: aarch64-apple-darwin
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Install Rust
+        run: |
+          rustup toolchain install "$RUST_TOOLCHAIN" --profile minimal
+          rustup default "$RUST_TOOLCHAIN"
+          rustup target add "${{ matrix.target }}"
+
+      - name: Install pnpm dependencies
+        run: |
+          corepack enable
+          corepack prepare "pnpm@$PNPM_VERSION" --activate
+          pnpm install --frozen-lockfile
+
+      - name: Build macOS artifact
+        env:
+          CHATMUX_MACOS_AD_HOC: "1"
+          CHATMUX_MACOS_SKIP_STAPLING: "1"
+          TAURI_TARGET_TRIPLE: ${{ matrix.target }}
+        run: pnpm --filter @chatmux/web desktop:build:macos
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: .tmp/artifacts/macos-${{ matrix.target }}/
+          if-no-files-found: error
+
+  linux:
+    name: chatmux-linux-x64
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Tauri Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential \
+            curl \
+            file \
+            libayatana-appindicator3-dev \
+            libfuse2t64 \
+            librsvg2-dev \
+            libssl-dev \
+            libwebkit2gtk-4.1-dev \
+            libxdo-dev \
+            patchelf \
+            wget
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Install Rust
+        run: |
+          rustup toolchain install "$RUST_TOOLCHAIN" --profile minimal
+          rustup default "$RUST_TOOLCHAIN"
+          rustup target add x86_64-unknown-linux-gnu
+
+      - name: Install pnpm dependencies
+        run: |
+          corepack enable
+          corepack prepare "pnpm@$PNPM_VERSION" --activate
+          pnpm install --frozen-lockfile
+
+      - name: Build Linux artifact
+        env:
+          TAURI_TARGET_TRIPLE: x86_64-unknown-linux-gnu
+        run: pnpm desktop:build:linux
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: chatmux-linux-x64
+          path: .tmp/artifacts/linux-x86_64-unknown-linux-gnu/
+          if-no-files-found: error
+
+  windows:
+    name: chatmux-windows-x64
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Windows portable exe
+        run: bash packaging/windows/package-portable-exe.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: chatmux-windows-x64
+          path: .tmp/artifacts/windows-x86_64-pc-windows-msvc/
+          if-no-files-found: error
+
+  android:
+    name: chatmux-android-apk
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Android debug APK
+        run: bash packaging/android/package-apk.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: chatmux-android-apk
+          path: .tmp/artifacts/android/
+          if-no-files-found: error

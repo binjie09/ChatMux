@@ -15,10 +15,31 @@ extension=""
 cgo_enabled=""
 cc=""
 cxx=""
+cgo_cflags=""
+cgo_ldflags=""
+macosx_deployment_target=""
 ldflags=()
 case "$target_triple" in
-  x86_64-apple-darwin) goos="darwin"; goarch="amd64" ;;
-  aarch64-apple-darwin) goos="darwin"; goarch="arm64" ;;
+  x86_64-apple-darwin)
+    goos="darwin"
+    goarch="amd64"
+    cgo_enabled="1"
+    cc="${CC:-clang}"
+    cxx="${CXX:-clang++}"
+    cgo_cflags="-arch x86_64"
+    cgo_ldflags="-arch x86_64"
+    macosx_deployment_target="10.13"
+    ;;
+  aarch64-apple-darwin)
+    goos="darwin"
+    goarch="arm64"
+    cgo_enabled="1"
+    cc="${CC:-clang}"
+    cxx="${CXX:-clang++}"
+    cgo_cflags="-arch arm64"
+    cgo_ldflags="-arch arm64"
+    macosx_deployment_target="11.0"
+    ;;
   x86_64-pc-windows-*)
     goos="windows"
     goarch="amd64"
@@ -54,6 +75,12 @@ mkdir -p "$out_dir"
   build_env=(GOOS="$goos" GOARCH="$goarch")
   if [[ -n "$cgo_enabled" ]]; then
     build_env+=(CGO_ENABLED="$cgo_enabled" CC="$cc" CXX="$cxx")
+  fi
+  if [[ -n "$cgo_cflags" ]]; then
+    build_env+=(CGO_CFLAGS="$cgo_cflags" CGO_LDFLAGS="$cgo_ldflags")
+  fi
+  if [[ -n "$macosx_deployment_target" ]]; then
+    build_env+=(MACOSX_DEPLOYMENT_TARGET="$macosx_deployment_target")
   fi
   env "${build_env[@]}" go build "${ldflags[@]}" -o "$out_file" ./cmd/chatmux-gateway
 )

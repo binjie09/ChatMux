@@ -17,7 +17,15 @@ coverage
 /services/gateway/chatmux-gateway
 /apps/web/build/
 /apps/web/src-tauri/gen/
+/apps/web/src-tauri/icons/*.png
+/apps/web/src-tauri/icons/*.ico
+/apps/web/src-tauri/icons/*.icns
+/apps/web/src-tauri/icons/*.Square*.png
+/apps/web/src-tauri/icons/StoreLogo.png
 /apps/web/src-tauri/icons/icon.ico
+/apps/web/src-tauri/icons/icon.iconset/
+/apps/web/src-tauri/icons/android/
+/apps/web/src-tauri/icons/ios/
 /apps/web/src-tauri/target/
 /apps/web/src-tauri/binaries/chatmux-gateway-*
 !/apps/web/src-tauri/binaries/.gitkeep

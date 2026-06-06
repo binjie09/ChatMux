@@ -9,6 +9,7 @@
     "dev": "vite --host 0.0.0.0",
     "build": "tsc -b && vite build",
     "desktop:build": "pnpm desktop:sidecar && tauri build",
+    "desktop:build:linux": "scripts/build-desktop-linux.sh",
     "desktop:build:macos": "scripts/build-desktop-macos.sh",
     "desktop:build:windows": "scripts/build-desktop-windows.sh",
     "desktop:dev": "pnpm desktop:sidecar && tauri dev",

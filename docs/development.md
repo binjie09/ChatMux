@@ -68,7 +68,8 @@ pnpm --filter @chatmux/web mobile:build:android-internal
 pnpm --filter @chatmux/web mobile:build:ios-testflight
 pnpm --filter @chatmux/web desktop:dev
 pnpm --filter @chatmux/web desktop:build
-pnpm --filter @chatmux/web desktop:build:macos
+pnpm desktop:build:linux
+pnpm desktop:build:macos
 pnpm desktop:build:windows
 ```
 
@@ -87,6 +88,34 @@ portable exe to `.tmp/artifacts/windows-x86_64-pc-windows-msvc/ChatMux.exe`.
 The exe embeds the Go gateway and extracts it into the app data directory at
 runtime, so there is no adjacent gateway exe to distribute.
 
+The canonical Linux x86_64 build is:
+
+```bash
+pnpm desktop:build:linux
+```
+
+It writes `.deb`, `.AppImage`, and checksum artifacts to
+`.tmp/artifacts/linux-x86_64-unknown-linux-gnu/`.
+
+The canonical macOS build is:
+
+```bash
+CHATMUX_MACOS_BUILDER=user@mac-host CHATMUX_MACOS_AD_HOC=1 pnpm desktop:build:macos
+```
+
+It runs Docker Compose from `packaging/macos/` on the local machine, but the
+actual Tauri build runs on the SSH macOS builder. This keeps the local machine
+free of Node, pnpm, Go, Rust, Xcode, and Tauri. The builder must have Xcode
+Command Line Tools, Node/Corepack, Rust, and Go. Artifacts are copied back to
+`.tmp/artifacts/macos-<target>/`.
+
+Set `TAURI_TARGET_TRIPLE` to `x86_64-apple-darwin` or
+`aarch64-apple-darwin` to force an architecture. Without
+`CHATMUX_MACOS_BUILDER`, `pnpm desktop:build:macos` falls back to the local
+macOS toolchain only when it is run on macOS. A pure Linux container cannot
+produce a valid macOS app bundle because Tauri needs Apple tooling for the app
+bundle, signing, DMG creation, and notarization.
+
 The canonical Android APK build is:
 
 ```bash
@@ -103,8 +132,8 @@ Desktop dev and non-Windows desktop bundles still build the Go gateway into
 `apps/web/src-tauri/binaries/` before Tauri starts. The generated binary is
 ignored by git and is named with the Tauri target triple, for example
 `chatmux-gateway-x86_64-unknown-linux-gnu`.
-Signed desktop release scripts are OS-specific. macOS builds must run on macOS
-with `APPLE_SIGNING_IDENTITY`, or `APPLE_CERTIFICATE` plus
+Signed desktop release scripts are OS-specific. macOS release builds must run on
+a macOS builder with `APPLE_SIGNING_IDENTITY`, or `APPLE_CERTIFICATE` plus
 `APPLE_CERTIFICATE_PASSWORD`; set `CHATMUX_MACOS_AD_HOC=1` only for local ad-hoc
 artifacts. Windows builds must run on Windows with
 `CHATMUX_WINDOWS_CERT_THUMBPRINT` for a certificate in the Windows store, or
@@ -114,6 +143,24 @@ Use `pnpm desktop:build:windows:signed` for that signed Windows build path.
 Set `CHATMUX_CREATE_UPDATER_ARTIFACTS=1` plus `TAURI_SIGNING_PRIVATE_KEY` to
 have Tauri generate updater archives and `.sig` files alongside signed desktop
 bundles. Keep the updater private key outside the repository.
+
+## GitHub Actions Artifacts
+
+The `Build Artifacts` workflow in `.github/workflows/build-artifacts.yml` can be
+started manually with `workflow_dispatch` or by pushing a `v*` tag. It uploads:
+
+| Artifact | Runner | Target |
+| --- | --- | --- |
+| `chatmux-macos-x64` | `macos-15-intel` | `x86_64-apple-darwin` |
+| `chatmux-macos-arm64` | `macos-15` | `aarch64-apple-darwin` |
+| `chatmux-linux-x64` | `ubuntu-24.04` | `x86_64-unknown-linux-gnu` |
+| `chatmux-windows-x64` | `ubuntu-24.04` Docker Compose | `x86_64-pc-windows-msvc` |
+| `chatmux-android-apk` | `ubuntu-24.04` Docker Compose | Android debug APK |
+
+macOS GitHub Actions builds use ad-hoc signing. Release notarization can be
+added later by passing Apple signing and notarization secrets to the same macOS
+script. iOS should fit as a separate macOS job that calls
+`pnpm --filter @chatmux/web mobile:build:ios-testflight`.
 
 ## Run Gateway
 

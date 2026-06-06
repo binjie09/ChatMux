@@ -16,7 +16,8 @@
   "scripts": {
     "dev": "pnpm --filter @chatmux/web dev",
     "build": "pnpm --filter @chatmux/web build",
-    "desktop:build:macos": "pnpm --filter @chatmux/web desktop:build:macos",
+    "desktop:build:linux": "pnpm --filter @chatmux/web desktop:build:linux",
+    "desktop:build:macos": "bash packaging/macos/package-macos.sh",
     "desktop:build:windows": "bash packaging/windows/package-portable-exe.sh",
     "desktop:build:windows:portable": "bash packaging/windows/package-portable-exe.sh",
     "desktop:build:windows:signed": "pnpm --filter @chatmux/web desktop:build:windows",
