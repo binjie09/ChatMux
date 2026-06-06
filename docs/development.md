@@ -157,10 +157,29 @@ started manually with `workflow_dispatch` or by pushing a `v*` tag. It uploads:
 | `chatmux-windows-x64` | `ubuntu-24.04` Docker Compose | `x86_64-pc-windows-msvc` |
 | `chatmux-android-apk` | `ubuntu-24.04` Docker Compose | Android debug APK |
 
-macOS GitHub Actions builds use ad-hoc signing. Release notarization can be
-added later by passing Apple signing and notarization secrets to the same macOS
-script. iOS should fit as a separate macOS job that calls
-`pnpm --filter @chatmux/web mobile:build:ios-testflight`.
+macOS GitHub Actions builds fall back to ad-hoc signing when Apple signing
+secrets are not configured. Those test artifacts can be blocked by Gatekeeper;
+open them with Control-click > Open, System Settings > Privacy & Security >
+Open Anyway, or remove the quarantine attribute for local testing only:
+
+```bash
+xattr -dr com.apple.quarantine /Applications/ChatMux.app
+```
+
+To produce Gatekeeper-ready macOS artifacts, configure these repository secrets:
+
+| Secret | Purpose |
+| --- | --- |
+| `APPLE_CERTIFICATE` | Base64-encoded Developer ID Application `.p12` certificate |
+| `APPLE_CERTIFICATE_PASSWORD` | Password for the `.p12` certificate |
+| `APPLE_ID` | Apple ID used for notarization |
+| `APPLE_PASSWORD` | App-specific password for the Apple ID |
+| `APPLE_TEAM_ID` | Apple Developer Team ID |
+| `APPLE_SIGNING_IDENTITY` | Optional explicit signing identity name |
+
+With the certificate and notarization secrets present, the macOS workflow signs,
+notarizes, and staples the DMG. iOS should fit as a separate macOS job that
+calls `pnpm --filter @chatmux/web mobile:build:ios-testflight`.
 
 ## Run Gateway
 

@@ -55,10 +55,89 @@ jobs:
           corepack prepare "pnpm@$PNPM_VERSION" --activate
           pnpm install --frozen-lockfile
 
+      - name: Import Apple Developer ID certificate
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY_SECRET: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+        run: |
+          if [[ -z "${APPLE_CERTIFICATE:-}" ]]; then
+            exit 0
+          fi
+          if [[ -z "${APPLE_CERTIFICATE_PASSWORD:-}" ]]; then
+            echo "APPLE_CERTIFICATE_PASSWORD is required when APPLE_CERTIFICATE is set" >&2
+            exit 2
+          fi
+
+          cert_path="$RUNNER_TEMP/chatmux-apple-certificate.p12"
+          keychain_path="$RUNNER_TEMP/chatmux-signing.keychain-db"
+          keychain_password="$(openssl rand -hex 24)"
+          echo "::add-mask::$keychain_password"
+
+          printf '%s' "$APPLE_CERTIFICATE" | base64 --decode > "$cert_path"
+          security create-keychain -p "$keychain_password" "$keychain_path"
+          security set-keychain-settings -lut 21600 "$keychain_path"
+          security unlock-keychain -p "$keychain_password" "$keychain_path"
+          security default-keychain -s "$keychain_path"
+          security list-keychains -d user -s "$keychain_path" $(security list-keychains -d user | tr -d '"')
+          security import "$cert_path" \
+            -k "$keychain_path" \
+            -P "$APPLE_CERTIFICATE_PASSWORD" \
+            -A \
+            -t cert \
+            -f pkcs12
+          security set-key-partition-list \
+            -S apple-tool:,apple:,codesign: \
+            -s \
+            -k "$keychain_password" \
+            "$keychain_path"
+
+          if [[ -n "${APPLE_SIGNING_IDENTITY_SECRET:-}" ]]; then
+            identity="$APPLE_SIGNING_IDENTITY_SECRET"
+          else
+            identity="$(security find-identity -v -p codesigning "$keychain_path" \
+              | awk -F '"' '/Developer ID Application/ { print $2; exit }')"
+          fi
+          if [[ -z "$identity" ]]; then
+            echo "No Developer ID Application identity found in APPLE_CERTIFICATE" >&2
+            exit 2
+          fi
+
+          printf 'APPLE_SIGNING_IDENTITY=%s\n' "$identity" >> "$GITHUB_ENV"
+          echo "CHATMUX_MACOS_SIGNED=1" >> "$GITHUB_ENV"
+
+      - name: Configure macOS signing mode
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_SIGNING_IDENTITY_SECRET: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+        run: |
+          if [[ "${CHATMUX_MACOS_SIGNED:-}" != "1" && -n "${APPLE_SIGNING_IDENTITY_SECRET:-}" ]]; then
+            printf 'APPLE_SIGNING_IDENTITY=%s\n' "$APPLE_SIGNING_IDENTITY_SECRET" >> "$GITHUB_ENV"
+            echo "CHATMUX_MACOS_SIGNED=1" >> "$GITHUB_ENV"
+            CHATMUX_MACOS_SIGNED=1
+          fi
+
+          if [[ "${CHATMUX_MACOS_SIGNED:-}" == "1" ]]; then
+            echo "CHATMUX_MACOS_AD_HOC=" >> "$GITHUB_ENV"
+            if [[ -n "${APPLE_ID:-}" && -n "${APPLE_PASSWORD:-}" && -n "${APPLE_TEAM_ID:-}" ]]; then
+              echo "CHATMUX_MACOS_SKIP_STAPLING=" >> "$GITHUB_ENV"
+            else
+              echo "CHATMUX_MACOS_SKIP_STAPLING=1" >> "$GITHUB_ENV"
+              echo "::notice title=macOS notarization disabled::Set APPLE_ID, APPLE_PASSWORD, and APPLE_TEAM_ID secrets to notarize macOS artifacts for Gatekeeper."
+            fi
+          else
+            echo "CHATMUX_MACOS_AD_HOC=1" >> "$GITHUB_ENV"
+            echo "CHATMUX_MACOS_SKIP_STAPLING=1" >> "$GITHUB_ENV"
+            echo "::notice title=macOS ad-hoc artifact::Set Apple Developer ID signing and notarization secrets to produce Gatekeeper-ready macOS artifacts."
+          fi
+
       - name: Build macOS artifact
         env:
-          CHATMUX_MACOS_AD_HOC: "1"
-          CHATMUX_MACOS_SKIP_STAPLING: "1"
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           CHATMUX_TRACE_BUILD: "1"
           TAURI_TARGET_TRIPLE: ${{ matrix.target }}
         run: |

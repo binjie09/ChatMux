@@ -240,7 +240,10 @@ Gateway Token。
 GitHub Actions 可从仓库的 `Build Artifacts` workflow 手动触发，也会在 `v*`
 tag push 时触发。它会上传 `chatmux-macos-x64`、`chatmux-macos-arm64`、
 `chatmux-linux-x64`、`chatmux-windows-x64` 和 `chatmux-android-apk` 五个
-artifact。
+artifact。未配置 Apple Developer ID 签名和公证 secrets 时，macOS artifact
+是 ad-hoc 测试包，可能被 Gatekeeper 拦截；配置
+`APPLE_CERTIFICATE`、`APPLE_CERTIFICATE_PASSWORD`、`APPLE_ID`、
+`APPLE_PASSWORD` 和 `APPLE_TEAM_ID` 后，workflow 会产出签名并公证的 DMG。
 
 更完整的开发、签名和测试说明见 [docs/development.md](docs/development.md)。
 
