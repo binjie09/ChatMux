@@ -122,7 +122,7 @@ export function App() {
     selectedHostUpdatedAt: selectedHost?.updatedAt ?? "",
     onAuditRefresh: () => void auditEvents.refresh(),
     onHostsRefresh: () => void refreshHosts(),
-    onListSessions: () => void sessionWorkflow.handleListSessions(),
+    onListSessions: () => void sessionWorkflow.handleAutoListSessions(),
   });
   useHostHeartbeat({
     gatewayReady: gatewayToken.ready,

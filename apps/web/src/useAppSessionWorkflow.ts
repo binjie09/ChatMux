@@ -34,12 +34,18 @@ type SessionWorkflowOptions = {
   onSessionsChange: (sessions: TmuxSession[] | ((current: TmuxSession[]) => TmuxSession[])) => void;
 };
 
+type ListSessionsBehavior = {
+  openFallback: boolean;
+  revealPanel: boolean;
+};
+
 export function useAppSessionWorkflow(options: SessionWorkflowOptions) {
   return {
+    handleAutoListSessions: () => listSessions(options, { openFallback: false, revealPanel: false }),
     handleBackToSessions: (session: TmuxSession | undefined) => backToSessions(options, session),
     handleCreateSession: () => createSession(options),
     handleExpandSession: (sessionName: string) => expandSession(options, sessionName),
-    handleListSessions: () => listSessions(options),
+    handleListSessions: () => listSessions(options, { openFallback: true, revealPanel: true }),
     handleOpenSessionWindow: (sessionName: string, windowIndex: number, tokenOverride = "") =>
       openWindow(options, sessionName, windowIndex, tokenOverride, false),
     handleTerminalConnectionReady: (status: ConnectionStatus) => terminalConnectionReady(options, status),
@@ -65,11 +71,11 @@ function backToSessions(options: SessionWorkflowOptions, session: TmuxSession | 
   options.onMobilePanelChange("sessions");
 }
 
-async function listSessions(options: SessionWorkflowOptions) {
+async function listSessions(options: SessionWorkflowOptions, behavior: ListSessionsBehavior) {
   if (!options.selectedHostId || !options.sshReady) {
     return;
   }
-  if (!ensureWorkflowHostTrusted(options, () => listSessions(options))) {
+  if (!ensureWorkflowHostTrusted(options, () => listSessions(options, behavior))) {
     return;
   }
   await runSessionWorkflow(options, async () => {
@@ -77,9 +83,13 @@ async function listSessions(options: SessionWorkflowOptions) {
     const sessions = await listTmuxSessions(options.selectedHostId, credentialToken);
     options.onSessionsChange(sessions);
     options.selection.clearSelection();
-    options.onMobilePanelChange("sessions");
+    if (behavior.revealPanel) {
+      options.onMobilePanelChange("sessions");
+    }
     options.history.clear();
-    await openFallbackSession(options, sessions, credentialToken);
+    if (behavior.openFallback) {
+      await openFallbackSession(options, sessions, credentialToken);
+    }
   });
 }
 
