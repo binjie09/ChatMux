@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, Sparkles } from "lucide-react";
+import { Check, Sparkles, X } from "lucide-react";
 import { draftTmuxCommand, type CommandDraft } from "./api";
 import { errorMessage } from "./view-utils";
 import "./command-draft.css";
@@ -62,24 +62,34 @@ export function CommandDraftPanel({ target, onDrafted, onInsert }: CommandDraftP
         </button>
       </form>
       {error ? <p className="command-draft-error">{error}</p> : null}
-      {draft ? <CommandDraftResult draft={draft} onInsert={onInsert} /> : null}
+      {draft ? <CommandDraftResult draft={draft} onClose={() => setDraft(null)} onInsert={onInsert} /> : null}
     </section>
   );
 }
 
-function CommandDraftResult({ draft, onInsert }: { draft: CommandDraft; onInsert: (command: string) => void }) {
+function CommandDraftResult(props: {
+  draft: CommandDraft;
+  onClose: () => void;
+  onInsert: (command: string) => void;
+}) {
   return (
-    <article className={`command-draft-result ${draft.risk}`}>
+    <article className={`command-draft-result ${props.draft.risk}`}>
       <header>
-        <strong>{draft.risk}</strong>
-        <small>{draft.model}</small>
+        <strong>{props.draft.risk}</strong>
+        <small>{props.draft.model}</small>
       </header>
-      <pre>{draft.command}</pre>
-      <p>{draft.explanation}</p>
-      <button type="button" onClick={() => onInsert(draft.command)}>
-        <Check size={14} aria-hidden="true" />
-        Insert
-      </button>
+      <pre>{props.draft.command}</pre>
+      <p>{props.draft.explanation}</p>
+      <div className="command-draft-result-actions">
+        <button type="button" onClick={() => props.onInsert(props.draft.command)}>
+          <Check size={14} aria-hidden="true" />
+          Insert
+        </button>
+        <button className="command-draft-close-button" type="button" onClick={props.onClose}>
+          <X size={14} aria-hidden="true" />
+          Close
+        </button>
+      </div>
     </article>
   );
 }

@@ -26,7 +26,7 @@
 }
 
 .command-draft-panel form button,
-.command-draft-result button {
+.command-draft-result-actions button {
   display: inline-grid;
   grid-template-columns: 15px auto;
   align-items: center;
@@ -109,9 +109,20 @@
   line-height: 1.45;
 }
 
-.command-draft-result button {
-  justify-self: start;
+.command-draft-result-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.command-draft-result-actions button {
   padding: 8px 10px;
+}
+
+.command-draft-result-actions .command-draft-close-button {
+  border: 1px solid #c8d1ca;
+  color: #34443d;
+  background: #f5f8f5;
 }
 
 @media (max-width: 760px) {
