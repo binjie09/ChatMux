@@ -61,6 +61,7 @@ type AppShellProps = {
   sessions: DisplayTmuxSession[];
   showHostForm: boolean;
   target: CredentialTarget;
+  terminalLoading: boolean;
   terminalSessionKey: string;
   tmuxFallbackActive: boolean;
   tmuxInstallPending: boolean;
@@ -180,6 +181,7 @@ export function AppShell(props: AppShellProps) {
         selectedSession={props.selectedSession}
         selectedWindowName={props.selectedWindowName}
         target={props.target}
+        terminalLoading={props.terminalLoading}
         terminalSessionKey={props.terminalSessionKey}
         tmuxFallbackActive={props.tmuxFallbackActive}
         tmuxInstallPending={props.tmuxInstallPending}

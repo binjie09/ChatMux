@@ -35,6 +35,7 @@ type ConversationPaneProps = {
   queuedInput: QueuedTerminalInput | null;
   selectedSession: DisplayTmuxSession | undefined;
   selectedWindowName: string;
+  terminalLoading: boolean;
   terminalSessionKey: string;
   target: CredentialTarget;
   tmuxFallbackActive: boolean;
@@ -69,11 +70,12 @@ export function ConversationPane(props: ConversationPaneProps) {
   const draftPanel = renderDraftPanel(props);
 
   return (
-    <section className="conversation">
+    <section className={`conversation ${props.terminalLoading ? "terminal-loading" : ""}`}>
       <MobileTerminalBar
         hostName={props.host?.name ?? "No host"}
-        sessionName={props.selectedSession?.name ?? "No session"}
-        title={sessionTitle(props.selectedSession)}
+        loading={props.terminalLoading}
+        sessionName={props.terminalLoading ? "Loading" : props.selectedSession?.name ?? "No session"}
+        title={props.terminalLoading ? "Terminal" : sessionTitle(props.selectedSession)}
         windowName={props.selectedWindowName}
         windows={props.selectedSession?.windowList ?? []}
         tmuxFallbackActive={props.tmuxFallbackActive}
@@ -117,6 +119,7 @@ export function ConversationPane(props: ConversationPaneProps) {
           <NativeTerminal
             createWebSocketURL={props.terminalSessionKey ? props.createTerminalWebSocketURL : null}
             loadScrollbackHistory={props.loadScrollbackHistory}
+            loading={props.terminalLoading}
             queuedInput={props.queuedInput}
             sessionKey={props.terminalSessionKey}
             onConnectionClosed={props.onConnectionClosed}
@@ -131,15 +134,17 @@ export function ConversationPane(props: ConversationPaneProps) {
         <div className="context-stack">{contextPanels}</div>
       </div>
 
-      <Composer
-        draftPanel={draftPanel}
-        mode={props.composerMode}
-        value={props.composerValue}
-        onModeChange={props.onComposerModeChange}
-        onSubmit={props.onComposerSubmit}
-        onUploadImage={props.onComposerUploadImage}
-        onValueChange={props.onComposerValueChange}
-      />
+      {props.terminalLoading ? null : (
+        <Composer
+          draftPanel={draftPanel}
+          mode={props.composerMode}
+          value={props.composerValue}
+          onModeChange={props.onComposerModeChange}
+          onSubmit={props.onComposerSubmit}
+          onUploadImage={props.onComposerUploadImage}
+          onValueChange={props.onComposerValueChange}
+        />
+      )}
       <MobileSheet open={props.mobileSheet === "context"} title="Context" onClose={() => props.onMobileSheetChange(null)}>
         {contextPanels}
       </MobileSheet>

@@ -16,6 +16,7 @@ import "./terminal.css";
 type NativeTerminalProps = {
   createWebSocketURL: ((status: ConnectionStatus) => Promise<string>) | null;
   loadScrollbackHistory?: ((lines: number) => Promise<string>) | null;
+  loading: boolean;
   onConnectionClosed: () => void;
   onConnectionBlocked?: (message: string) => boolean;
   onConnectionError: (message: string) => void;
@@ -57,6 +58,7 @@ export function NativeTerminal(props: NativeTerminalProps) {
   const [reconnectAttempt, setReconnectAttempt] = useState(0);
   const reconnecting = status === "connecting" || status === "recovering";
   const canReconnect = Boolean(props.sessionKey && props.createWebSocketURL && !reconnecting);
+  const terminalStatus = props.loading ? "loading" : status;
 
   useEffect(() => {
     connectorRef.current = props.createWebSocketURL;
@@ -74,7 +76,7 @@ export function NativeTerminal(props: NativeTerminalProps) {
     terminalInstanceRef,
     terminalRef,
   });
-  useSessionReset(props.sessionKey, terminalInstanceRef);
+  useSessionReset(props.sessionKey, props.loading, terminalInstanceRef);
   useTerminalSocket({
     connectorRef,
     handlersRef,
@@ -101,23 +103,39 @@ export function NativeTerminal(props: NativeTerminalProps) {
   }
 
   return (
-    <div className={`terminal-shell terminal-${mobileInteractionMode}-mode`} aria-label="Terminal">
+    <div className={`terminal-shell terminal-${mobileInteractionMode}-mode ${props.loading ? "loading" : ""}`} aria-label="Terminal">
       <div className="terminal-toolbar">
-        <span className={`terminal-connection ${status}`}>{statusLabel[status]}</span>
-        <div className="terminal-toolbar-actions">
-          <MobileInteractionToggle mode={mobileInteractionMode} onModeChange={setMobileInteractionMode} />
-          <button type="button" disabled={!canReconnect} onClick={reconnect}>
-            <RefreshCw size={14} aria-hidden="true" />
-            Reconnect
-          </button>
-        </div>
+        <span className={`terminal-connection ${terminalStatus}`}>{props.loading ? "Loading" : statusLabel[status]}</span>
+        {props.loading ? null : (
+          <div className="terminal-toolbar-actions">
+            <MobileInteractionToggle mode={mobileInteractionMode} onModeChange={setMobileInteractionMode} />
+            <button type="button" disabled={!canReconnect} onClick={reconnect}>
+              <RefreshCw size={14} aria-hidden="true" />
+              Reconnect
+            </button>
+          </div>
+        )}
       </div>
       <div className="terminal-screen" ref={terminalRef}>
+        <TerminalLoadingState active={props.loading} />
         {mobileInteractionMode === "select" && terminalReady && terminalInstanceRef.current ? (
           <TerminalScrollbackOverlay loadEarlier={props.loadScrollbackHistory} terminal={terminalInstanceRef.current} />
         ) : null}
       </div>
-      <TerminalQuickKeys disabled={status !== "connected"} onSend={sendQuickKey} />
+      <TerminalQuickKeys disabled={props.loading || status !== "connected"} onSend={sendQuickKey} />
+    </div>
+  );
+}
+
+function TerminalLoadingState(props: { active: boolean }) {
+  if (!props.active) {
+    return null;
+  }
+  return (
+    <div className="terminal-loading-state" role="status" aria-live="polite">
+      <span aria-hidden="true" />
+      <strong>Loading terminal</strong>
+      <small>Restoring last window...</small>
     </div>
   );
 }
@@ -277,17 +295,20 @@ function bindTerminalInput(
   });
 }
 
-function useSessionReset(sessionKey: string, terminalRef: MutableRefObject<Terminal | null>) {
+function useSessionReset(sessionKey: string, loading: boolean, terminalRef: MutableRefObject<Terminal | null>) {
   useEffect(() => {
     const terminal = terminalRef.current;
     if (!terminal) {
       return;
     }
     terminal.reset();
+    if (loading) {
+      return;
+    }
     if (!sessionKey) {
       terminal.write("$ ");
     }
-  }, [sessionKey, terminalRef]);
+  }, [loading, sessionKey, terminalRef]);
 }
 
 function useQueuedInput(

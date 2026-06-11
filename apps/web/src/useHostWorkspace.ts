@@ -21,6 +21,7 @@ type HostWorkspaceOptions = {
 
 export function useHostWorkspace(options: HostWorkspaceOptions) {
   const [hosts, setHosts] = useState<Host[]>([]);
+  const [hostsLoaded, setHostsLoaded] = useState(false);
   const [selectedHostId, setSelectedHostId] = useState(() => loadLastWindowSelection()?.hostId ?? "");
   const [hostSelectionVersion, setHostSelectionVersion] = useState(0);
   const [showHostForm, setShowHostForm] = useState(false);
@@ -31,8 +32,10 @@ export function useHostWorkspace(options: HostWorkspaceOptions) {
       const nextHosts = await listHosts();
       setHosts(nextHosts);
       setSelectedHostId((current) => selectedHostIdFromHosts(current, nextHosts));
+      setHostsLoaded(true);
       options.onError("");
     } catch (err) {
+      setHostsLoaded(true);
       options.onError(errorMessage(err));
     }
   }
@@ -146,6 +149,7 @@ export function useHostWorkspace(options: HostWorkspaceOptions) {
     handleTrustHost,
     handleUpdateHost,
     hosts,
+    hostsLoaded,
     hostSelectionVersion,
     refreshHosts,
     selectedHost,

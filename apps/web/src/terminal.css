@@ -228,6 +228,7 @@
 }
 
 .terminal-connection.connecting::before,
+.terminal-connection.loading::before,
 .terminal-connection.recovering::before {
   background: #e0b35a;
 }
@@ -287,6 +288,47 @@
 .terminal-screen .xterm-screen {
   user-select: text;
   -webkit-user-select: text;
+}
+
+.terminal-shell.loading .terminal-screen .xterm {
+  opacity: 0;
+}
+
+.terminal-loading-state {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 8px;
+  color: #dbe7df;
+  background: #101713;
+  text-align: center;
+}
+
+.terminal-loading-state span {
+  width: 28px;
+  height: 28px;
+  border: 2px solid #2b3d34;
+  border-top-color: #8fd5b2;
+  border-radius: 99px;
+  animation: terminal-loading-spin 850ms linear infinite;
+}
+
+.terminal-loading-state strong {
+  font-size: 14px;
+}
+
+.terminal-loading-state small {
+  color: #8fa096;
+  font-size: 12px;
+}
+
+@keyframes terminal-loading-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .terminal-quick-keys {

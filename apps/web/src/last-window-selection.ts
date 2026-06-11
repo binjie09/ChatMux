@@ -11,7 +11,7 @@ export function loadLastWindowSelection() {
   if (!raw) {
     return null;
   }
-  const parsed: unknown = JSON.parse(raw);
+  const parsed = parseLastWindowSelection(raw);
   if (!isLastWindowSelection(parsed)) {
     localStorage.removeItem(storageKey);
     return null;
@@ -42,4 +42,12 @@ function isLastWindowSelection(value: unknown): value is LastWindowSelection {
 
 function isNonEmptyString(value: unknown) {
   return typeof value === "string" && value.length > 0;
+}
+
+function parseLastWindowSelection(raw: string) {
+  try {
+    return JSON.parse(raw) as unknown;
+  } catch {
+    return null;
+  }
 }

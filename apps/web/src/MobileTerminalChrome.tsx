@@ -8,6 +8,7 @@ export type MobileTerminalSheet = "context" | "draft";
 
 type MobileTerminalBarProps = {
   hostName: string;
+  loading: boolean;
   selectedWindowIndex: number | null;
   sessionName: string;
   title: string;
@@ -31,7 +32,7 @@ type MobileTerminalSheetPanelProps = {
 
 export function MobileTerminalBar(props: MobileTerminalBarProps) {
   return (
-    <header className={`mobile-terminal-bar ${props.tmuxFallbackActive ? "tmux-fallback" : ""}`}>
+    <header className={mobileTerminalBarClassName(props.loading, props.tmuxFallbackActive)}>
       <button type="button" aria-label="Back to sessions" onClick={props.onBack}>
         <ArrowLeft size={20} aria-hidden="true" />
       </button>
@@ -39,7 +40,7 @@ export function MobileTerminalBar(props: MobileTerminalBarProps) {
         <strong>{props.title}</strong>
         <span>{terminalSubtitle(props.hostName, props.sessionName, props.windowName)}</span>
       </div>
-      {props.tmuxFallbackActive ? (
+      {props.loading ? null : props.tmuxFallbackActive ? (
         <button
           className="mobile-terminal-install"
           type="button"
@@ -78,6 +79,14 @@ export function MobileTerminalBar(props: MobileTerminalBarProps) {
       )}
     </header>
   );
+}
+
+function mobileTerminalBarClassName(loading: boolean, tmuxFallbackActive: boolean) {
+  return [
+    "mobile-terminal-bar",
+    loading ? "loading" : "",
+    tmuxFallbackActive ? "tmux-fallback" : "",
+  ].filter(Boolean).join(" ");
 }
 
 function terminalSubtitle(hostName: string, sessionName: string, windowName: string) {

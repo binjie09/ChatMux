@@ -72,6 +72,13 @@
     padding: 7px 8px;
   }
 
+  .mobile-terminal-bar.loading {
+    grid-template-areas: "back title";
+    grid-template-columns: 44px minmax(0, 1fr);
+    min-height: 56px;
+    padding: 7px 8px;
+  }
+
   .mobile-terminal-bar > button:first-child {
     grid-area: back;
   }

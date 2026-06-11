@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { type TmuxSession, uploadTerminalImage } from "./api";
 import { type ComposerMode } from "./Composer";
 import { AppShell } from "./AppShell";
@@ -7,6 +7,7 @@ import { HostTrustDialog } from "./HostTrustDialog";
 import { type MobilePanel } from "./MobileNavigation";
 import { type MobileTerminalSheet } from "./MobileTerminalChrome";
 import { type QueuedTerminalInput } from "./NativeTerminal";
+import { loadLastWindowSelection } from "./last-window-selection";
 import { useGatewayAccessToken } from "./useGatewayAccessToken";
 import { useHostHeartbeat } from "./useHostHeartbeat";
 import { useHostWorkspace } from "./useHostWorkspace";
@@ -37,7 +38,9 @@ export function App() {
   const [newSessionName, setNewSessionName] = useState("");
   const [composerMode, setComposerMode] = useState<ComposerMode>("paste");
   const [composerValue, setComposerValue] = useState("");
-  const [mobilePanel, setMobilePanel] = useState<MobilePanel>("hosts");
+  const [mobilePanel, setMobilePanel] = useState<MobilePanel>(() => loadLastWindowSelection() ? "terminal" : "hosts");
+  const [lastWindowRestorePending, setLastWindowRestorePending] = useState(() => mobilePanel === "terminal");
+  const lastWindowRestorePendingRef = useRef(lastWindowRestorePending);
   const [mobileSheet, setMobileSheet] = useState<MobileTerminalSheet | null>(null);
   const [queuedInput, setQueuedInput] = useState<QueuedTerminalInput | null>(null);
   const [terminalReconnectSignal, setTerminalReconnectSignal] = useState(0);
@@ -59,6 +62,7 @@ export function App() {
     handleTrustHost,
     handleUpdateHost,
     hosts,
+    hostsLoaded,
     hostSelectionVersion,
     refreshHosts,
     selectedHost,
@@ -100,6 +104,8 @@ export function App() {
     history,
     isMobileLayout,
     newSessionName,
+    canRestoreLastWindow: () => lastWindowRestorePendingRef.current,
+    restoreLastWindow: lastWindowRestorePending,
     sessions,
     selectedHostId,
     selection,
@@ -110,6 +116,12 @@ export function App() {
     onMobilePanelChange: setMobilePanel,
     onMobileSheetClear: () => setMobileSheet(null),
     onNewSessionNameChange: setNewSessionName,
+    onLastWindowRestoreFinished: (opened) => {
+      stopLastWindowRestore();
+      if (!opened && isMobileLayout) {
+        setMobilePanel("sessions");
+      }
+    },
     onSessionsChange: setSessions,
   });
   useAppStartupEffects({
@@ -131,8 +143,22 @@ export function App() {
     onHostHeartbeat: handleHostHeartbeat,
     onHostStatusChange: handleHostHeartbeatStatus,
   });
+  useEffect(() => {
+    lastWindowRestorePendingRef.current = lastWindowRestorePending;
+  }, [lastWindowRestorePending]);
+  useEffect(() => {
+    if (!lastWindowRestorePending || !gatewayToken.ready || !hostsLoaded) {
+      return;
+    }
+    if (selectedHostId && selectedHost?.hasCredential) {
+      return;
+    }
+    stopLastWindowRestore();
+    setMobilePanel(selectedHostId ? "sessions" : "hosts");
+  }, [gatewayToken.ready, hostsLoaded, lastWindowRestorePending, selectedHost?.hasCredential, selectedHostId]);
 
   function clearSelectedSession() {
+    stopLastWindowRestore();
     selection.clearSelection();
     setMobileSheet(null);
     setPendingTmuxInstall(false);
@@ -166,6 +192,8 @@ export function App() {
   }
 
   const isMobileTerminalActive = Boolean(terminalSessionKey && mobilePanel === "terminal");
+  const terminalRestoreLoading = Boolean(lastWindowRestorePending && mobilePanel === "terminal" && !terminalSessionKey);
+  const showMobileTerminal = Boolean((terminalSessionKey || terminalRestoreLoading) && mobilePanel === "terminal");
 
   async function handleMobileTerminalImageUpload(file: File) {
     try {
@@ -280,7 +308,10 @@ export function App() {
   const sessionHandlers = useAppSessionHandlers({
     selectedSession,
     tmuxWindowActions,
-    onBackToSessions: sessionWorkflow.handleBackToSessions,
+    onBackToSessions: (session) => {
+      stopLastWindowRestore();
+      sessionWorkflow.handleBackToSessions(session);
+    },
     onConnectionReady: (status) => {
       void sessionWorkflow.handleTerminalConnectionReady(status);
       if (pendingTmuxInstall && selectedSessionIsFallback) {
@@ -308,7 +339,7 @@ export function App() {
         historyText={history.text}
         hosts={hosts}
         expandedSessionNames={isMobileLayout ? noExpandedSessions : selection.expandedSessionNames}
-        isMobileTerminalActive={isMobileTerminalActive}
+        isMobileTerminalActive={showMobileTerminal}
         loadScrollbackHistory={terminalSessionKey && !selectedSessionIsFallback ? loadTerminalScrollbackHistory : null}
         mobilePanel={mobilePanel}
         mobileSheet={mobileSheet}
@@ -323,6 +354,7 @@ export function App() {
         sessions={displaySessions}
         showHostForm={showHostForm}
         target={summaryTarget}
+        terminalLoading={terminalRestoreLoading}
         terminalSessionKey={terminalSessionKey}
         tmuxFallbackActive={tmuxFallbackActive}
         tmuxInstallPending={pendingTmuxInstall}
@@ -341,7 +373,7 @@ export function App() {
         onDrafted={() => void auditEvents.refresh()}
         onHistoryQueryChange={history.setQuery}
         onInstallTmux={handleInstallTmux}
-        onMobilePanelChange={setMobilePanel}
+        onMobilePanelChange={handleMobilePanelChange}
         onMobileSheetChange={setMobileSheet}
         onNewSessionNameChange={setNewSessionName}
         onNotificationsEnabledChange={(enabled) => void sessionState.notifications.setEnabled(enabled)}
@@ -356,7 +388,30 @@ export function App() {
         terminalReconnectSignal={terminalReconnectSignal}
         onUpdateHost={handleUpdateHost}
       />
-      <HostTrustDialog request={trustPrompt.request} trusting={trustPrompt.trusting} onCancel={trustPrompt.cancelHostTrust} onTrust={() => void trustPrompt.confirmHostTrust()} />
+      <HostTrustDialog request={trustPrompt.request} trusting={trustPrompt.trusting} onCancel={cancelHostTrust} onTrust={() => void trustPrompt.confirmHostTrust()} />
     </>
   );
+
+  function cancelHostTrust() {
+    trustPrompt.cancelHostTrust();
+    if (!lastWindowRestorePending) {
+      return;
+    }
+    stopLastWindowRestore();
+    if (!terminalSessionKey) {
+      setMobilePanel("sessions");
+    }
+  }
+
+  function handleMobilePanelChange(panel: MobilePanel) {
+    if (panel !== "terminal") {
+      stopLastWindowRestore();
+    }
+    setMobilePanel(panel);
+  }
+
+  function stopLastWindowRestore() {
+    lastWindowRestorePendingRef.current = false;
+    setLastWindowRestorePending(false);
+  }
 }
