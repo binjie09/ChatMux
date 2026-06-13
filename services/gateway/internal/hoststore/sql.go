@@ -40,6 +40,14 @@ CREATE TABLE IF NOT EXISTS session_metadata (
 	PRIMARY KEY (host_id, session_name)
 );`
 
+const createHostLastWindowTableSQL = `
+CREATE TABLE IF NOT EXISTS host_last_window (
+	host_id TEXT PRIMARY KEY,
+	session_name TEXT NOT NULL DEFAULT '',
+	window_index INTEGER NOT NULL DEFAULT 0,
+	updated_at TIMESTAMP NOT NULL
+);`
+
 const addHostFingerprintSQL = `
 ALTER TABLE hosts ADD COLUMN host_key_fingerprint TEXT NOT NULL DEFAULT '';`
 
@@ -112,6 +120,10 @@ const deleteSessionMetadataForHostSQL = `
 DELETE FROM session_metadata
 WHERE host_id = ?;`
 
+const deleteHostLastWindowForHostSQL = `
+DELETE FROM host_last_window
+WHERE host_id = ?;`
+
 const insertAuditEventSQL = `
 INSERT INTO audit_events (id, type, host_id, session_name, message, created_at)
 VALUES (?, ?, ?, ?, ?, ?);`
@@ -145,3 +157,16 @@ const renameSessionMetadataSQL = `
 UPDATE session_metadata
 SET session_name = ?, updated_at = ?
 WHERE host_id = ? AND session_name = ?;`
+
+const upsertHostLastWindowSQL = `
+INSERT INTO host_last_window (host_id, session_name, window_index, updated_at)
+VALUES (?, ?, ?, ?)
+ON CONFLICT(host_id) DO UPDATE SET
+	session_name = excluded.session_name,
+	window_index = excluded.window_index,
+	updated_at = excluded.updated_at;`
+
+const getHostLastWindowSQL = `
+SELECT host_id, session_name, window_index, updated_at
+FROM host_last_window
+WHERE host_id = ?;`

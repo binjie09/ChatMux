@@ -1,5 +1,5 @@
 import { createTmuxSession, listTmuxSessions } from "./tmux-api";
-import { type TmuxSession } from "./api";
+import { type TmuxSession, getHostLastWindow, saveHostLastWindow } from "./api";
 import { clearLastWindowSelection, loadLastWindowSelection, saveLastWindowSelection } from "./last-window-selection";
 import { type MobilePanel } from "./MobileNavigation";
 import { findSessionWindow, firstSessionWindowIndex } from "./session-window-utils";
@@ -41,17 +41,18 @@ type SessionWorkflowOptions = {
 
 type ListSessionsBehavior = {
   openLastWindow: boolean;
+  openHostLastWindow: boolean;
   openFallback: boolean;
   revealPanel: boolean;
 };
 
 export function useAppSessionWorkflow(options: SessionWorkflowOptions) {
   return {
-    handleAutoListSessions: () => listSessions(options, { openLastWindow: options.restoreLastWindow, openFallback: false, revealPanel: false }),
+    handleAutoListSessions: () => listSessions(options, { openLastWindow: options.restoreLastWindow, openHostLastWindow: true, openFallback: false, revealPanel: false }),
     handleBackToSessions: (session: TmuxSession | undefined) => backToSessions(options, session),
     handleCreateSession: () => createSession(options),
     handleExpandSession: (sessionName: string) => expandSession(options, sessionName),
-    handleListSessions: () => listSessions(options, { openLastWindow: false, openFallback: true, revealPanel: true }),
+    handleListSessions: () => listSessions(options, { openLastWindow: false, openHostLastWindow: false, openFallback: true, revealPanel: true }),
     handleOpenSessionWindow: (sessionName: string, windowIndex: number, tokenOverride = "") =>
       openWindow(options, sessionName, windowIndex, tokenOverride, false),
     handleTerminalConnectionReady: (status: ConnectionStatus) => terminalConnectionReady(options, status),
@@ -100,6 +101,12 @@ async function listSessions(options: SessionWorkflowOptions, behavior: ListSessi
         return;
       }
     }
+    if (behavior.openHostLastWindow) {
+      const openedHostWindow = await openHostLastWindowSelection(options, sessions, credentialToken);
+      if (openedHostWindow) {
+        return;
+      }
+    }
     options.selection.clearSelection();
     options.history.clear();
     if (behavior.openFallback) {
@@ -123,6 +130,7 @@ async function openWindow(
   }
   options.selection.openWindow({ isMobileLayout: options.isMobileLayout, sessionName, windowIndex });
   saveLastWindowSelection({ hostId: options.selectedHostId, sessionName, windowIndex });
+  void saveHostLastWindow(options.selectedHostId, sessionName, windowIndex).catch(() => {});
   options.onMobileSheetClear();
   options.onMobilePanelChange("terminal");
   await runSessionWorkflow(options, async () => {
@@ -179,6 +187,34 @@ function lastWindowTarget(hostId: string, sessions: TmuxSession[]) {
   }
   if (findSessionWindow(session, lastSelection.windowIndex)) {
     return { sessionName: session.name, windowIndex: lastSelection.windowIndex };
+  }
+  const windowIndex = firstSessionWindowIndex(session);
+  return windowIndex === null ? null : { sessionName: session.name, windowIndex };
+}
+
+async function openHostLastWindowSelection(options: SessionWorkflowOptions, sessions: TmuxSession[], credentialToken: string) {
+  const target = await hostLastWindowTarget(options.selectedHostId, sessions);
+  if (!target) {
+    return false;
+  }
+  await openWindow(options, target.sessionName, target.windowIndex, credentialToken, false);
+  return true;
+}
+
+async function hostLastWindowTarget(hostId: string, sessions: TmuxSession[]) {
+  if (!hostId) {
+    return null;
+  }
+  const lastWindow = await getHostLastWindow(hostId);
+  if (!lastWindow) {
+    return null;
+  }
+  const session = sessions.find((item) => item.name === lastWindow.sessionName);
+  if (!session) {
+    return null;
+  }
+  if (findSessionWindow(session, lastWindow.windowIndex)) {
+    return { sessionName: session.name, windowIndex: lastWindow.windowIndex };
   }
   const windowIndex = firstSessionWindowIndex(session);
   return windowIndex === null ? null : { sessionName: session.name, windowIndex };

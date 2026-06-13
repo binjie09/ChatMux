@@ -140,3 +140,10 @@ export type TmuxSessionMetadata = {
   owner: string;
   updatedAt: string;
 };
+
+export type HostLastWindow = {
+  hostId: string;
+  sessionName: string;
+  windowIndex: number;
+  updatedAt: string;
+};

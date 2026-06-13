@@ -20,6 +20,9 @@ func (s *Store) DeleteHost(ctx context.Context, id string) error {
 	if _, err := tx.ExecContext(ctx, deleteSessionMetadataForHostSQL, id); err != nil {
 		return fmt.Errorf("delete host session metadata: %w", err)
 	}
+	if _, err := tx.ExecContext(ctx, deleteHostLastWindowForHostSQL, id); err != nil {
+		return fmt.Errorf("delete host last window: %w", err)
+	}
 	result, err := tx.ExecContext(ctx, deleteHostSQL, id)
 	if err != nil {
 		return fmt.Errorf("delete host: %w", err)

@@ -40,6 +40,9 @@ func (s *Store) createBaseTables(ctx context.Context) error {
 	if _, err := s.db.ExecContext(ctx, createSessionMetadataTableSQL); err != nil {
 		return fmt.Errorf("migrate session metadata table: %w", err)
 	}
+	if _, err := s.db.ExecContext(ctx, createHostLastWindowTableSQL); err != nil {
+		return fmt.Errorf("migrate host last window table: %w", err)
+	}
 	return nil
 }
 

@@ -7,6 +7,7 @@ import type {
   CreateTerminalTokenInput,
   Host,
   HostHeartbeatResponse,
+  HostLastWindow,
   SaveSessionMetadataInput,
   SSHCredential,
   TerminalTokenResponse,
@@ -26,6 +27,7 @@ export type {
   CreateTerminalTokenInput,
   Host,
   HostHeartbeatResponse,
+  HostLastWindow,
   SaveSessionMetadataInput,
   SessionStatus,
   SSHAuthMethod,
@@ -107,6 +109,22 @@ export async function saveSessionMetadata(hostId: string, sessionName: string, i
   return request<TmuxSessionMetadata>(`${tmuxSessionPath(hostId, sessionName)}/metadata`, {
     method: "POST",
     body: JSON.stringify(input),
+  });
+}
+
+export async function getHostLastWindow(hostId: string): Promise<HostLastWindow | null> {
+  try {
+    return await request<HostLastWindow>(`/api/hosts/${hostId}/last-window`);
+  } catch {
+    // No last window recorded yet (404) or the request failed — nothing to restore.
+    return null;
+  }
+}
+
+export async function saveHostLastWindow(hostId: string, sessionName: string, windowIndex: number): Promise<HostLastWindow> {
+  return request<HostLastWindow>(`/api/hosts/${hostId}/last-window`, {
+    method: "POST",
+    body: JSON.stringify({ sessionName, windowIndex }),
   });
 }
 
