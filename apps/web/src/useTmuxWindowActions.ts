@@ -93,8 +93,14 @@ export function useTmuxWindowActions(options: UseTmuxWindowActionsOptions) {
     }
     await runTmuxAction(optionsRef, async (current) => {
       const credentialToken = await current.getCredentialToken();
+      const selectedForDeletion = current.selectedSessionName === sessionName && current.selectedWindowIndex === windowIndex;
+      const deletedWindowPosition = windowListPosition(current.sessions, sessionName, windowIndex);
+      const deletedSessionPosition = sessionListPosition(current.sessions, sessionName);
       const nextSessions = await deleteTmuxWindow(current.hostId, sessionName, credentialToken, windowIndex);
-      const result = applySessions(current, nextSessions);
+      const preferred = selectedForDeletion
+        ? nextSelectionAfterDeletion(nextSessions, sessionName, deletedWindowPosition, deletedSessionPosition)
+        : undefined;
+      const result = applySessions(current, nextSessions, preferred);
       await openReconciledWindow(current, result, credentialToken);
     });
   }, []);
@@ -240,6 +246,60 @@ function renamedSelectionTarget(
     return undefined;
   }
   return { sessionName: newName, windowIndex: options.selectedWindowIndex };
+}
+
+function windowListPosition(sessions: TmuxSession[], sessionName: string, windowIndex: number): number | null {
+  const session = sessions.find((item) => item.name === sessionName);
+  if (!session) {
+    return null;
+  }
+  const position = session.windowList.findIndex((window) => window.index === windowIndex);
+  return position === -1 ? null : position;
+}
+
+function sessionListPosition(sessions: TmuxSession[], sessionName: string): number | null {
+  const position = sessions.findIndex((session) => session.name === sessionName);
+  return position === -1 ? null : position;
+}
+
+// Pick the target to focus after a deletion: the next sibling (window or session) by
+// list position, falling back to the previous one when the deleted item was last.
+// Positions are computed against the pre-deletion list and resolved on the
+// post-deletion list, which is robust to index gaps and renumbering.
+function nextSelectionAfterDeletion(
+  nextSessions: TmuxSession[],
+  deletedSessionName: string,
+  deletedWindowPosition: number | null,
+  deletedSessionPosition: number | null,
+): SelectionTarget | undefined {
+  const session = nextSessions.find((item) => item.name === deletedSessionName);
+  if (session && session.windowList.length > 0) {
+    const window = session.windowList[nextListPosition(deletedWindowPosition, session.windowList.length)];
+    return { sessionName: session.name, windowIndex: window.index };
+  }
+  if (nextSessions.length === 0 || deletedSessionPosition === null) {
+    return undefined;
+  }
+  const nextSession = nextSessions[nextListPosition(deletedSessionPosition, nextSessions.length)];
+  const windowIndex = activeOrFirstWindowIndex(nextSession);
+  return windowIndex === null ? undefined : { sessionName: nextSession.name, windowIndex };
+}
+
+// After removing the item at `deletedPosition`, the following item shifts into that
+// slot; if the deleted item was last, take the new final slot instead.
+function nextListPosition(deletedPosition: number | null, listLength: number): number {
+  if (deletedPosition !== null && deletedPosition < listLength) {
+    return deletedPosition;
+  }
+  return Math.max(0, listLength - 1);
+}
+
+function activeOrFirstWindowIndex(session: TmuxSession): number | null {
+  const active = session.windowList.find((window) => window.active);
+  if (active) {
+    return active.index;
+  }
+  return firstSessionWindowIndex(session);
 }
 
 function nextWindowName(session: TmuxSession | undefined) {
