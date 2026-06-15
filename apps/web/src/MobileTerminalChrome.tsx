@@ -1,11 +1,11 @@
-import { ArrowLeft, Bot, Download, ListTree, Plus, Search, X } from "lucide-react";
+import { ArrowLeft, Bot, Download, Files, ListTree, Plus, X } from "lucide-react";
 import { type ReactNode } from "react";
 import { type TmuxWindow } from "./api";
 import { windowLabel } from "./session-window-utils";
 import { TerminalFileUploadButton } from "./TerminalFileUploadButton";
 import "./mobile-terminal.css";
 
-export type MobileTerminalSheet = "context" | "draft";
+export type MobileTerminalSheet = "draft" | "files";
 
 type MobileTerminalBarProps = {
   hostName: string;
@@ -26,6 +26,7 @@ type MobileTerminalBarProps = {
 };
 
 type MobileTerminalSheetPanelProps = {
+  action?: ReactNode;
   children: ReactNode;
   open: boolean;
   title: string;
@@ -75,8 +76,8 @@ export function MobileTerminalBar(props: MobileTerminalBarProps) {
             </button>
             {props.onUploadFile ? <TerminalFileUploadButton onUpload={props.onUploadFile} /> : null}
           </div>
-          <button type="button" aria-label="Open context" onClick={() => props.onOpenSheet("context")}>
-            <Search size={19} aria-hidden="true" />
+          <button type="button" aria-label="Open files" onClick={() => props.onOpenSheet("files")}>
+            <Files size={19} aria-hidden="true" />
           </button>
           <button type="button" aria-label="Draft command" onClick={() => props.onOpenSheet("draft")}>
             <Bot size={19} aria-hidden="true" />
@@ -110,9 +111,10 @@ export function MobileTerminalSheetPanel(props: MobileTerminalSheetPanelProps) {
     <div className="mobile-terminal-sheet-layer">
       <button className="mobile-terminal-sheet-scrim" type="button" aria-label="Close panel" onClick={props.onClose} />
       <section className="mobile-terminal-sheet" aria-label={props.title}>
-        <header>
+        <header className={props.action ? "has-action" : ""}>
           <ListTree size={18} aria-hidden="true" />
           <strong>{props.title}</strong>
+          {props.action}
           <button type="button" aria-label="Close panel" onClick={props.onClose}>
             <X size={19} aria-hidden="true" />
           </button>

@@ -336,16 +336,12 @@ export function App() {
   return (
     <>
       <AppShell
-        auditEvents={auditEvents.events}
         composerMode={composerMode}
         composerValue={composerValue}
         createTerminalWebSocketURL={terminalSessionKey ? guardedTerminalWebSocketURL : null}
         credentialStatus={sshCredential.status}
         error={error}
         gatewayToken={gatewayToken}
-        historyChunks={history.chunks}
-        historyQuery={history.query}
-        historyText={history.text}
         hosts={hosts}
         expandedSessionNames={isMobileLayout ? noExpandedSessions : selection.expandedSessionNames}
         isMobileTerminalActive={showMobileTerminal}
@@ -365,6 +361,7 @@ export function App() {
         target={summaryTarget}
         terminalLoading={terminalRestoreLoading}
         terminalUploadProgress={uploadProgress.progress}
+        terminalUploadProgressHandlers={uploadProgress}
         terminalSessionKey={terminalSessionKey}
         tmuxFallbackActive={tmuxFallbackActive}
         tmuxInstallPending={pendingTmuxInstall}
@@ -381,7 +378,6 @@ export function App() {
         onCreateHost={handleCreateHost}
         onDeleteHost={handleDeleteHost}
         onDrafted={() => void auditEvents.refresh()}
-        onHistoryQueryChange={history.setQuery}
         onInstallTmux={handleInstallTmux}
         onTerminalUploadProgressHide={uploadProgress.hideUpload}
         onMobilePanelChange={handleMobilePanelChange}

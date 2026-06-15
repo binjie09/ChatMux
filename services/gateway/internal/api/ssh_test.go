@@ -17,6 +17,11 @@ import (
 type fakeSSHRunner struct {
 	command          string
 	credential       sshclient.Credential
+	readData         []byte
+	readEntries      []sshclient.FileEntry
+	readPath         string
+	readRealPath     string
+	deletePath       string
 	output           string
 	outputForCommand func(string) string
 	password         string
@@ -37,6 +42,34 @@ func (r *fakeSSHRunner) Run(_ context.Context, _ sshclient.HostConfig, credentia
 		return []byte(r.output), nil
 	}
 	return []byte("chatmux-ok"), nil
+}
+
+func (r *fakeSSHRunner) ReadFile(_ context.Context, _ sshclient.HostConfig, credential sshclient.Credential, path string) ([]byte, error) {
+	r.credential = credential
+	r.password = credential.Password
+	r.privateKey = credential.PrivateKey
+	r.readPath = path
+	return append([]byte(nil), r.readData...), nil
+}
+
+func (r *fakeSSHRunner) ReadDir(_ context.Context, _ sshclient.HostConfig, credential sshclient.Credential, path string) ([]sshclient.FileEntry, string, error) {
+	r.credential = credential
+	r.password = credential.Password
+	r.privateKey = credential.PrivateKey
+	r.readPath = path
+	realPath := r.readRealPath
+	if realPath == "" {
+		realPath = path
+	}
+	return append([]sshclient.FileEntry(nil), r.readEntries...), realPath, nil
+}
+
+func (r *fakeSSHRunner) DeleteFile(_ context.Context, _ sshclient.HostConfig, credential sshclient.Credential, path string) error {
+	r.credential = credential
+	r.password = credential.Password
+	r.privateKey = credential.PrivateKey
+	r.deletePath = path
+	return nil
 }
 
 func (r *fakeSSHRunner) ScanHostKey(_ context.Context, _ sshclient.HostConfig) (string, error) {

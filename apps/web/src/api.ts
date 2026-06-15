@@ -5,9 +5,14 @@ import type {
   CommandDraft,
   CreateHostInput,
   CreateTerminalTokenInput,
+  DeleteRemoteFileInput,
+  DownloadRemoteFileInput,
   Host,
   HostHeartbeatResponse,
   HostLastWindow,
+  ListRemoteFilesInput,
+  RemoteFileList,
+  ResolveRemoteFilePathInput,
   SaveSessionMetadataInput,
   SSHCredential,
   TerminalTokenResponse,
@@ -15,6 +20,8 @@ import type {
   TmuxSessionMetadata,
   TranscriptSummary,
   UpdateHostInput,
+  UploadRemoteFileInput,
+  UploadRemoteFileResponse,
   UploadTerminalImageInput,
   UploadTerminalImageResponse,
 } from "./api-types";
@@ -28,6 +35,12 @@ export type {
   Host,
   HostHeartbeatResponse,
   HostLastWindow,
+  DeleteRemoteFileInput,
+  DownloadRemoteFileInput,
+  ListRemoteFilesInput,
+  RemoteFileEntry,
+  RemoteFileList,
+  ResolveRemoteFilePathInput,
   SaveSessionMetadataInput,
   SessionStatus,
   SSHAuthMethod,
@@ -39,6 +52,8 @@ export type {
   TranscriptChunk,
   TranscriptSummary,
   UpdateHostInput,
+  UploadRemoteFileInput,
+  UploadRemoteFileResponse,
   UploadTerminalFileInput,
   UploadTerminalFileResponse,
   UploadTerminalImageInput,
@@ -138,6 +153,62 @@ export async function createTerminalToken(hostId: string, sessionName: string, i
   return response.token;
 }
 
+export async function resolveRemoteFilePath(
+  hostId: string,
+  sessionName: string,
+  input: ResolveRemoteFilePathInput,
+): Promise<string> {
+  const response = await request<{ path: string }>(`${tmuxSessionPath(hostId, sessionName)}/files/resolve`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  return response.path;
+}
+
+export async function listRemoteFiles(
+  hostId: string,
+  sessionName: string,
+  input: ListRemoteFilesInput,
+): Promise<RemoteFileList> {
+  return request<RemoteFileList>(`${tmuxSessionPath(hostId, sessionName)}/files/list`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function uploadRemoteFile(
+  hostId: string,
+  sessionName: string,
+  input: UploadRemoteFileInput,
+): Promise<UploadRemoteFileResponse> {
+  return request<UploadRemoteFileResponse>(`${tmuxSessionPath(hostId, sessionName)}/files/upload`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function downloadRemoteFile(
+  hostId: string,
+  sessionName: string,
+  input: DownloadRemoteFileInput,
+): Promise<Blob> {
+  return requestBlob(`${tmuxSessionPath(hostId, sessionName)}/files/download`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function deleteRemoteFile(
+  hostId: string,
+  sessionName: string,
+  input: DeleteRemoteFileInput,
+): Promise<void> {
+  await requestWithoutBody(`${tmuxSessionPath(hostId, sessionName)}/files/delete`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
 export async function uploadTerminalImage(
   hostId: string,
   sessionName: string,
@@ -219,6 +290,17 @@ async function requestWithoutBody(path: string, init: RequestInit = {}) {
   if (!response.ok) {
     throw new Error(await response.text());
   }
+}
+
+async function requestBlob(path: string, init: RequestInit = {}) {
+  const response = await fetch(gatewayURL + path, {
+    ...init,
+    headers: requestHeaders(init.headers),
+  });
+  if (!response.ok) {
+    throw new Error(await response.text());
+  }
+  return response.blob();
 }
 
 export function requestHeaders(initHeaders?: HeadersInit) {

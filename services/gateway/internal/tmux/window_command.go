@@ -26,6 +26,15 @@ func tmuxCurrentPathPrelude(target Target) string {
 		shellQuote("#{pane_current_path}") + ") || exit $?; "
 }
 
+func CurrentPathCommand(target Target) (string, error) {
+	if err := ValidateTarget(target); err != nil {
+		return "", err
+	}
+	command := tmuxPrelude() + "\"$TMUX_BIN\" display-message -p -t " + shellQuote(formatTarget(target)) + " " +
+		shellQuote("#{pane_current_path}")
+	return loginShellCommand(command), nil
+}
+
 func KillWindowCommand(target Target) (string, error) {
 	if err := ValidateTarget(target); err != nil {
 		return "", err

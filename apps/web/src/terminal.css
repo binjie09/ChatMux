@@ -173,8 +173,7 @@
 
 .context-stack {
   display: grid;
-  grid-template-rows: minmax(0, 1fr) minmax(140px, 220px);
-  gap: 12px;
+  grid-template-rows: minmax(0, 1fr);
   min-height: 0;
   overflow: hidden;
 }
@@ -359,10 +358,6 @@
 @media (max-width: 900px) {
   .terminal-workspace {
     grid-template-columns: 1fr;
-  }
-
-  .history-panel {
-    min-height: 180px;
   }
 }
 

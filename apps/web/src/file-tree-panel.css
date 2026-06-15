@@ -1,0 +1,245 @@
+.file-tree-panel {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto auto auto minmax(0, 1fr);
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid #d9d2c3;
+  border-radius: 8px;
+  color: #1a231e;
+  background: #fffaf0;
+}
+
+.file-tree-panel.drag-active {
+  border-color: #527a64;
+  outline: 2px solid rgba(143, 213, 178, 0.45);
+}
+
+.file-tree-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 54px;
+  border-bottom: 1px solid #e2dccf;
+  padding: 10px;
+}
+
+.file-tree-header strong,
+.file-tree-header span {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-tree-header strong {
+  font-size: 14px;
+}
+
+.file-tree-header span {
+  margin-top: 2px;
+  color: #69746e;
+  font-size: 12px;
+}
+
+.file-tree-actions {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.file-tree-actions button,
+.file-tree-path-form button {
+  display: grid;
+  place-items: center;
+  height: 32px;
+  border: 1px solid #d6cebd;
+  border-radius: 8px;
+  color: #1c251f;
+  background: #ffffff;
+}
+
+.file-tree-actions button {
+  width: 32px;
+}
+
+.file-tree-actions button:disabled,
+.file-tree-path-form button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.file-tree-path-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 48px;
+  gap: 6px;
+  border-bottom: 1px solid #e8e0d1;
+  padding: 8px 10px;
+}
+
+.file-tree-path-form input {
+  min-width: 0;
+  height: 32px;
+  border: 1px solid #d6cebd;
+  border-radius: 8px;
+  padding: 0 9px;
+  color: #17201b;
+  background: #ffffff;
+  font-size: 12px;
+}
+
+.file-tree-path-form button {
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.file-tree-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.file-tree-drop-hint {
+  border-bottom: 1px solid #e8e0d1;
+  padding: 7px 10px;
+  color: #69746e;
+  background: #f8f2e6;
+  font-size: 12px;
+}
+
+.file-tree-body {
+  min-height: 0;
+  overflow: auto;
+  padding: 6px;
+  scrollbar-color: #c7bdac #fffaf0;
+}
+
+.file-tree-node-group {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.file-tree-row {
+  --tree-depth: 0;
+  display: grid;
+  grid-template-columns: 16px 18px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 30px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 4px 8px 4px calc(8px + var(--tree-depth) * 16px);
+  color: #24302a;
+  background: transparent;
+  font-size: 12px;
+  text-align: left;
+}
+
+.file-tree-row:hover {
+  border-color: #ded6c7;
+  background: #f4ecdd;
+}
+
+.file-tree-row.selected {
+  border-color: #8fd5b2;
+  background: #e4f4ea;
+}
+
+.file-tree-row svg {
+  color: #60736a;
+}
+
+.file-tree-row span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-tree-row small {
+  color: #7a847e;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.file-tree-spacer {
+  width: 16px;
+  height: 16px;
+}
+
+.file-tree-loading,
+.file-tree-state {
+  margin: 0;
+  padding: 10px;
+  color: #69746e;
+  font-size: 12px;
+}
+
+.file-tree-loading {
+  padding-left: calc(10px + var(--tree-depth) * 16px);
+}
+
+.file-tree-panel.mobile {
+  height: 100%;
+  border: 0;
+  background: #fffaf0;
+}
+
+.file-tree-panel.mobile .file-tree-row {
+  min-height: 38px;
+  font-size: 13px;
+}
+
+.file-tree-panel.mobile .file-tree-drop-hint {
+  min-height: 34px;
+}
+
+.file-tree-menu-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  border: 0;
+  background: transparent;
+}
+
+.file-tree-context-menu {
+  position: fixed;
+  z-index: 81;
+  display: grid;
+  min-width: 128px;
+  overflow: hidden;
+  border: 1px solid #d3caba;
+  border-radius: 8px;
+  padding: 4px;
+  background: #ffffff;
+  box-shadow: 0 12px 28px rgba(28, 37, 31, 0.2);
+}
+
+.file-tree-context-menu button {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  align-items: center;
+  gap: 7px;
+  min-height: 32px;
+  border: 0;
+  border-radius: 6px;
+  padding: 0 8px;
+  color: #1c251f;
+  background: transparent;
+  font-size: 12px;
+  text-align: left;
+}
+
+.file-tree-context-menu button:hover {
+  background: #f4ecdd;
+}
+
+.file-tree-context-menu button.danger {
+  color: #9f2d23;
+}

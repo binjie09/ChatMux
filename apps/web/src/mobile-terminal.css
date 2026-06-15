@@ -53,9 +53,9 @@
   .mobile-terminal-bar {
     display: grid;
     grid-template-areas:
-      "back title context draft"
+      "back title files draft"
       ". picker picker picker";
-    grid-template-columns: 44px minmax(0, 1fr) 44px 44px;
+    grid-template-columns: 44px minmax(0, 1fr) 40px 40px;
     align-items: center;
     gap: 5px 4px;
     min-height: 88px;
@@ -84,7 +84,7 @@
   }
 
   .mobile-terminal-bar:not(.tmux-fallback) > button:nth-of-type(2) {
-    grid-area: context;
+    grid-area: files;
   }
 
   .mobile-terminal-bar:not(.tmux-fallback) > button:nth-of-type(3) {
@@ -228,6 +228,10 @@
     background: #fffaf0;
   }
 
+  .mobile-terminal-sheet > header.has-action {
+    grid-template-columns: 22px minmax(0, 1fr) 40px 40px;
+  }
+
   .mobile-terminal-sheet > header button {
     display: grid;
     place-items: center;
@@ -245,12 +249,6 @@
     min-height: 0;
     overflow: auto;
     padding: 12px;
-  }
-
-  .mobile-terminal-sheet-body .history-panel,
-  .mobile-terminal-sheet-body .audit-panel {
-    min-height: 240px;
-    max-height: none;
   }
 
   .mobile-terminal-sheet-body .command-draft-panel {
