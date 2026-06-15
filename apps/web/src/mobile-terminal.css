@@ -66,8 +66,8 @@
   }
 
   .mobile-terminal-bar.tmux-fallback {
-    grid-template-areas: "back title install";
-    grid-template-columns: 44px minmax(0, 1fr) auto;
+    grid-template-areas: "back title upload install";
+    grid-template-columns: 44px minmax(0, 1fr) 44px auto;
     min-height: 56px;
     padding: 7px 8px;
   }
@@ -129,7 +129,7 @@
   .mobile-terminal-window-picker {
     grid-area: picker;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 40px;
+    grid-template-columns: minmax(0, 1fr) 40px 40px;
     gap: 6px;
     min-width: 0;
   }
@@ -143,6 +143,14 @@
     color: #eff7f1;
     background: #0f1713;
     font-size: 13px;
+  }
+
+  .terminal-file-input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
   }
 
   .mobile-terminal-bar > button.mobile-terminal-install {
@@ -172,6 +180,10 @@
     margin-top: 0;
     color: inherit;
     font-size: inherit;
+  }
+
+  .mobile-terminal-bar > button.terminal-file-upload-button {
+    grid-area: upload;
   }
 
   .mobile-terminal-sheet-layer {

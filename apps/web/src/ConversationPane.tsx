@@ -56,8 +56,9 @@ type ConversationPaneProps = {
   onInstallTmux: () => void;
   onMobileSheetChange: (sheet: MobileTerminalSheet | null) => void;
   onOpenWindow: (sessionName: string, windowIndex: number) => void;
-  onPasteTerminalImage: ((file: File) => Promise<string>) | null;
+  onPasteTerminalFile: ((file: File) => Promise<string>) | null;
   onQueuedInputSent: (inputId: number) => void;
+  onUploadTerminalFile: ((file: File) => Promise<void>) | null;
   onRenameWindow: (sessionName: string, windowIndex: number, name: string) => Promise<void> | void;
   onSaveSessionMetadata: (input: SaveSessionMetadataInput) => Promise<void>;
   onTogglePin: () => void;
@@ -90,6 +91,7 @@ export function ConversationPane(props: ConversationPaneProps) {
             props.onOpenWindow(props.selectedSession.name, windowIndex);
           }
         }}
+        onUploadFile={props.onUploadTerminalFile}
       />
       <header className="conversation-header">
         <div>
@@ -126,7 +128,7 @@ export function ConversationPane(props: ConversationPaneProps) {
             onConnectionBlocked={props.onConnectionBlocked}
             onConnectionError={props.onConnectionError}
             onConnectionReady={props.onConnectionReady}
-            onPasteImage={props.onPasteTerminalImage}
+            onPasteFile={props.onPasteTerminalFile}
             onQueuedInputSent={props.onQueuedInputSent}
             reconnectSignal={props.terminalReconnectSignal}
           />

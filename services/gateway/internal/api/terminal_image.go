@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"path"
 	"strings"
 	"time"
 
@@ -13,6 +14,9 @@ import (
 )
 
 const terminalImageUploadDir = "/tmp/chatmux-clipboard-images"
+const terminalFileUploadDir = "/tmp/chatmux-clipboard-files"
+const terminalFileNameMaxLength = 120
+const defaultTerminalFileName = "clipboard-file"
 
 type terminalImageUploadRequest struct {
 	CredentialToken string `json:"credentialToken"`
@@ -20,7 +24,18 @@ type terminalImageUploadRequest struct {
 	MimeType        string `json:"mimeType"`
 }
 
+type terminalFileUploadRequest struct {
+	CredentialToken string `json:"credentialToken"`
+	DataBase64      string `json:"dataBase64"`
+	FileName        string `json:"fileName"`
+	MimeType        string `json:"mimeType"`
+}
+
 type terminalImageUploadResponse struct {
+	RemotePath string `json:"remotePath"`
+}
+
+type terminalFileUploadResponse struct {
 	RemotePath string `json:"remotePath"`
 }
 
@@ -67,6 +82,49 @@ func (s *Server) handleUploadTerminalImage(w http.ResponseWriter, r *http.Reques
 	writeJSON(w, http.StatusCreated, terminalImageUploadResponse{RemotePath: remotePath})
 }
 
+func (s *Server) handleUploadTerminalFile(w http.ResponseWriter, r *http.Request) {
+	hostID, sessionName, ok := routeHostSessionAction(r.URL.Path, "/terminal-files")
+	if !ok {
+		writeError(w, http.StatusNotFound, errors.New("route not found"))
+		return
+	}
+
+	var input terminalFileUploadRequest
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+	host, err := s.visibleHost(r, hostID)
+	if err != nil {
+		writeError(w, statusForHostAccessError(err), err)
+		return
+	}
+	credential, err := s.sshCredentialForRequest(r, hostID, input.CredentialToken)
+	if err != nil {
+		writeError(w, statusForCredentialError(err), err)
+		return
+	}
+	payload, err := decodeTerminalFile(input)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+
+	remotePath := terminalFileRemotePath(input.FileName)
+	if err := s.ssh.WriteFile(r.Context(), hostToSSHConfig(host), credential, remotePath, payload); err != nil {
+		writeError(w, http.StatusBadGateway, err)
+		return
+	}
+	if err := s.logAudit(r.Context(), hoststore.LogAuditEventInput{
+		Type: "terminal.file.uploaded", HostID: hostID, SessionName: sessionName,
+		Message: fmt.Sprintf("uploaded terminal file %q (%d bytes)", sanitizeTerminalFileName(input.FileName), len(payload)),
+	}); err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	writeJSON(w, http.StatusCreated, terminalFileUploadResponse{RemotePath: remotePath})
+}
+
 func decodeTerminalImage(input terminalImageUploadRequest) ([]byte, string, error) {
 	extension, ok := terminalImageExtension(input.MimeType)
 	if !ok {
@@ -80,6 +138,14 @@ func decodeTerminalImage(input terminalImageUploadRequest) ([]byte, string, erro
 		return nil, "", errors.New("terminal image is empty")
 	}
 	return data, extension, nil
+}
+
+func decodeTerminalFile(input terminalFileUploadRequest) ([]byte, error) {
+	data, err := base64.StdEncoding.DecodeString(input.DataBase64)
+	if err != nil {
+		return nil, fmt.Errorf("decode terminal file: %w", err)
+	}
+	return data, nil
 }
 
 func terminalImageExtension(mimeType string) (string, bool) {
@@ -99,4 +165,38 @@ func terminalImageExtension(mimeType string) (string, bool) {
 
 func terminalImageRemotePath(extension string) string {
 	return fmt.Sprintf("%s/chatmux-%d%s", terminalImageUploadDir, time.Now().UnixNano(), extension)
+}
+
+func terminalFileRemotePath(fileName string) string {
+	return path.Join(terminalFileUploadDir, fmt.Sprintf("chatmux-%d-%s", time.Now().UnixNano(), sanitizeTerminalFileName(fileName)))
+}
+
+func sanitizeTerminalFileName(fileName string) string {
+	candidate := path.Base(strings.ReplaceAll(strings.TrimSpace(fileName), "\\", "/"))
+	if candidate == "." || candidate == "/" || candidate == "" {
+		return defaultTerminalFileName
+	}
+	var builder strings.Builder
+	for _, value := range candidate {
+		if builder.Len() >= terminalFileNameMaxLength {
+			break
+		}
+		if safeTerminalFileNameRune(value) {
+			builder.WriteRune(value)
+			continue
+		}
+		builder.WriteByte('_')
+	}
+	sanitized := strings.Trim(builder.String(), ".-_")
+	if sanitized == "" {
+		return defaultTerminalFileName
+	}
+	return sanitized
+}
+
+func safeTerminalFileNameRune(value rune) bool {
+	return value >= 'a' && value <= 'z' ||
+		value >= 'A' && value <= 'Z' ||
+		value >= '0' && value <= '9' ||
+		value == '.' || value == '_' || value == '-'
 }

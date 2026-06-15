@@ -5,7 +5,7 @@ import { MousePointer2, RefreshCw, TextCursorInput } from "lucide-react";
 import { TerminalQuickKeys } from "./TerminalQuickKeys";
 import { TerminalScrollbackOverlay } from "./TerminalScrollbackOverlay";
 import { bindTerminalClipboard } from "./terminal-clipboard";
-import { bindTerminalPaste, type TerminalPasteHandlers } from "./terminal-image-paste";
+import { bindTerminalPaste, type TerminalPasteHandlers } from "./terminal-file-paste";
 import { sendTerminalInput, sendTerminalResize, terminalSize } from "./terminal-protocol";
 import { terminalTheme } from "./terminal-theme";
 import { useExternalReconnect } from "./useExternalReconnect";
@@ -21,7 +21,7 @@ type NativeTerminalProps = {
   onConnectionBlocked?: (message: string) => boolean;
   onConnectionError: (message: string) => void;
   onConnectionReady: (status: ConnectionStatus) => void;
-  onPasteImage?: ((file: File) => Promise<string>) | null;
+  onPasteFile?: ((file: File) => Promise<string>) | null;
   queuedInput: QueuedTerminalInput | null;
   onQueuedInputSent: (inputId: number) => void;
   reconnectSignal: number;

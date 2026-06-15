@@ -2,6 +2,7 @@ import { ArrowLeft, Bot, Download, ListTree, Plus, Search, X } from "lucide-reac
 import { type ReactNode } from "react";
 import { type TmuxWindow } from "./api";
 import { windowLabel } from "./session-window-utils";
+import { TerminalFileUploadButton } from "./TerminalFileUploadButton";
 import "./mobile-terminal.css";
 
 export type MobileTerminalSheet = "context" | "draft";
@@ -21,6 +22,7 @@ type MobileTerminalBarProps = {
   onInstallTmux: () => void;
   onOpenSheet: (sheet: MobileTerminalSheet) => void;
   onOpenWindow: (windowIndex: number) => void;
+  onUploadFile: ((file: File) => Promise<void>) | null;
 };
 
 type MobileTerminalSheetPanelProps = {
@@ -41,16 +43,19 @@ export function MobileTerminalBar(props: MobileTerminalBarProps) {
         <span>{terminalSubtitle(props.hostName, props.sessionName, props.windowName)}</span>
       </div>
       {props.loading ? null : props.tmuxFallbackActive ? (
-        <button
-          className="mobile-terminal-install"
-          type="button"
-          aria-label="Install tmux"
-          disabled={props.tmuxInstallPending}
-          onClick={props.onInstallTmux}
-        >
-          <Download size={18} aria-hidden="true" />
-          <span>{props.tmuxInstallPending ? "Installing" : "Install tmux"}</span>
-        </button>
+        <>
+          <button
+            className="mobile-terminal-install"
+            type="button"
+            aria-label="Install tmux"
+            disabled={props.tmuxInstallPending}
+            onClick={props.onInstallTmux}
+          >
+            <Download size={18} aria-hidden="true" />
+            <span>{props.tmuxInstallPending ? "Installing" : "Install tmux"}</span>
+          </button>
+          {props.onUploadFile ? <TerminalFileUploadButton onUpload={props.onUploadFile} /> : null}
+        </>
       ) : (
         <>
           <div className="mobile-terminal-window-picker">
@@ -68,6 +73,7 @@ export function MobileTerminalBar(props: MobileTerminalBarProps) {
             <button type="button" aria-label="New window" onClick={props.onCreateWindow}>
               <Plus size={18} aria-hidden="true" />
             </button>
+            {props.onUploadFile ? <TerminalFileUploadButton onUpload={props.onUploadFile} /> : null}
           </div>
           <button type="button" aria-label="Open context" onClick={() => props.onOpenSheet("context")}>
             <Search size={19} aria-hidden="true" />

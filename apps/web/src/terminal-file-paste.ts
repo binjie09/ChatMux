@@ -4,7 +4,7 @@ import { bracketedPaste, errorMessage, sendTerminalInput } from "./terminal-prot
 
 export type TerminalPasteHandlers = {
   onConnectionError: (message: string) => void;
-  onPasteImage?: ((file: File) => Promise<string>) | null;
+  onPasteFile?: ((file: File) => Promise<string>) | null;
 };
 
 const keyboardPasteFallbackDelayMs = 100;
@@ -22,7 +22,7 @@ export function bindTerminalPaste(options: TerminalPasteOptions) {
   let keyboardPasteFallbackTimer = 0;
   const onPaste = (event: ClipboardEvent) => {
     keyboardPasteFallbackTimer = clearKeyboardPasteFallback(keyboardPasteFallbackTimer);
-    const file = firstPastedImage(event.clipboardData);
+    const file = firstPastedFile(event.clipboardData);
     const text = event.clipboardData?.getData("text/plain") ?? "";
     if (!file && !text) {
       return;
@@ -51,10 +51,10 @@ export function bindTerminalPaste(options: TerminalPasteOptions) {
   };
 }
 
-function firstPastedImage(data: DataTransfer | null) {
+function firstPastedFile(data: DataTransfer | null) {
   const items = Array.from(data?.items ?? []);
   for (const item of items) {
-    if (item.kind === "file" && item.type.startsWith("image/")) {
+    if (item.kind === "file") {
       return item.getAsFile();
     }
   }
@@ -78,9 +78,9 @@ function isKeyboardPaste(event: KeyboardEvent) {
 async function pasteFromBrowserClipboard(target: PasteTarget) {
   try {
     const clipboard = navigator.clipboard;
-    const imageFile = await readClipboardImage(clipboard);
-    if (imageFile) {
-      await pasteTerminalClipboard({ file: imageFile, text: "" }, target);
+    const file = await readClipboardFile(clipboard);
+    if (file) {
+      await pasteTerminalClipboard({ file, text: "" }, target);
       return;
     }
     const text = await clipboard.readText();
@@ -92,17 +92,28 @@ async function pasteFromBrowserClipboard(target: PasteTarget) {
   }
 }
 
-async function readClipboardImage(clipboard: Clipboard) {
+async function readClipboardFile(clipboard: Clipboard) {
   const items = await clipboard.read();
   for (const item of items) {
-    const imageType = item.types.find((type) => type.startsWith("image/"));
-    if (!imageType) {
+    const fileType = clipboardFileType(item);
+    if (!fileType) {
       continue;
     }
-    const blob = await item.getType(imageType);
-    return new File([blob], `clipboard.${extensionForMimeType(imageType)}`, { type: imageType });
+    const blob = await item.getType(fileType);
+    return new File([blob], clipboardFileName(fileType), { type: fileType });
   }
   return null;
+}
+
+function clipboardFileType(item: ClipboardItem) {
+  const imageType = item.types.find((type) => type.startsWith("image/"));
+  if (imageType) {
+    return imageType;
+  }
+  if (item.types.some((type) => type.startsWith("text/"))) {
+    return "";
+  }
+  return item.types.find((type) => type !== "text/plain") ?? "";
 }
 
 async function pasteTerminalClipboard(
@@ -115,7 +126,7 @@ async function pasteTerminalClipboard(
     return;
   }
   if (clipboard.file) {
-    await pasteTerminalImage(clipboard.file, socket, target.handlersRef);
+    await pasteTerminalFile(clipboard.file, socket, target.handlersRef);
     return;
   }
   if (clipboard.text) {
@@ -123,14 +134,14 @@ async function pasteTerminalClipboard(
   }
 }
 
-async function pasteTerminalImage(
+async function pasteTerminalFile(
   file: File,
   socket: WebSocket,
   handlersRef: MutableRefObject<TerminalPasteHandlers>,
 ) {
-  const upload = handlersRef.current.onPasteImage;
+  const upload = handlersRef.current.onPasteFile;
   if (!upload) {
-    handlersRef.current.onConnectionError("Terminal image paste is not available");
+    handlersRef.current.onConnectionError("Terminal file paste is not available");
     return;
   }
   try {
@@ -139,6 +150,10 @@ async function pasteTerminalImage(
   } catch (error) {
     handlersRef.current.onConnectionError(errorMessage(error));
   }
+}
+
+function clipboardFileName(mimeType: string) {
+  return `clipboard.${extensionForMimeType(mimeType)}`;
 }
 
 function extensionForMimeType(mimeType: string) {
@@ -150,8 +165,20 @@ function extensionForMimeType(mimeType: string) {
       return "gif";
     case "image/webp":
       return "webp";
+    case "application/pdf":
+      return "pdf";
+    case "application/json":
+      return "json";
+    case "text/csv":
+      return "csv";
+    case "text/html":
+      return "html";
+    case "text/markdown":
+      return "md";
+    case "text/plain":
+      return "txt";
     default:
-      return "png";
+      return "bin";
   }
 }
 

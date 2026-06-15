@@ -39,6 +39,8 @@ export type {
   TranscriptChunk,
   TranscriptSummary,
   UpdateHostInput,
+  UploadTerminalFileInput,
+  UploadTerminalFileResponse,
   UploadTerminalImageInput,
   UploadTerminalImageResponse,
 } from "./api-types";
@@ -219,17 +221,25 @@ async function requestWithoutBody(path: string, init: RequestInit = {}) {
   }
 }
 
-function requestHeaders(initHeaders?: HeadersInit) {
+export function requestHeaders(initHeaders?: HeadersInit) {
+  return new Headers(requestHeaderEntries(initHeaders));
+}
+
+function requestHeaderEntries(initHeaders?: HeadersInit) {
   const headers = new Headers(initHeaders);
   headers.set("Content-Type", jsonContentType);
   if (gatewayAccessToken) {
     headers.set("Authorization", `Bearer ${gatewayAccessToken}`);
   }
-  return headers;
+  return Array.from(headers.entries());
 }
 
 export function tmuxSessionPath(hostId: string, sessionName: string) {
   return `/api/hosts/${hostId}/tmux/sessions/${encodeURIComponent(sessionName)}`;
+}
+
+export function uploadRequestURL(path: string) {
+  return gatewayURL + path;
 }
 
 function defaultGatewayURL() {

@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { type TmuxSession, uploadTerminalImage } from "./api";
+import { type TmuxSession } from "./api";
 import { type ComposerMode } from "./Composer";
 import { AppShell } from "./AppShell";
-import { fileToBase64 } from "./file-base64";
 import { HostTrustDialog } from "./HostTrustDialog";
 import { type MobilePanel } from "./MobileNavigation";
 import { type MobileTerminalSheet } from "./MobileTerminalChrome";
@@ -25,9 +24,11 @@ import { useTmuxWindowActions } from "./useTmuxWindowActions";
 import { useAppSessionHandlers } from "./useAppSessionHandlers";
 import { useAppSessionWorkflow } from "./useAppSessionWorkflow";
 import { useHostTrustPrompt } from "./useHostTrustPrompt";
+import { useTerminalUploadProgress } from "./useTerminalUploadProgress";
 import { type ConnectionStatus } from "./useTerminalSocket";
 import { findSessionWindow, windowLabel } from "./session-window-utils";
 import { bracketedPaste } from "./terminal-protocol";
+import { uploadTerminalFileWithProgress } from "./terminal-upload-workflow";
 import { hasSSHFallbackSession, isSSHFallbackSession, tmuxInstallScript } from "./tmux-fallback";
 import { errorMessage } from "./view-utils";
 
@@ -52,6 +53,7 @@ export function App() {
   const history = useTerminalHistoryState();
   const selection = useSessionWindowSelection();
   const gatewayToken = useGatewayAccessToken(setError);
+  const uploadProgress = useTerminalUploadProgress();
   const {
     handleCreateHost,
     handleDeleteHost,
@@ -177,27 +179,34 @@ export function App() {
     setQueuedInput((current) => current?.id === inputId ? null : current);
   }, []);
 
-  async function handleTerminalImagePaste(file: File) {
+  async function handleTerminalFilePaste(file: File) {
     if (!selectedHostId || !selection.selectedSessionName) {
       throw new Error("Host and session are required");
     }
     const credentialToken = await getSelectedHostCredentialToken();
-    const response = await uploadTerminalImage(selectedHostId, selection.selectedSessionName, {
-      credentialToken,
-      dataBase64: await fileToBase64(file),
-      mimeType: file.type,
-    });
-    void auditEvents.refresh();
-    return response.remotePath;
+    try {
+      const remotePath = await uploadTerminalFileWithProgress({
+        credentialToken,
+        file,
+        hostId: selectedHostId,
+        progress: uploadProgress,
+        sessionName: selection.selectedSessionName,
+      });
+      void auditEvents.refresh();
+      return remotePath;
+    } catch (error) {
+      uploadProgress.failUpload(errorMessage(error));
+      throw error;
+    }
   }
 
   const isMobileTerminalActive = Boolean(terminalSessionKey && mobilePanel === "terminal");
   const terminalRestoreLoading = Boolean(lastWindowRestorePending && mobilePanel === "terminal" && !terminalSessionKey);
   const showMobileTerminal = Boolean((terminalSessionKey || terminalRestoreLoading) && mobilePanel === "terminal");
 
-  async function handleMobileTerminalImageUpload(file: File) {
+  async function handleMobileTerminalFileUpload(file: File) {
     try {
-      const remotePath = await handleTerminalImagePaste(file);
+      const remotePath = await handleTerminalFilePaste(file);
       setQueuedInput({ data: bracketedPaste(remotePath), id: Date.now() });
     } catch (error) {
       setError(errorMessage(error));
@@ -355,24 +364,26 @@ export function App() {
         showHostForm={showHostForm}
         target={summaryTarget}
         terminalLoading={terminalRestoreLoading}
+        terminalUploadProgress={uploadProgress.progress}
         terminalSessionKey={terminalSessionKey}
         tmuxFallbackActive={tmuxFallbackActive}
         tmuxInstallPending={pendingTmuxInstall}
         composerHandlers={{
           onComposerModeChange: setComposerMode,
           onComposerSubmit: handleComposerSubmit,
-          onComposerUploadImage: isMobileLayout && isMobileTerminalActive && !selectedSessionIsFallback ? handleMobileTerminalImageUpload : null,
+          onComposerUploadImage: isMobileLayout && isMobileTerminalActive ? handleMobileTerminalFileUpload : null,
           onComposerValueChange: setComposerValue,
         }}
         sessionHandlers={sessionHandlers}
         onConnectionError={setError}
         onConnectionBlocked={handleTerminalConnectionBlocked}
-        onPasteTerminalImage={terminalSessionKey && !selectedSessionIsFallback ? handleTerminalImagePaste : null}
+        onPasteTerminalFile={terminalSessionKey ? handleTerminalFilePaste : null}
         onCreateHost={handleCreateHost}
         onDeleteHost={handleDeleteHost}
         onDrafted={() => void auditEvents.refresh()}
         onHistoryQueryChange={history.setQuery}
         onInstallTmux={handleInstallTmux}
+        onTerminalUploadProgressHide={uploadProgress.hideUpload}
         onMobilePanelChange={handleMobilePanelChange}
         onMobileSheetChange={setMobileSheet}
         onNewSessionNameChange={setNewSessionName}
@@ -385,6 +396,7 @@ export function App() {
         onShowHostForm={setShowHostForm}
         onTogglePin={handleTogglePin}
         onTrustHost={() => void handleTrustHost()}
+        onUploadTerminalFile={isMobileLayout && isMobileTerminalActive ? handleMobileTerminalFileUpload : null}
         terminalReconnectSignal={terminalReconnectSignal}
         onUpdateHost={handleUpdateHost}
       />

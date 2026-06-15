@@ -15,11 +15,13 @@ import { type QueuedTerminalInput } from "./NativeTerminal";
 import { SessionList } from "./SessionList";
 import { type DisplayTmuxSession } from "./session-state-machine";
 import { Sidebar } from "./Sidebar";
+import { TerminalUploadProgressToast } from "./TerminalUploadProgressToast";
 import { type GatewayTokenState } from "./useGatewayAccessToken";
 import { usePWAInstallPrompt } from "./usePWAInstallPrompt";
 import { type SessionNotificationStatus } from "./useSessionNotifications";
 import { type SSHCredentialStatus } from "./useSSHCredentialToken";
 import { type ConnectionStatus } from "./useTerminalSocket";
+import { type TerminalUploadProgressState } from "./useTerminalUploadProgress";
 
 type CredentialTarget = {
   getCredentialToken: () => Promise<string>;
@@ -62,6 +64,7 @@ type AppShellProps = {
   showHostForm: boolean;
   target: CredentialTarget;
   terminalLoading: boolean;
+  terminalUploadProgress: TerminalUploadProgressState | null;
   terminalSessionKey: string;
   tmuxFallbackActive: boolean;
   tmuxInstallPending: boolean;
@@ -94,16 +97,18 @@ type AppShellProps = {
   onMobileSheetChange: (sheet: MobileTerminalSheet | null) => void;
   onNewSessionNameChange: (value: string) => void;
   onNotificationsEnabledChange: (enabled: boolean) => void;
-  onPasteTerminalImage: ((file: File) => Promise<string>) | null;
+  onPasteTerminalFile: ((file: File) => Promise<string>) | null;
   onQueuedInputSent: (inputId: number) => void;
   onSaveSessionMetadata: (input: SaveSessionMetadataInput) => Promise<void>;
   onSelectHost: (hostId: string) => void;
   onShowHostForm: (show: boolean) => void;
   onTogglePin: () => void;
   onTrustHost: () => void;
+  onUploadTerminalFile: ((file: File) => Promise<void>) | null;
   onUpdateHost: (hostId: string, input: CreateHostInput) => Promise<void>;
   onHistoryQueryChange: (query: string) => void;
   onInstallTmux: () => void;
+  onTerminalUploadProgressHide: () => void;
   terminalReconnectSignal: number;
 };
 
@@ -201,13 +206,18 @@ export function AppShell(props: AppShellProps) {
         onInstallTmux={props.onInstallTmux}
         onMobileSheetChange={props.onMobileSheetChange}
         onOpenWindow={props.sessionHandlers.onOpenWindow}
-        onPasteTerminalImage={props.onPasteTerminalImage}
+        onPasteTerminalFile={props.onPasteTerminalFile}
         onQueuedInputSent={props.onQueuedInputSent}
         onRenameWindow={props.sessionHandlers.onRenameWindow}
         onSaveSessionMetadata={props.onSaveSessionMetadata}
         onTogglePin={props.onTogglePin}
         onTrustHost={props.onTrustHost}
+        onUploadTerminalFile={props.onUploadTerminalFile}
         terminalReconnectSignal={props.terminalReconnectSignal}
+      />
+      <TerminalUploadProgressToast
+        progress={props.terminalUploadProgress}
+        onHide={props.onTerminalUploadProgressHide}
       />
       <MobileNavigation activePanel={props.mobilePanel} hidden={props.isMobileTerminalActive} onPanelChange={props.onMobilePanelChange} />
     </main>

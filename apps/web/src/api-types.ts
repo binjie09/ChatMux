@@ -127,6 +127,17 @@ export type UploadTerminalImageResponse = {
   remotePath: string;
 };
 
+export type UploadTerminalFileInput = {
+  credentialToken: string;
+  dataBase64: string;
+  fileName: string;
+  mimeType: string;
+};
+
+export type UploadTerminalFileResponse = {
+  remotePath: string;
+};
+
 export type SaveSessionMetadataInput = {
   title: string;
   tags: string[];
