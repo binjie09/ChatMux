@@ -4,7 +4,7 @@ import { FileTreeContextMenu } from "./FileTreeContextMenu";
 import { TreeNode } from "./FileTreeNode";
 import { FileTreeBody, FileTreeHeader, FileTreePathForm } from "./FileTreePanelParts";
 import { type FileTreeContextMenuState, type FileTreePanelProps } from "./file-tree-types";
-import { downloadEntry, firstClipboardFile } from "./file-tree-utils";
+import { downloadEntry, firstClipboardFile, relativeRemotePath } from "./file-tree-utils";
 import { useFileTreePanel } from "./useFileTreePanel";
 import { errorMessage } from "./view-utils";
 import "./file-tree-panel.css";
@@ -53,6 +53,22 @@ export function FileTreePanel(props: FileTreePanelProps) {
     const entry = contextMenu.entry;
     setContextMenu(null);
     void state.deleteEntry(entry);
+  }
+
+  function handleCopyAbsolutePathFromMenu() {
+    if (!contextMenu) {
+      return;
+    }
+    copySelectedPath(contextMenu.entry.path);
+    setContextMenu(null);
+  }
+
+  function handleCopyRelativePathFromMenu() {
+    if (!contextMenu) {
+      return;
+    }
+    copySelectedPath(relativeRemotePath(state.rootPath, contextMenu.entry.path));
+    setContextMenu(null);
   }
 
   function handleDownloadFromMenu() {
@@ -120,6 +136,8 @@ export function FileTreePanel(props: FileTreePanelProps) {
       <FileTreeContextMenu
         menu={contextMenu}
         onClose={() => setContextMenu(null)}
+        onCopyAbsolutePath={handleCopyAbsolutePathFromMenu}
+        onCopyRelativePath={handleCopyRelativePathFromMenu}
         onDelete={handleDeleteFromMenu}
         onDownload={handleDownloadFromMenu}
       />
