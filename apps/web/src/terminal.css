@@ -36,6 +36,7 @@
 }
 
 .terminal-window-tab {
+  position: relative;
   display: inline-grid;
   grid-template-columns: minmax(0, 1fr) 28px;
   align-items: center;
@@ -47,11 +48,18 @@
   border-radius: 8px;
   overflow: hidden;
   background: #151f1a;
+  transition: border-color 140ms ease, background-color 140ms ease, box-shadow 140ms ease;
+}
+
+.terminal-window-tab:not(.selected):hover {
+  border-color: #3d5447;
+  background: #1a261f;
 }
 
 .terminal-window-tab.selected {
   border-color: #8fd5b2;
-  background: #1f3028;
+  background: #233a2e;
+  box-shadow: 0 0 0 1px #8fd5b2, 0 2px 8px rgba(143, 213, 178, 0.18);
 }
 
 .terminal-window-tab > button:first-child {
@@ -62,10 +70,32 @@
   height: 100%;
   border: 0;
   padding: 0 8px;
-  color: #dbe7df;
+  color: #c4d3ca;
   background: transparent;
   font-size: 12px;
+  font-weight: 500;
   text-align: left;
+  transition: color 140ms ease;
+}
+
+.terminal-window-tab.selected > button:first-child {
+  padding-left: 10px;
+  color: #eafff2;
+  font-weight: 600;
+}
+
+.terminal-window-tab.selected > button:first-child svg {
+  color: #8fd5b2;
+}
+
+.terminal-window-tab.selected::before {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 3px;
+  background: #8fd5b2;
+  content: "";
 }
 
 .terminal-window-tab span {
