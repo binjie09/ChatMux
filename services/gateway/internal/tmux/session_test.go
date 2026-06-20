@@ -131,6 +131,32 @@ func TestCreateSessionCommandRejectsUnsafeName(t *testing.T) {
 	}
 }
 
+func TestUnavailableDetectsUnsupportedWindowsLoginShell(t *testing.T) {
+	outputs := []string{
+		"'exec' is not recognized as an internal or external command,\r\noperable program or batch file.\r\n",
+		"exec : The term 'exec' is not recognized as the name of a cmdlet, function, script file, or operable program.",
+		"'exec' \ufffd\ufffd\ufffd\ufffd\ufffdڲ\ufffd\ufffd\ufffd\ufffdⲿ\ufffd\ufffd\ufffdҲ\ufffd\ufffd\ufffdǿ\ufffd\ufffd\ufffd\ufffdеĳ\ufffd\ufffd\ufffd\r\n",
+	}
+	for _, output := range outputs {
+		if !Unavailable(output) {
+			t.Fatalf("expected unsupported login shell output to be unavailable: %q", output)
+		}
+	}
+}
+
+func TestUnavailableDoesNotHideOtherCommandFailures(t *testing.T) {
+	outputs := []string{
+		"permission denied\n",
+		"tmux failed to create /tmp socket\n",
+		"some command was not found\n",
+	}
+	for _, output := range outputs {
+		if Unavailable(output) {
+			t.Fatalf("expected unrelated output to stay visible: %q", output)
+		}
+	}
+}
+
 func TestValidateSessionNameAllowsUnicode(t *testing.T) {
 	validNames := []string{"部署", "发布_1", "deploy-生产.1", strings.Repeat("部", 64)}
 	for _, name := range validNames {

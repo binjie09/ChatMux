@@ -169,7 +169,7 @@ func findSessionByName(sessions []tmux.Session, name string) (tmux.Session, erro
 
 func fallbackSessionFromTmuxError(err error) (tmux.Session, bool) {
 	var commandError sshclient.CommandError
-	if !errors.As(err, &commandError) || !tmux.MissingTmux(commandError.Output) {
+	if !errors.As(err, &commandError) || !tmux.Unavailable(commandError.Output) {
 		return tmux.Session{}, false
 	}
 	return fallbackSSHSession(time.Now()), true

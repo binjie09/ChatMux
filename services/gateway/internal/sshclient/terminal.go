@@ -76,11 +76,24 @@ func startTerminalSession(client *ssh.Client, command string, size TerminalSize)
 		_ = session.Close()
 		return nil, err
 	}
-	if err := session.Start(command); err != nil {
+	if err := startTerminalCommand(session, command); err != nil {
 		_ = session.Close()
-		return nil, fmt.Errorf("start terminal command: %w", err)
+		return nil, err
 	}
 	return &Terminal{client: client, session: session, stdin: stdin, stdout: stdout, stderr: stderr}, nil
+}
+
+func startTerminalCommand(session *ssh.Session, command string) error {
+	if command == "" {
+		if err := session.Shell(); err != nil {
+			return fmt.Errorf("start terminal shell: %w", err)
+		}
+		return nil
+	}
+	if err := session.Start(command); err != nil {
+		return fmt.Errorf("start terminal command: %w", err)
+	}
+	return nil
 }
 
 func openTerminalPipes(session *ssh.Session) (io.WriteCloser, io.Reader, io.Reader, error) {

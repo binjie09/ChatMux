@@ -17,6 +17,7 @@ const terminalOverridesClipboardSlot = "terminal-overrides[900]"
 const tmuxDefaultHistoryLimit = 100000
 const maxSessionNameRunes = 64
 const maxWindowNameRunes = 256
+const missingTmuxMessage = "tmux not found in PATH, CHATMUX_TMUX_BIN, or $HOME/.local/bin"
 
 var ErrInvalidSessionName = errors.New("session name must be 1-64 Unicode letters or numbers, underscore, dot, or dash")
 var ErrInvalidWindowTarget = errors.New("window target must have a non-negative window index")
@@ -60,10 +61,6 @@ func AttachTargetCommand(target Target) (string, error) {
 	command := tmuxPrelude() + tmuxHistoryPrelude(sessionName) + tmuxClipboardPrelude() +
 		"exec \"$TMUX_BIN\" attach-session -t " + shellQuote(formatTarget(target))
 	return loginShellCommand(command), nil
-}
-
-func LoginShellCommand() string {
-	return "exec \"${SHELL:-/bin/sh}\""
 }
 
 func KillSessionCommand(name string) (string, error) {
@@ -264,14 +261,43 @@ func tmuxNoSessionsPrelude() string {
 }
 
 func MissingTmux(output string) bool {
-	return strings.Contains(output, "tmux not found in PATH, CHATMUX_TMUX_BIN, or $HOME/.local/bin")
+	return strings.Contains(output, missingTmuxMessage)
+}
+
+func Unavailable(output string) bool {
+	return MissingTmux(output) || UnsupportedLoginShell(output)
+}
+
+func UnsupportedLoginShell(output string) bool {
+	lower := strings.ToLower(output)
+	if !strings.Contains(lower, "exec") {
+		return false
+	}
+	for _, pattern := range unsupportedLoginShellPatterns() {
+		if strings.Contains(lower, pattern) {
+			return true
+		}
+	}
+	return false
+}
+
+func unsupportedLoginShellPatterns() []string {
+	return []string{
+		"not recognized",
+		"commandnotfoundexception",
+		"cmdlet",
+		"not found",
+		"\ufffd",
+		"\u5185\u90e8",
+		"\u5916\u90e8",
+	}
 }
 
 func tmuxPrelude() string {
 	return "TMUX_BIN=\"${CHATMUX_TMUX_BIN:-$(command -v tmux || true)}\"; " +
 		"CHATMUX_TMUX_HISTORY_LIMIT=\"${CHATMUX_TMUX_HISTORY_LIMIT:-" + strconv.Itoa(tmuxDefaultHistoryLimit) + "}\"; " +
 		"if [ -z \"$TMUX_BIN\" ] && [ -x \"$HOME/.local/bin/tmux\" ]; then TMUX_BIN=\"$HOME/.local/bin/tmux\"; fi; " +
-		"if [ -z \"$TMUX_BIN\" ]; then echo 'tmux not found in PATH, CHATMUX_TMUX_BIN, or $HOME/.local/bin' >&2; exit 127; fi; "
+		"if [ -z \"$TMUX_BIN\" ]; then echo '" + missingTmuxMessage + "' >&2; exit 127; fi; "
 }
 
 func tmuxCreateSessionCommand(name string) string {

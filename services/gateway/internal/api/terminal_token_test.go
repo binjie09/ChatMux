@@ -147,8 +147,41 @@ func TestCreateTerminalTokenStoresSSHFallbackMode(t *testing.T) {
 	if token.Mode != terminalTokenModeSSH {
 		t.Fatalf("expected ssh token mode, got %q", token.Mode)
 	}
-	if command, err := terminalCommand(token); err != nil || command != "exec \"${SHELL:-/bin/sh}\"" {
-		t.Fatalf("expected login shell command, got %q err=%v", command, err)
+	if command, err := terminalCommand(token); err != nil || command != "" {
+		t.Fatalf("expected default shell request command, got %q err=%v", command, err)
+	}
+}
+
+func TestCreateTerminalTokenStoresSSHFallbackModeForUnsupportedLoginShell(t *testing.T) {
+	server, closeServer := newTestServer(t)
+	defer closeServer()
+	runner := &fakeSSHRunner{
+		outputForCommand: func(command string) string {
+			return "'exec' is not recognized as an internal or external command,\r\noperable program or batch file.\r\n"
+		},
+	}
+	server.ssh = failingCommandRunner{fakeSSHRunner: runner}
+	host := createTrustedTestHost(t, server)
+	credentialID := createCredentialTokenForTest(t, server, testCredentialInput{hostID: host.ID})
+
+	body := bytes.NewBufferString(`{"credentialToken":"` + credentialID + `","mode":"ssh","windowIndex":0}`)
+	req := httptest.NewRequest(http.MethodPost, "/api/hosts/"+host.ID+"/tmux/sessions/ssh/terminal-token", body)
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("expected 201, got %d: %s", rec.Code, rec.Body.String())
+	}
+	var response createTerminalTokenResponse
+	if err := json.NewDecoder(rec.Body).Decode(&response); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	token, ok := server.terminalTokens.Consume(response.Token)
+	if !ok {
+		t.Fatal("expected terminal token to be stored")
+	}
+	if token.Mode != terminalTokenModeSSH {
+		t.Fatalf("expected ssh token mode, got %q", token.Mode)
 	}
 }
 

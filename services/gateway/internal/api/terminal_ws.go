@@ -112,7 +112,7 @@ func (s *Server) openTerminal(r *http.Request, token terminalToken) (*sshclient.
 
 func terminalCommand(token terminalToken) (string, error) {
 	if token.Mode == terminalTokenModeSSH {
-		return tmux.LoginShellCommand(), nil
+		return "", nil
 	}
 	return tmux.AttachTargetCommand(terminalTokenTarget(token))
 }
