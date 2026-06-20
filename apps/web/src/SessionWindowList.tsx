@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Monitor, Pencil, Terminal, Trash2 } from "lucide-react";
 import { InlineNameEdit } from "./InlineNameEdit";
 import { type TmuxWindow } from "./api";
-import { windowLabel } from "./session-window-utils";
+import { windowDisplayLabel, windowLabel } from "./session-window-utils";
 import { formatTime } from "./view-utils";
 
 type SessionWindowListProps = {
@@ -87,10 +87,9 @@ function WindowRow({
       >
         {window.active ? <Terminal size={16} aria-hidden="true" /> : <Monitor size={16} aria-hidden="true" />}
         <span>
-          <strong>{windowLabel(window)}</strong>
+          <strong>{windowDisplayLabel(window)}</strong>
           <small>
             #{window.index}
-            {window.processName ? ` · ${window.processName}` : ""}
             {" · "}
             {formatTime(window.updatedAt)}
           </small>

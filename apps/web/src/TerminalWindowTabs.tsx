@@ -3,7 +3,7 @@ import { Monitor, Plus, Terminal, Trash2 } from "lucide-react";
 import { InlineNameEdit } from "./InlineNameEdit";
 import { type TmuxWindow } from "./api";
 import { type DisplayTmuxSession } from "./session-state-machine";
-import { windowLabel } from "./session-window-utils";
+import { windowDisplayLabel, windowLabel } from "./session-window-utils";
 
 type TerminalWindowTabsProps = {
   selectedWindowIndex: number | null;
@@ -58,7 +58,7 @@ export function TerminalWindowTabs(props: TerminalWindowTabsProps) {
         >
           {session.windowList.map((window) => (
             <option key={window.id || window.index} value={window.index}>
-              #{window.index} {windowLabel(window)}
+              #{window.index} {windowDisplayLabel(window)}
             </option>
           ))}
         </select>
@@ -122,7 +122,7 @@ function WindowTab(props: {
         }}
       >
         {props.window.active ? <Terminal size={14} aria-hidden="true" /> : <Monitor size={14} aria-hidden="true" />}
-        <span>{windowLabel(props.window)}</span>
+        <span>{windowDisplayLabel(props.window)}</span>
       </button>
       {props.showActions ? (
         <button type="button" aria-label={`Delete ${windowLabel(props.window)}`} onClick={() => props.onDeleteWindow(props.sessionName, props.window.index)}>

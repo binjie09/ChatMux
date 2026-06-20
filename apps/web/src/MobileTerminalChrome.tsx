@@ -1,7 +1,7 @@
 import { ArrowLeft, Bot, Download, Files, ListTree, Plus, X } from "lucide-react";
 import { type ReactNode } from "react";
 import { type TmuxWindow } from "./api";
-import { windowLabel } from "./session-window-utils";
+import { windowDisplayLabel } from "./session-window-utils";
 import { TerminalFileUploadButton } from "./TerminalFileUploadButton";
 import "./mobile-terminal.css";
 
@@ -67,7 +67,7 @@ export function MobileTerminalBar(props: MobileTerminalBarProps) {
             >
               {props.windows.map((window) => (
                 <option key={window.id || window.index} value={window.index}>
-                  #{window.index} {windowLabel(window)}
+                  #{window.index} {windowDisplayLabel(window)}
                 </option>
               ))}
             </select>

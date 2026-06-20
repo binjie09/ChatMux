@@ -16,11 +16,12 @@ type Window struct {
 	UpdatedAt   time.Time `json:"updatedAt"`
 	Status      string    `json:"status"`
 	ProcessName string    `json:"processName"`
+	AutoRename  bool      `json:"autoRename"`
 }
 
 func parseWindowLine(line string, now time.Time) (Window, string, error) {
 	parts := strings.Split(line, "\t")
-	if len(parts) != 10 {
+	if len(parts) != 11 {
 		return Window{}, "", fmt.Errorf("invalid tmux window line: %q", line)
 	}
 	index, err := strconv.Atoi(parts[3])
@@ -39,6 +40,10 @@ func parseWindowLine(line string, now time.Time) (Window, string, error) {
 	if err != nil {
 		return Window{}, "", err
 	}
+	autoRename, err := parseTmuxBool(parts[10], "automatic-rename")
+	if err != nil {
+		return Window{}, "", err
+	}
 	updatedAt := time.Unix(activity, 0).UTC()
 	processName := normalizePaneCommand(parts[7])
 	status := sessionStatus(sessionStatusInput{
@@ -51,6 +56,7 @@ func parseWindowLine(line string, now time.Time) (Window, string, error) {
 	return Window{
 		ID: parts[2], Index: index, Name: normalizeWindowName(parts[4]),
 		Active: active, UpdatedAt: updatedAt, ProcessName: processName, Status: status,
+		AutoRename: autoRename,
 	}, parts[1], nil
 }
 
@@ -74,6 +80,7 @@ func defaultWindowList(sessionName string, updatedAt time.Time, processName stri
 	return []Window{{
 		ID: sessionName + ":0", Index: 0, Name: "0",
 		Active: true, UpdatedAt: updatedAt, ProcessName: processName, Status: status,
+		AutoRename: true,
 	}}
 }
 

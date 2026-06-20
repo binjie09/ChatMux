@@ -11,7 +11,7 @@ import (
 )
 
 const listSessionFormat = "session\t#{session_id}\t#{session_name}\t#{session_windows}\t#{session_attached}\t#{session_activity}\t#{pane_current_command}\t#{pane_dead}\t#{pane_dead_status}"
-const listWindowFormat = "window\t#{session_name}\t#{window_id}\t#{window_index}\t#{window_name}\t#{window_active}\t#{window_activity}\t#{pane_current_command}\t#{pane_dead}\t#{pane_dead_status}"
+const listWindowFormat = "window\t#{session_name}\t#{window_id}\t#{window_index}\t#{window_name}\t#{window_active}\t#{window_activity}\t#{pane_current_command}\t#{pane_dead}\t#{pane_dead_status}\t#{automatic-rename}"
 const listSessionNowPrefix = "__chatmux_now\t"
 const terminalOverridesClipboardSlot = "terminal-overrides[900]"
 const tmuxDefaultHistoryLimit = 100000

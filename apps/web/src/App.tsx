@@ -26,7 +26,7 @@ import { useAppSessionWorkflow } from "./useAppSessionWorkflow";
 import { useHostTrustPrompt } from "./useHostTrustPrompt";
 import { useTerminalUploadProgress } from "./useTerminalUploadProgress";
 import { type ConnectionStatus } from "./useTerminalSocket";
-import { findSessionWindow, windowLabel } from "./session-window-utils";
+import { findSessionWindow, windowDisplayLabel } from "./session-window-utils";
 import { bracketedPaste } from "./terminal-protocol";
 import { uploadTerminalFileWithProgress } from "./terminal-upload-workflow";
 import { hasSSHFallbackSession, isSSHFallbackSession, tmuxInstallScript } from "./tmux-fallback";
@@ -355,7 +355,7 @@ export function App() {
         selectedSession={selectedSession}
         selectedSessionName={selection.selectedSessionName}
         selectedWindowIndex={selection.selectedWindowIndex}
-        selectedWindowName={selectedWindow ? windowLabel(selectedWindow) : ""}
+        selectedWindowName={selectedWindow ? windowDisplayLabel(selectedWindow) : ""}
         sessions={displaySessions}
         showHostForm={showHostForm}
         target={summaryTarget}
