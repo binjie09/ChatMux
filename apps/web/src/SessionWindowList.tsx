@@ -3,6 +3,7 @@ import { Monitor, Pencil, Terminal, Trash2 } from "lucide-react";
 import { InlineNameEdit } from "./InlineNameEdit";
 import { type TmuxWindow } from "./api";
 import { windowDisplayLabel, windowLabel } from "./session-window-utils";
+import { OverflowText } from "./OverflowText";
 import { formatTime } from "./view-utils";
 
 type SessionWindowListProps = {
@@ -87,7 +88,7 @@ function WindowRow({
       >
         {window.active ? <Terminal size={16} aria-hidden="true" /> : <Monitor size={16} aria-hidden="true" />}
         <span>
-          <strong>{windowDisplayLabel(window)}</strong>
+          <OverflowText as="strong">{windowDisplayLabel(window)}</OverflowText>
           <small>
             #{window.index}
             {" · "}

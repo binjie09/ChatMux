@@ -7,6 +7,7 @@ import { PWAInstallPrompt } from "./PWAInstallPrompt";
 import { type GatewayTokenState } from "./useGatewayAccessToken";
 import { type PWAInstallPromptState } from "./usePWAInstallPrompt";
 import "./sidebar-host-actions.css";
+import { OverflowText } from "./OverflowText";
 
 type SidebarProps = {
   desktopCollapsed: boolean;
@@ -119,8 +120,8 @@ function HostEntry(props: HostEntryProps) {
         <button className={`host-row ${props.isSelected ? "selected" : ""}`} type="button" onClick={() => props.onSelectHost(props.host.id)}>
           <Server size={18} aria-hidden="true" />
           <span>
-            <strong>{props.host.name}</strong>
-            <small>{hostAddress(props.host)}</small>
+            <OverflowText as="strong">{props.host.name}</OverflowText>
+            <OverflowText as="small">{hostAddress(props.host)}</OverflowText>
           </span>
           <KeyRound className={`host-credential-icon ${props.host.hasCredential ? "saved" : ""}`} size={14} aria-hidden="true" />
           <i className={`status-dot ${props.host.status}`} role="img" aria-label={`SSH status: ${props.host.status}`} title={`SSH status: ${props.host.status}`} />

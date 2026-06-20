@@ -10,6 +10,7 @@ import { MobileTerminalBar, MobileTerminalSheetPanel, type MobileTerminalSheet }
 import { NativeTerminal, type QueuedTerminalInput } from "./NativeTerminal";
 import { SessionMetadataEditor } from "./SessionMetadataEditor";
 import { TerminalWindowTabs } from "./TerminalWindowTabs";
+import { OverflowText } from "./OverflowText";
 import { type DisplayTmuxSession } from "./session-state-machine";
 import { type ConnectionStatus } from "./useTerminalSocket";
 import { type TerminalUploadProgressState } from "./useTerminalUploadProgress";
@@ -100,8 +101,8 @@ export function ConversationPane(props: ConversationPaneProps) {
       />
       <header className="conversation-header">
         <div>
-          <p>{conversationSubtitle(props.host?.name, props.selectedWindowName)}</p>
-          <h2>{sessionTitle(props.selectedSession)}</h2>
+          <OverflowText as="p">{conversationSubtitle(props.host?.name, props.selectedWindowName)}</OverflowText>
+          <OverflowText as="h2">{sessionTitle(props.selectedSession)}</OverflowText>
           <SessionMetadataEditor session={props.selectedSession} onSave={props.onSaveSessionMetadata} />
         </div>
         <HostActions host={props.host} onTogglePin={props.onTogglePin} onTrustHost={props.onTrustHost} />

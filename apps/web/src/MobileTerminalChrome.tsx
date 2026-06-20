@@ -2,6 +2,7 @@ import { ArrowLeft, Bot, Download, Files, ListTree, Plus, X } from "lucide-react
 import { type ReactNode } from "react";
 import { type TmuxWindow } from "./api";
 import { windowDisplayLabel } from "./session-window-utils";
+import { OverflowText } from "./OverflowText";
 import { TerminalFileUploadButton } from "./TerminalFileUploadButton";
 import "./mobile-terminal.css";
 
@@ -40,8 +41,8 @@ export function MobileTerminalBar(props: MobileTerminalBarProps) {
         <ArrowLeft size={20} aria-hidden="true" />
       </button>
       <div className="mobile-terminal-title">
-        <strong>{props.title}</strong>
-        <span>{terminalSubtitle(props.hostName, props.sessionName, props.windowName)}</span>
+        <OverflowText as="strong">{props.title}</OverflowText>
+        <OverflowText as="span">{terminalSubtitle(props.hostName, props.sessionName, props.windowName)}</OverflowText>
       </div>
       {props.loading ? null : props.tmuxFallbackActive ? (
         <>

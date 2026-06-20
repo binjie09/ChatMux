@@ -4,6 +4,7 @@ import { InlineNameEdit } from "./InlineNameEdit";
 import { type TmuxWindow } from "./api";
 import { type DisplayTmuxSession } from "./session-state-machine";
 import { windowDisplayLabel, windowLabel } from "./session-window-utils";
+import { OverflowText } from "./OverflowText";
 
 type TerminalWindowTabsProps = {
   selectedWindowIndex: number | null;
@@ -122,7 +123,7 @@ function WindowTab(props: {
         }}
       >
         {props.window.active ? <Terminal size={14} aria-hidden="true" /> : <Monitor size={14} aria-hidden="true" />}
-        <span>{windowDisplayLabel(props.window)}</span>
+        <OverflowText>{windowDisplayLabel(props.window)}</OverflowText>
       </button>
       {props.showActions ? (
         <button type="button" aria-label={`Delete ${windowLabel(props.window)}`} onClick={() => props.onDeleteWindow(props.sessionName, props.window.index)}>

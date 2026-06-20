@@ -7,6 +7,7 @@ import { SessionWindowList } from "./SessionWindowList";
 import { type DisplayTmuxSession } from "./session-state-machine";
 import { isSSHFallbackSession } from "./tmux-fallback";
 import { windowCountLabel } from "./session-window-utils";
+import { OverflowText } from "./OverflowText";
 import { type SessionNotificationStatus } from "./useSessionNotifications";
 import { type SSHCredentialStatus } from "./useSSHCredentialToken";
 
@@ -206,8 +207,8 @@ function MobileWindowListView(props: MobileWindowListViewProps) {
     <div className="session-mobile-windows">
       <div className="session-window-heading">
         <div>
-          <strong>{props.session.title || props.session.name}</strong>
-          <small>{props.session.name} · {windowCountLabel(props.session.windowList.length)}</small>
+          <OverflowText as="strong">{props.session.title || props.session.name}</OverflowText>
+          <OverflowText as="small">{`${props.session.name} · ${windowCountLabel(props.session.windowList.length)}`}</OverflowText>
         </div>
         {!isSSHFallbackSession(props.session) ? (
           <button className="session-window-action" type="button" aria-label={`Rename ${props.session.name}`} onClick={() => setEditingSession(true)}>
