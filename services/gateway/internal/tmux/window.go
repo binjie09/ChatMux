@@ -17,11 +17,12 @@ type Window struct {
 	Status      string    `json:"status"`
 	ProcessName string    `json:"processName"`
 	AutoRename  bool      `json:"autoRename"`
+	PaneTitle   string    `json:"paneTitle"`
 }
 
 func parseWindowLine(line string, now time.Time) (Window, string, error) {
 	parts := strings.Split(line, "\t")
-	if len(parts) != 11 {
+	if len(parts) != 12 {
 		return Window{}, "", fmt.Errorf("invalid tmux window line: %q", line)
 	}
 	index, err := strconv.Atoi(parts[3])
@@ -56,7 +57,7 @@ func parseWindowLine(line string, now time.Time) (Window, string, error) {
 	return Window{
 		ID: parts[2], Index: index, Name: normalizeWindowName(parts[4]),
 		Active: active, UpdatedAt: updatedAt, ProcessName: processName, Status: status,
-		AutoRename: autoRename,
+		AutoRename: autoRename, PaneTitle: normalizePaneTitle(parts[11]),
 	}, parts[1], nil
 }
 
@@ -89,4 +90,14 @@ func normalizeWindowName(name string) string {
 		return name
 	}
 	return string([]rune(name)[:maxWindowNameRunes])
+}
+
+// normalizePaneTitle trims surrounding whitespace and caps the length so an
+// unusually long terminal title cannot bloat the response or the UI.
+func normalizePaneTitle(title string) string {
+	trimmed := strings.TrimSpace(title)
+	if utf8.RuneCountInString(trimmed) <= maxWindowNameRunes {
+		return trimmed
+	}
+	return string([]rune(trimmed)[:maxWindowNameRunes])
 }

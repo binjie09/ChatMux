@@ -53,6 +53,7 @@ export type TmuxWindow = {
   status: SessionStatus;
   processName: string;
   autoRename: boolean;
+  paneTitle: string;
 };
 
 export type SessionStatus = "done" | "failed" | "idle" | "running" | "unknown" | "waiting";

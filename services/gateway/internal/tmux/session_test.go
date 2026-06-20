@@ -10,9 +10,9 @@ func TestParseSessions(t *testing.T) {
 	output := strings.Join([]string{
 		"session\t$0\tdeploy\t2\t2\t1710000000\tnode\t0\t",
 		"session\t$1\tlogs\t1\t0\t1710000300\tzsh\t0\t",
-		"window\tdeploy\t@0\t0\tapi\t1\t1710000002\tnode\t0\t\t0",
-		"window\tdeploy\t@1\t1\tworker\t0\t1710000000\tzsh\t0\t\t1",
-		"window\tlogs\t@2\t0\tlogs\t1\t1710000300\tzsh\t0\t\t0",
+		"window\tdeploy\t@0\t0\tapi\t1\t1710000002\tnode\t0\t\t0\tdeploy-api",
+		"window\tdeploy\t@1\t1\tworker\t0\t1710000000\tzsh\t0\t\t1\t",
+		"window\tlogs\t@2\t0\tlogs\t1\t1710000300\tzsh\t0\t\t0\tlogs-tail",
 	}, "\n")
 	now := time.Unix(1710000005, 0).UTC()
 	sessions, err := ParseSessionsAt(output, now)
@@ -48,6 +48,12 @@ func TestParseSessions(t *testing.T) {
 	}
 	if !sessions[0].WindowList[1].AutoRename {
 		t.Fatalf("expected worker window autoRename=true, got %#v", sessions[0].WindowList[1])
+	}
+	if sessions[0].WindowList[0].PaneTitle != "deploy-api" {
+		t.Fatalf("expected api window paneTitle=deploy-api, got %#v", sessions[0].WindowList[0])
+	}
+	if sessions[0].WindowList[1].PaneTitle != "" {
+		t.Fatalf("expected worker window empty paneTitle, got %#v", sessions[0].WindowList[1])
 	}
 	if sessions[1].Status != SessionStatusDone {
 		t.Fatalf("expected done, got %q", sessions[1].Status)

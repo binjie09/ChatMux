@@ -34,17 +34,39 @@ export function isWindowAutoNamed(window: TmuxWindow) {
   return /^window-\d+$/.test(window.name);
 }
 
+const SHELL_PROCESS_NAMES = new Set(["zsh", "bash", "sh", "fish", "dash", "ksh", "csh", "tcsh"]);
+
+function isShellProcess(processName: string) {
+  return SHELL_PROCESS_NAMES.has(processName);
+}
+
 /**
- * Display label for a window. An automatically-named window shows only the
- * pane's process name; a renamed window shows both its custom name and the
- * process name.
+ * The pane-level label for a window. We prefer the terminal title (pane_title)
+ * that tools like Claude Code or Codex write, since it carries the real session
+ * topic (e.g. "⠂ tmux-window-pane-display"). Titles set by a shell are noise
+ * (typically the user name or cwd), so shell panes fall back to the process
+ * name; empty or duplicate titles fall back too.
+ */
+export function paneLabel(window: TmuxWindow) {
+  const title = window.paneTitle?.trim() ?? "";
+  const processName = window.processName;
+  if (!title || isShellProcess(processName) || title === processName || title === window.name) {
+    return processName;
+  }
+  return title;
+}
+
+/**
+ * Display label for a window. An automatically-named window shows only its pane
+ * label; a renamed window shows both its custom name and the pane label.
  */
 export function windowDisplayLabel(window: TmuxWindow) {
+  const pane = paneLabel(window);
   if (isWindowAutoNamed(window)) {
-    return window.processName || windowLabel(window);
+    return pane || windowLabel(window);
   }
-  if (window.processName) {
-    return `${window.name} · ${window.processName}`;
+  if (pane) {
+    return `${window.name} · ${pane}`;
   }
   return window.name;
 }
