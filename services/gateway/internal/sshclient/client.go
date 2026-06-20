@@ -8,6 +8,7 @@ import (
 	"io"
 	"net"
 	"strings"
+	"sync"
 	"time"
 
 	"golang.org/x/crypto/ssh"
@@ -52,11 +53,28 @@ func (e CommandError) Unwrap() error {
 
 type Client struct {
 	dialContext func(context.Context, string, string) (net.Conn, error)
+
+	mu   sync.Mutex
+	pool map[string]*pooledConn
+}
+
+// pooledConn wraps a reused *ssh.Client for the Run hot path. The dead channel
+// is closed by a watchConn goroutine once the underlying connection drops
+// (remote idle timeout, network failure, or explicit close), so callers can
+// detect and replace stale entries.
+type pooledConn struct {
+	client   *ssh.Client
+	dead     chan struct{}
+	lastUsed time.Time
 }
 
 func NewClient() *Client {
 	var dialer net.Dialer
-	return &Client{dialContext: dialer.DialContext}
+	return &Client{dialContext: dialer.DialContext, pool: map[string]*pooledConn{}}
+}
+
+func connKey(host HostConfig) string {
+	return fmt.Sprintf("%s@%s:%d", host.Username, host.Hostname, host.Port)
 }
 
 func (c *Client) Run(ctx context.Context, host HostConfig, credential Credential, command string) ([]byte, error) {
@@ -64,12 +82,91 @@ func (c *Client) Run(ctx context.Context, host HostConfig, credential Credential
 		return nil, errors.New("host key is not trusted")
 	}
 
+	entry, err := c.borrowConn(ctx, host, credential)
+	if err != nil {
+		return nil, err
+	}
+	output, runErr := runOnClient(entry.client, command)
+	if runErr != nil {
+		// The pooled connection may have dropped mid-use; evict it, rebuild once,
+		// and retry. Run backs the read-only session-list polling path, so a retry
+		// is safe.
+		c.evictConn(connKey(host), entry)
+		if retry, borrowErr := c.borrowConn(ctx, host, credential); borrowErr == nil {
+			entry = retry
+			output, runErr = runOnClient(entry.client, command)
+		}
+	}
+	entry.lastUsed = time.Now()
+	return output, runErr
+}
+
+// borrowConn returns a live pooled connection for host, dialing and caching a
+// fresh one on miss. credential is only consulted when dialing a new
+// connection; cached connections are reused regardless of credential.
+func (c *Client) borrowConn(ctx context.Context, host HostConfig, credential Credential) (*pooledConn, error) {
+	key := connKey(host)
+	c.mu.Lock()
+	if entry, ok := c.pool[key]; ok && !channelClosed(entry.dead) {
+		c.mu.Unlock()
+		return entry, nil
+	}
+	c.mu.Unlock()
+
 	client, err := c.connect(ctx, host, credential)
 	if err != nil {
 		return nil, err
 	}
-	defer client.Close()
+	entry := &pooledConn{client: client, dead: make(chan struct{}), lastUsed: time.Now()}
+	go c.watchConn(key, entry)
 
+	c.mu.Lock()
+	// Another goroutine may have raced ahead and cached a live connection; if so,
+	// discard the one we just dialed and reuse the existing entry.
+	if existing, dup := c.pool[key]; dup && !channelClosed(existing.dead) {
+		c.mu.Unlock()
+		_ = client.Close()
+		return existing, nil
+	}
+	c.pool[key] = entry
+	c.mu.Unlock()
+	return entry, nil
+}
+
+// watchConn blocks until the underlying connection drops, then marks the entry
+// dead, removes it from the pool, and closes the client.
+func (c *Client) watchConn(key string, entry *pooledConn) {
+	_ = entry.client.Wait()
+	close(entry.dead)
+	c.mu.Lock()
+	if c.pool[key] == entry {
+		delete(c.pool, key)
+	}
+	c.mu.Unlock()
+	_ = entry.client.Close()
+}
+
+// evictConn removes a (likely dead) entry from the pool and closes its client.
+// Closing the client lets the watchConn goroutine converge on the same state.
+func (c *Client) evictConn(key string, entry *pooledConn) {
+	c.mu.Lock()
+	if c.pool[key] == entry {
+		delete(c.pool, key)
+	}
+	c.mu.Unlock()
+	_ = entry.client.Close()
+}
+
+func channelClosed(ch <-chan struct{}) bool {
+	select {
+	case <-ch:
+		return true
+	default:
+		return false
+	}
+}
+
+func runOnClient(client *ssh.Client, command string) ([]byte, error) {
 	session, err := client.NewSession()
 	if err != nil {
 		return nil, fmt.Errorf("open ssh session: %w", err)

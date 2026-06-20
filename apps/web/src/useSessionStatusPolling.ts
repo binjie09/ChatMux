@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { type TmuxSession } from "./api";
 import { errorMessage } from "./view-utils";
 
-const sessionStatusPollIntervalMs = 30_000;
+const sessionStatusPollIntervalMs = 2_000;
 
 type SessionStatusPollingOptions = {
   hostId: string;

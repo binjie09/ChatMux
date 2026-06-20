@@ -17,8 +17,8 @@ func TestListTmuxSessionsAPI(t *testing.T) {
 	server.ssh = &fakeSSHRunner{
 		output: strings.Join([]string{
 			"session\t$0\tdeploy\t2\t0\t1710000000\tzsh\t0\t",
-			"window\tdeploy\t@0\t0\tapi\t1\t1710000000\tzsh\t0\t",
-			"window\tdeploy\t@1\t1\tworker\t0\t1710000000\tnode\t0\t",
+			"window\tdeploy\t@0\t0\tapi\t1\t1710000000\tzsh\t0\t\t1\t",
+			"window\tdeploy\t@1\t1\tworker\t0\t1710000000\tnode\t0\t\t1\t",
 		}, "\n"),
 	}
 	host := createTrustedTestHost(t, server)
@@ -410,7 +410,7 @@ func TestRenameTmuxSessionAPIUpdatesMetadata(t *testing.T) {
 func sessionWithWindowsOutput(sessionName string, windows []string) string {
 	lines := []string{"session\t$0\t" + sessionName + "\t" + strconv.Itoa(len(windows)) + "\t0\t1710000000\tzsh\t0\t"}
 	for index, name := range windows {
-		lines = append(lines, "window\t"+sessionName+"\t@"+strconv.Itoa(index)+"\t"+strconv.Itoa(index)+"\t"+name+"\t0\t1710000000\tzsh\t0\t")
+		lines = append(lines, "window\t"+sessionName+"\t@"+strconv.Itoa(index)+"\t"+strconv.Itoa(index)+"\t"+name+"\t0\t1710000000\tzsh\t0\t\t1\t")
 	}
 	return strings.Join(lines, "\n")
 }
