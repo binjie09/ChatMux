@@ -118,7 +118,6 @@ export function ConversationPane(props: ConversationPaneProps) {
           <TerminalWindowTabs
             selectedWindowIndex={props.target.windowIndex}
             session={props.selectedSession}
-            tmuxFallbackActive={props.tmuxFallbackActive}
             onCreateWindow={props.onCreateWindow}
             onDeleteWindow={props.onDeleteWindow}
             onOpenWindow={props.onOpenWindow}
@@ -185,8 +184,8 @@ function TmuxFallbackBanner(props: { active: boolean; installing: boolean; onIns
   return (
     <div className="tmux-fallback-banner">
       <div>
-        <strong>Single SSH shell</strong>
-        <span>Install tmux, then reconnect for persistent sessions, windows, history, and summaries.</span>
+        <strong>SSH fallback tabs</strong>
+        <span>Gateway keeps SSH shells running across refreshes. Install tmux for remote sessions, history, and summaries.</span>
       </div>
       <button type="button" disabled={props.installing} onClick={props.onInstall}>
         <Download size={15} aria-hidden="true" />

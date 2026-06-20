@@ -49,7 +49,7 @@ func (s *Server) handleListTmuxSessions(w http.ResponseWriter, r *http.Request) 
 	output, err := s.ssh.Run(r.Context(), hostToSSHConfig(host), credential, tmux.ListSessionsCommand())
 	if err != nil {
 		if session, ok := fallbackSessionFromTmuxError(err); ok {
-			writeJSON(w, http.StatusOK, []tmux.Session{session})
+			writeJSON(w, http.StatusOK, []tmux.Session{s.sshFallback.Session(hostID, session.UpdatedAt)})
 			return
 		}
 		writeError(w, http.StatusBadGateway, err)
@@ -103,7 +103,7 @@ func (s *Server) handleCreateTmuxSession(w http.ResponseWriter, r *http.Request)
 	output, err := s.ssh.Run(r.Context(), hostToSSHConfig(host), credential, command)
 	if err != nil {
 		if session, ok := fallbackSessionFromTmuxError(err); ok {
-			writeJSON(w, http.StatusCreated, session)
+			writeJSON(w, http.StatusCreated, s.sshFallback.Session(hostID, session.UpdatedAt))
 			return
 		}
 		writeError(w, http.StatusBadGateway, err)
@@ -172,33 +172,5 @@ func fallbackSessionFromTmuxError(err error) (tmux.Session, bool) {
 	if !errors.As(err, &commandError) || !tmux.Unavailable(commandError.Output) {
 		return tmux.Session{}, false
 	}
-	return fallbackSSHSession(time.Now()), true
-}
-
-func fallbackSSHSession(now time.Time) tmux.Session {
-	return tmux.Session{
-		ID:          "ssh-fallback",
-		Name:        fallbackSSHSessionName,
-		Windows:     1,
-		WindowList:  []tmux.Window{fallbackSSHWindow(now)},
-		Attached:    true,
-		UpdatedAt:   now.UTC(),
-		Status:      "unknown",
-		ProcessName: "ssh",
-		Title:       "SSH shell",
-		Tags:        []string{},
-		Mode:        terminalTokenModeSSH,
-	}
-}
-
-func fallbackSSHWindow(now time.Time) tmux.Window {
-	return tmux.Window{
-		ID:          "ssh-fallback:0",
-		Index:       0,
-		Name:        "SSH shell",
-		Active:      true,
-		UpdatedAt:   now.UTC(),
-		Status:      "unknown",
-		ProcessName: "ssh",
-	}
+	return tmux.Session{UpdatedAt: time.Now().UTC()}, true
 }

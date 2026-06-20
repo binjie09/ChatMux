@@ -17,6 +17,7 @@ type Server struct {
 	drafter                CommandDrafter
 	hosts                  *hoststore.Store
 	ssh                    sshRunner
+	sshFallback            *sshFallbackStore
 	summarizer             TranscriptSummarizer
 	terminalTokens         *terminalTokenStore
 }
@@ -73,6 +74,7 @@ func NewServer(hosts *hoststore.Store, options ...ServerOption) *Server {
 		credentialTokens:       newCredentialTokenStore(),
 		hosts:                  hosts,
 		ssh:                    sshclient.NewClient(),
+		sshFallback:            newSSHFallbackStore(),
 		terminalTokens:         newTerminalTokenStore(),
 	}
 	for _, option := range options {

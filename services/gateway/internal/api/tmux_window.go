@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/chatmux/chatmux/services/gateway/internal/hoststore"
 	"github.com/chatmux/chatmux/services/gateway/internal/tmux"
@@ -16,17 +17,35 @@ type tmuxWindowRequest struct {
 }
 
 type tmuxMutationCommand func(string, tmuxWindowRequest) (string, error)
+type fallbackWindowMutation func(string, int, string, time.Time) (tmux.Session, error)
 
 func (s *Server) handleCreateTmuxWindow(w http.ResponseWriter, r *http.Request) {
-	s.handleTmuxWindowMutation(w, r, "/windows", "tmux.window.created", "created tmux window", createWindowCommand)
+	s.handleTmuxWindowMutation(w, r, windowMutationInput{
+		suffix: "/windows", eventType: "tmux.window.created", auditMessage: "created tmux window",
+		commandForInput: createWindowCommand, fallback: s.createFallbackWindow,
+	})
 }
 
 func (s *Server) handleRenameTmuxWindow(w http.ResponseWriter, r *http.Request) {
-	s.handleTmuxWindowMutation(w, r, "/windows/rename", "tmux.window.renamed", "renamed tmux window", renameWindowCommand)
+	s.handleTmuxWindowMutation(w, r, windowMutationInput{
+		suffix: "/windows/rename", eventType: "tmux.window.renamed", auditMessage: "renamed tmux window",
+		commandForInput: renameWindowCommand, fallback: s.renameFallbackWindow,
+	})
 }
 
 func (s *Server) handleDeleteTmuxWindow(w http.ResponseWriter, r *http.Request) {
-	s.handleTmuxWindowMutation(w, r, "/windows/delete", "tmux.window.deleted", "deleted tmux window", deleteWindowCommand)
+	s.handleTmuxWindowMutation(w, r, windowMutationInput{
+		suffix: "/windows/delete", eventType: "tmux.window.deleted", auditMessage: "deleted tmux window",
+		commandForInput: deleteWindowCommand, fallback: s.deleteFallbackWindow,
+	})
+}
+
+type windowMutationInput struct {
+	suffix          string
+	eventType       string
+	auditMessage    string
+	commandForInput tmuxMutationCommand
+	fallback        fallbackWindowMutation
 }
 
 func (s *Server) handleRenameTmuxSession(w http.ResponseWriter, r *http.Request) {
@@ -68,26 +87,43 @@ func (s *Server) handleRenameTmuxSession(w http.ResponseWriter, r *http.Request)
 func (s *Server) handleTmuxWindowMutation(
 	w http.ResponseWriter,
 	r *http.Request,
-	suffix string,
-	eventType string,
-	auditMessage string,
-	commandForInput tmuxMutationCommand,
+	mutation windowMutationInput,
 ) {
-	hostID, sessionName, input, ok := decodeTmuxWindowRequest(w, r, suffix)
+	hostID, sessionName, input, ok := decodeTmuxWindowRequest(w, r, mutation.suffix)
 	if !ok {
 		return
 	}
-	command, err := commandForInput(sessionName, input)
+	command, err := mutation.commandForInput(sessionName, input)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err)
 		return
 	}
 	sessions, err := s.runManagedTmuxListMutation(r, hostID, sessionName, input.CredentialToken, command)
 	if err != nil {
+		fallbackSessions, fallbackErr, ok := s.fallbackWindowMutationSessions(hostID, sessionName, input, err, mutation.fallback)
+		if fallbackErr != nil {
+			writeError(w, statusForTmuxMutationError(fallbackErr), fallbackErr)
+			return
+		}
+		if ok {
+			s.writeWindowMutationResponse(w, r, hostID, sessionName, mutation, fallbackSessions)
+			return
+		}
 		writeError(w, statusForTmuxMutationError(err), err)
 		return
 	}
-	if err := s.logAudit(r.Context(), hoststore.LogAuditEventInput{Type: eventType, HostID: hostID, SessionName: sessionName, Message: auditMessage}); err != nil {
+	s.writeWindowMutationResponse(w, r, hostID, sessionName, mutation, sessions)
+}
+
+func (s *Server) writeWindowMutationResponse(
+	w http.ResponseWriter,
+	r *http.Request,
+	hostID string,
+	sessionName string,
+	mutation windowMutationInput,
+	sessions []tmux.Session,
+) {
+	if err := s.logAudit(r.Context(), hoststore.LogAuditEventInput{Type: mutation.eventType, HostID: hostID, SessionName: sessionName, Message: mutation.auditMessage}); err != nil {
 		writeError(w, http.StatusInternalServerError, err)
 		return
 	}
@@ -106,6 +142,27 @@ func decodeTmuxWindowRequest(w http.ResponseWriter, r *http.Request, suffix stri
 		return "", "", tmuxWindowRequest{}, false
 	}
 	return hostID, sessionName, input, true
+}
+
+func (s *Server) fallbackWindowMutationSessions(
+	hostID string,
+	sessionName string,
+	input tmuxWindowRequest,
+	runErr error,
+	mutation fallbackWindowMutation,
+) ([]tmux.Session, error, bool) {
+	if sessionName != fallbackSSHSessionName || mutation == nil {
+		return nil, nil, false
+	}
+	fallbackProbe, ok := fallbackSessionFromTmuxError(runErr)
+	if !ok {
+		return nil, nil, false
+	}
+	session, err := mutation(hostID, windowIndexValue(input.WindowIndex), input.Name, fallbackProbe.UpdatedAt)
+	if err != nil {
+		return nil, err, true
+	}
+	return []tmux.Session{session}, nil, true
 }
 
 func (s *Server) runManagedTmuxListMutation(
@@ -145,12 +202,33 @@ func renameSessionCommand(sessionName string, input tmuxWindowRequest) (string, 
 	return tmux.RenameSessionCommand(sessionName, input.Name)
 }
 
+func (s *Server) createFallbackWindow(hostID string, _ int, name string, now time.Time) (tmux.Session, error) {
+	return s.sshFallback.CreateWindow(hostID, name, now)
+}
+
+func (s *Server) renameFallbackWindow(hostID string, windowIndex int, name string, now time.Time) (tmux.Session, error) {
+	return s.sshFallback.RenameWindow(hostID, windowIndex, name, now)
+}
+
+func (s *Server) deleteFallbackWindow(hostID string, windowIndex int, _ string, now time.Time) (tmux.Session, error) {
+	return s.sshFallback.DeleteWindow(hostID, windowIndex, now)
+}
+
+func windowIndexValue(windowIndex *int) int {
+	if windowIndex == nil {
+		return 0
+	}
+	return *windowIndex
+}
+
 func statusForTmuxMutationError(err error) int {
 	switch {
-	case errors.Is(err, errSessionNotVisible), errors.Is(err, errHostNotVisible), errors.Is(err, hoststore.ErrHostNotFound):
+	case errors.Is(err, errSessionNotVisible), errors.Is(err, errHostNotVisible), errors.Is(err, hoststore.ErrHostNotFound), errors.Is(err, errFallbackWindowNotFound):
 		return http.StatusNotFound
 	case errors.Is(err, errCredentialRequired), errors.Is(err, errCredentialInvalid):
 		return statusForCredentialError(err)
+	case errors.Is(err, tmux.ErrInvalidWindowName), errors.Is(err, errFallbackLastWindow):
+		return http.StatusBadRequest
 	default:
 		return http.StatusBadGateway
 	}

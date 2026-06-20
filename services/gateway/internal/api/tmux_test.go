@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -9,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/chatmux/chatmux/services/gateway/internal/hoststore"
+	"github.com/chatmux/chatmux/services/gateway/internal/tmux"
 )
 
 func TestListTmuxSessionsAPI(t *testing.T) {
@@ -123,6 +125,59 @@ func TestListTmuxSessionsFallsBackToSSHWhenTmuxMissing(t *testing.T) {
 	}
 	if !strings.Contains(rec.Body.String(), `"mode":"ssh"`) || !strings.Contains(rec.Body.String(), `"SSH shell"`) {
 		t.Fatalf("expected ssh fallback session, got %s", rec.Body.String())
+	}
+}
+
+func TestSSHFallbackWindowsAreGatewayManaged(t *testing.T) {
+	server, closeServer := newTestServer(t)
+	defer closeServer()
+	server.ssh = missingTmuxRunner()
+	host := createTrustedTestHost(t, server)
+	token := createCredentialTokenForTest(t, server, testCredentialInput{hostID: host.ID})
+
+	createFallbackWindowForTest(t, server, host.ID, token, "logs")
+	renameFallbackWindowForTest(t, server, host.ID, token, 1, "shell-2")
+	sessions := listTmuxSessionsForTest(t, server, host.ID, token)
+
+	session := sessions[0]
+	if session.Mode != terminalTokenModeSSH || session.Windows != 2 {
+		t.Fatalf("expected two ssh fallback windows, got %#v", session)
+	}
+	if session.WindowList[1].Index != 1 || session.WindowList[1].Name != "shell-2" {
+		t.Fatalf("expected renamed fallback tab, got %#v", session.WindowList)
+	}
+}
+
+func TestSSHFallbackDeleteWindow(t *testing.T) {
+	server, closeServer := newTestServer(t)
+	defer closeServer()
+	server.ssh = missingTmuxRunner()
+	host := createTrustedTestHost(t, server)
+	token := createCredentialTokenForTest(t, server, testCredentialInput{hostID: host.ID})
+
+	createFallbackWindowForTest(t, server, host.ID, token, "logs")
+	deleteFallbackWindowForTest(t, server, host.ID, token, 1)
+	sessions := listTmuxSessionsForTest(t, server, host.ID, token)
+
+	if sessions[0].Windows != 1 || sessions[0].WindowList[0].Index != 0 {
+		t.Fatalf("expected only the original fallback window, got %#v", sessions[0].WindowList)
+	}
+}
+
+func TestSSHFallbackRejectsDeletingLastWindow(t *testing.T) {
+	server, closeServer := newTestServer(t)
+	defer closeServer()
+	server.ssh = missingTmuxRunner()
+	host := createTrustedTestHost(t, server)
+	token := createCredentialTokenForTest(t, server, testCredentialInput{hostID: host.ID})
+
+	body := bytes.NewBufferString(`{"credentialToken":"` + token + `","windowIndex":0}`)
+	req := httptest.NewRequest(http.MethodPost, "/api/hosts/"+host.ID+"/tmux/sessions/ssh/windows/delete", body)
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d: %s", rec.Code, rec.Body.String())
 	}
 }
 
@@ -437,4 +492,61 @@ func sessionWithWindowsOutput(sessionName string, windows []string) string {
 		lines = append(lines, "window\t"+sessionName+"\t@"+strconv.Itoa(index)+"\t"+strconv.Itoa(index)+"\t"+name+"\t0\t1710000000\tzsh\t0\t\t1\t")
 	}
 	return strings.Join(lines, "\n")
+}
+
+func missingTmuxRunner() sshRunner {
+	runner := &fakeSSHRunner{
+		outputForCommand: func(command string) string {
+			return "tmux not found in PATH, CHATMUX_TMUX_BIN, or $HOME/.local/bin\n"
+		},
+	}
+	return failingCommandRunner{fakeSSHRunner: runner}
+}
+
+func createFallbackWindowForTest(t *testing.T, server *Server, hostID string, token string, name string) {
+	t.Helper()
+	body := bytes.NewBufferString(`{"credentialToken":"` + token + `","name":"` + name + `"}`)
+	req := httptest.NewRequest(http.MethodPost, "/api/hosts/"+hostID+"/tmux/sessions/ssh/windows", body)
+	rec := httptest.NewRecorder()
+	server.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+}
+
+func renameFallbackWindowForTest(t *testing.T, server *Server, hostID string, token string, windowIndex int, name string) {
+	t.Helper()
+	body := bytes.NewBufferString(`{"credentialToken":"` + token + `","windowIndex":` + strconv.Itoa(windowIndex) + `,"name":"` + name + `"}`)
+	req := httptest.NewRequest(http.MethodPost, "/api/hosts/"+hostID+"/tmux/sessions/ssh/windows/rename", body)
+	rec := httptest.NewRecorder()
+	server.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+}
+
+func deleteFallbackWindowForTest(t *testing.T, server *Server, hostID string, token string, windowIndex int) {
+	t.Helper()
+	body := bytes.NewBufferString(`{"credentialToken":"` + token + `","windowIndex":` + strconv.Itoa(windowIndex) + `}`)
+	req := httptest.NewRequest(http.MethodPost, "/api/hosts/"+hostID+"/tmux/sessions/ssh/windows/delete", body)
+	rec := httptest.NewRecorder()
+	server.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+}
+
+func listTmuxSessionsForTest(t *testing.T, server *Server, hostID string, token string) []tmux.Session {
+	t.Helper()
+	req := httptest.NewRequest(http.MethodPost, "/api/hosts/"+hostID+"/tmux/sessions/list", credentialTokenBody(token))
+	rec := httptest.NewRecorder()
+	server.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+	var sessions []tmux.Session
+	if err := json.NewDecoder(rec.Body).Decode(&sessions); err != nil {
+		t.Fatalf("decode sessions: %v", err)
+	}
+	return sessions
 }

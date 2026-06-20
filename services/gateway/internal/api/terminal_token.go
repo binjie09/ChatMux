@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/chatmux/chatmux/services/gateway/internal/hoststore"
 	"github.com/chatmux/chatmux/services/gateway/internal/sshclient"
@@ -51,7 +52,7 @@ func (s *Server) handleCreateTerminalToken(w http.ResponseWriter, r *http.Reques
 			return
 		}
 	}
-	if err := validateTerminalTokenMode(mode, sessionName, target); err != nil {
+	if err := s.validateTerminalTokenMode(mode, hostID, sessionName, target); err != nil {
 		writeError(w, statusForSessionAccessError(err), err)
 		return
 	}
@@ -60,7 +61,7 @@ func (s *Server) handleCreateTerminalToken(w http.ResponseWriter, r *http.Reques
 		writeError(w, statusForCredentialError(err), err)
 		return
 	}
-	if err := s.validateFallbackTerminalMode(r, host, credential, mode); err != nil {
+	if err := s.validateFallbackTerminalMode(r, host, credential, mode, target); err != nil {
 		writeError(w, http.StatusBadGateway, err)
 		return
 	}
@@ -90,11 +91,14 @@ func terminalTokenMode(input string) string {
 	return terminalTokenModeTmux
 }
 
-func validateTerminalTokenMode(mode string, sessionName string, target tmux.Target) error {
+func (s *Server) validateTerminalTokenMode(mode string, hostID string, sessionName string, target tmux.Target) error {
 	if mode != terminalTokenModeSSH {
 		return nil
 	}
-	if sessionName != fallbackSSHSessionName || target.WindowIndex == nil || *target.WindowIndex != 0 {
+	if sessionName != fallbackSSHSessionName || target.WindowIndex == nil {
+		return errSessionNotVisible
+	}
+	if !s.sshFallback.HasWindow(hostID, *target.WindowIndex, time.Now()) {
 		return errSessionNotVisible
 	}
 	return nil
@@ -105,8 +109,12 @@ func (s *Server) validateFallbackTerminalMode(
 	host hoststore.Host,
 	credential sshclient.Credential,
 	mode string,
+	target tmux.Target,
 ) error {
 	if mode != terminalTokenModeSSH {
+		return nil
+	}
+	if _, ok := s.sshFallback.Terminal(host.ID, windowIndexValue(target.WindowIndex), time.Now()); ok {
 		return nil
 	}
 	_, err := s.ssh.Run(r.Context(), hostToSSHConfig(host), credential, tmux.ListSessionsCommand())

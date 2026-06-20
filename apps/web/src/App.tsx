@@ -282,7 +282,7 @@ export function App() {
       return;
     }
     setTmuxInstallPromptHostId(selectedHostId);
-    if (window.confirm("tmux is not installed on this server. ChatMux is using a single SSH shell. Allow ChatMux to run the built-in tmux installer now?")) {
+    if (window.confirm("tmux is not installed on this server. ChatMux is using gateway-managed SSH tabs. Allow ChatMux to run the built-in tmux installer now?")) {
       handleInstallTmux();
     }
   }, [handleInstallTmux, pendingTmuxInstall, selectedHostId, tmuxFallbackActive, tmuxInstallPromptHostId]);

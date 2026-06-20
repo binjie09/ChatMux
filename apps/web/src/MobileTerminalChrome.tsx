@@ -44,21 +44,7 @@ export function MobileTerminalBar(props: MobileTerminalBarProps) {
         <OverflowText as="strong">{props.title}</OverflowText>
         <OverflowText as="span">{terminalSubtitle(props.hostName, props.sessionName, props.windowName)}</OverflowText>
       </div>
-      {props.loading ? null : props.tmuxFallbackActive ? (
-        <>
-          <button
-            className="mobile-terminal-install"
-            type="button"
-            aria-label="Install tmux"
-            disabled={props.tmuxInstallPending}
-            onClick={props.onInstallTmux}
-          >
-            <Download size={18} aria-hidden="true" />
-            <span>{props.tmuxInstallPending ? "Installing" : "Install tmux"}</span>
-          </button>
-          {props.onUploadFile ? <TerminalFileUploadButton onUpload={props.onUploadFile} /> : null}
-        </>
-      ) : (
+      {props.loading ? null : (
         <>
           <div className="mobile-terminal-window-picker">
             <select
@@ -77,12 +63,27 @@ export function MobileTerminalBar(props: MobileTerminalBarProps) {
             </button>
             {props.onUploadFile ? <TerminalFileUploadButton onUpload={props.onUploadFile} /> : null}
           </div>
-          <button type="button" aria-label="Open files" onClick={() => props.onOpenSheet("files")}>
-            <Files size={19} aria-hidden="true" />
-          </button>
-          <button type="button" aria-label="Draft command" onClick={() => props.onOpenSheet("draft")}>
-            <Bot size={19} aria-hidden="true" />
-          </button>
+          {props.tmuxFallbackActive ? (
+            <button
+              className="mobile-terminal-install"
+              type="button"
+              aria-label="Install tmux"
+              disabled={props.tmuxInstallPending}
+              onClick={props.onInstallTmux}
+            >
+              <Download size={18} aria-hidden="true" />
+              <span>{props.tmuxInstallPending ? "Installing" : "Install tmux"}</span>
+            </button>
+          ) : (
+            <>
+              <button type="button" aria-label="Open files" onClick={() => props.onOpenSheet("files")}>
+                <Files size={19} aria-hidden="true" />
+              </button>
+              <button type="button" aria-label="Draft command" onClick={() => props.onOpenSheet("draft")}>
+                <Bot size={19} aria-hidden="true" />
+              </button>
+            </>
+          )}
         </>
       )}
     </header>

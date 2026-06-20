@@ -68,18 +68,18 @@ export function SessionList(props: SessionListProps) {
         onBack={() => props.onExpandSession("")}
         onCreateClick={handleCreateClick}
         onDesktopCollapsedChange={props.onDesktopCollapsedChange}
-        showNewSession={!props.tmuxFallbackActive}
+        showNewSession={!props.tmuxFallbackActive || Boolean(windowListSession)}
       />
 
       <div className="session-list-content">
         {windowListSession ? (
           <MobileWindowListView
-            selectedWindowIndex={props.selectedSessionName === windowListSession.name ? props.selectedWindowIndex : null}
-            session={windowListSession}
-            onDeleteWindow={(windowIndex) => props.onDeleteWindow(windowListSession.name, windowIndex)}
-            onOpenWindow={(windowIndex) => props.onOpenWindow(windowListSession.name, windowIndex)}
-            onRenameSession={props.onRenameSession}
-            onRenameWindow={(windowIndex, name) => props.onRenameWindow(windowListSession.name, windowIndex, name)}
+          selectedWindowIndex={props.selectedSessionName === windowListSession.name ? props.selectedWindowIndex : null}
+          session={windowListSession}
+          onDeleteWindow={canDeleteWindow(windowListSession) ? (windowIndex) => props.onDeleteWindow(windowListSession.name, windowIndex) : undefined}
+          onOpenWindow={(windowIndex) => props.onOpenWindow(windowListSession.name, windowIndex)}
+          onRenameSession={props.onRenameSession}
+          onRenameWindow={(windowIndex, name) => props.onRenameWindow(windowListSession.name, windowIndex, name)}
           />
         ) : (
           <SessionListBody {...props} inputRef={newSessionInputRef} />
@@ -153,11 +153,11 @@ function SessionListBody(props: SessionListProps & { inputRef: RefObject<HTMLInp
           key={session.id}
           selectedWindowIndex={props.selectedSessionName === session.name ? props.selectedWindowIndex : null}
           session={session}
-          onDeleteWindow={isSSHFallbackSession(session) ? undefined : props.onDeleteWindow}
+          onDeleteWindow={canDeleteWindow(session) ? props.onDeleteWindow : undefined}
           onExpandSession={props.onExpandSession}
           onOpenWindow={props.onOpenWindow}
           onRenameSession={isSSHFallbackSession(session) ? undefined : props.onRenameSession}
-          onRenameWindow={isSSHFallbackSession(session) ? undefined : props.onRenameWindow}
+          onRenameWindow={props.onRenameWindow}
         />
       ))}
       {props.sessions.length === 0 ? <p className="session-empty">No sessions</p> : null}
@@ -172,7 +172,7 @@ function TmuxFallbackNotice(props: { visible: boolean }) {
   return (
     <div className="session-tmux-fallback">
       <strong>tmux unavailable</strong>
-      <span>Connected with a single SSH shell. Install tmux and reconnect for sessions and windows.</span>
+      <span>SSH tabs stay alive in the gateway across refreshes. Install tmux for remote sessions and history.</span>
     </div>
   );
 }
@@ -180,7 +180,7 @@ function TmuxFallbackNotice(props: { visible: boolean }) {
 type MobileWindowListViewProps = {
   selectedWindowIndex: number | null;
   session: DisplayTmuxSession;
-  onDeleteWindow: (windowIndex: number) => void;
+  onDeleteWindow?: (windowIndex: number) => void;
   onOpenWindow: (windowIndex: number) => void;
   onRenameSession: (sessionName: string, name: string) => Promise<void> | void;
   onRenameWindow: (windowIndex: number, name: string) => Promise<void> | void;
@@ -226,12 +226,16 @@ function MobileWindowRows(props: Pick<MobileWindowListViewProps, "onDeleteWindow
     <SessionWindowList
       selectedWindowIndex={props.selectedWindowIndex}
       windows={props.session.windowList}
-      onDeleteWindow={isSSHFallbackSession(props.session) ? undefined : props.onDeleteWindow}
+      onDeleteWindow={canDeleteWindow(props.session) ? props.onDeleteWindow : undefined}
       onOpenWindow={props.onOpenWindow}
-      onRenameWindow={isSSHFallbackSession(props.session) ? undefined : props.onRenameWindow}
-      showRenameButton={!isSSHFallbackSession(props.session)}
+      onRenameWindow={props.onRenameWindow}
+      showRenameButton
     />
   );
+}
+
+function canDeleteWindow(session: DisplayTmuxSession) {
+  return session.windowList.length > 1;
 }
 
 function SessionConnectionStatus(props: Pick<SessionListProps, "credentialStatus" | "onListSessions">) {

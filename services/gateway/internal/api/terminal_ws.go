@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/chatmux/chatmux/services/gateway/internal/hoststore"
 	"github.com/chatmux/chatmux/services/gateway/internal/sshclient"
@@ -37,8 +38,13 @@ type terminalServerMessage struct {
 type terminalInputContext struct {
 	request  *http.Request
 	conn     *websocket.Conn
-	terminal *sshclient.Terminal
+	terminal terminalIO
 	token    terminalToken
+}
+
+type terminalIO interface {
+	Resize(sshclient.TerminalSize) error
+	Stdin() io.Writer
 }
 
 func (s *Server) handleTerminalWebSocket(w http.ResponseWriter, r *http.Request) {
@@ -57,6 +63,10 @@ func (s *Server) handleTerminalWebSocket(w http.ResponseWriter, r *http.Request)
 }
 
 func (s *Server) runTerminal(r *http.Request, conn *websocket.Conn, token terminalToken) {
+	if token.Mode == terminalTokenModeSSH {
+		s.runFallbackTerminal(r, conn, token)
+		return
+	}
 	terminal, err := s.openTerminal(r, token)
 	if err != nil {
 		writeTerminalError(conn, err)
@@ -79,6 +89,32 @@ func (s *Server) runTerminal(r *http.Request, conn *websocket.Conn, token termin
 		token:    token,
 	})
 	close(done)
+}
+
+func (s *Server) runFallbackTerminal(r *http.Request, conn *websocket.Conn, token terminalToken) {
+	terminal, err := s.openFallbackTerminal(r, token)
+	if err != nil {
+		writeTerminalError(conn, err)
+		return
+	}
+	if err := s.logAudit(r.Context(), terminalConnectionAuditEvent(token)); err != nil {
+		writeTerminalError(conn, err)
+		return
+	}
+
+	writer := &terminalWriter{conn: conn}
+	listener, backlog := terminal.Subscribe()
+	defer terminal.Unsubscribe(listener)
+	if !token.Recovering && len(backlog) > 0 {
+		_ = writer.WriteJSON(terminalServerMessage{Type: "output", Data: string(backlog)})
+	}
+	go streamFallbackTerminalOutput(writer, listener)
+	s.readTerminalInput(terminalInputContext{
+		request:  r,
+		conn:     conn,
+		terminal: terminal,
+		token:    token,
+	})
 }
 
 func terminalConnectionAuditEvent(token terminalToken) hoststore.LogAuditEventInput {
@@ -108,6 +144,18 @@ func (s *Server) openTerminal(r *http.Request, token terminalToken) (*sshclient.
 		return nil, err
 	}
 	return s.ssh.StartTerminal(r.Context(), hostToSSHConfig(host), token.Credential, command, sshclient.TerminalSize{})
+}
+
+func (s *Server) openFallbackTerminal(r *http.Request, token terminalToken) (*sshFallbackTerminal, error) {
+	windowIndex := windowIndexValue(token.Target.WindowIndex)
+	if terminal, ok := s.sshFallback.Terminal(token.HostID, windowIndex, time.Now()); ok {
+		return terminal, nil
+	}
+	terminal, err := s.openTerminal(r, token)
+	if err != nil {
+		return nil, err
+	}
+	return s.sshFallback.BindTerminal(token.HostID, windowIndex, terminal, time.Now())
 }
 
 func terminalCommand(token terminalToken) (string, error) {
@@ -151,6 +199,15 @@ func streamTerminalOutput(writer *terminalWriter, reader io.Reader, done <-chan 
 			}
 		}
 		if err != nil {
+			return
+		}
+	}
+}
+
+func streamFallbackTerminalOutput(writer *terminalWriter, listener *sshFallbackListener) {
+	for data := range listener.ch {
+		message := terminalServerMessage{Type: "output", Data: string(data)}
+		if writer.WriteJSON(message) != nil {
 			return
 		}
 	}

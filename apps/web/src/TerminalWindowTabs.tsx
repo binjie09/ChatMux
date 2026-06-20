@@ -9,7 +9,6 @@ import { OverflowText } from "./OverflowText";
 type TerminalWindowTabsProps = {
   selectedWindowIndex: number | null;
   session: DisplayTmuxSession | undefined;
-  tmuxFallbackActive: boolean;
   onCreateWindow: (sessionName: string) => void;
   onDeleteWindow: (sessionName: string, windowIndex: number) => void;
   onOpenWindow: (sessionName: string, windowIndex: number) => void;
@@ -34,22 +33,16 @@ export function TerminalWindowTabs(props: TerminalWindowTabsProps) {
             sessionName={session.name}
             window={window}
             onDeleteWindow={props.onDeleteWindow}
-            onEdit={() => {
-              if (!props.tmuxFallbackActive) {
-                setEditingWindowIndex(window.index);
-              }
-            }}
+            onEdit={() => setEditingWindowIndex(window.index)}
             onOpenWindow={props.onOpenWindow}
             onRenameWindow={props.onRenameWindow}
-            showActions={!props.tmuxFallbackActive}
+            showActions={canDeleteWindow(session.windowList.length)}
             onStopEditing={() => setEditingWindowIndex(null)}
           />
         ))}
-        {!props.tmuxFallbackActive ? (
-          <button className="terminal-window-add" type="button" aria-label="New window" onClick={() => props.onCreateWindow(session.name)}>
-            <Plus size={16} aria-hidden="true" />
-          </button>
-        ) : null}
+        <button className="terminal-window-add" type="button" aria-label="New window" onClick={() => props.onCreateWindow(session.name)}>
+          <Plus size={16} aria-hidden="true" />
+        </button>
       </div>
       <div className="terminal-window-picker">
         <select
@@ -63,28 +56,28 @@ export function TerminalWindowTabs(props: TerminalWindowTabsProps) {
             </option>
           ))}
         </select>
-        {!props.tmuxFallbackActive ? (
-          <>
-            <button type="button" aria-label="New window" onClick={() => props.onCreateWindow(session.name)}>
-              <Plus size={16} aria-hidden="true" />
-            </button>
-            <button
-              type="button"
-              aria-label="Delete selected window"
-              disabled={props.selectedWindowIndex === null}
-              onClick={() => {
-                if (props.selectedWindowIndex !== null) {
-                  props.onDeleteWindow(session.name, props.selectedWindowIndex);
-                }
-              }}
-            >
-              <Trash2 size={16} aria-hidden="true" />
-            </button>
-          </>
-        ) : null}
+        <button type="button" aria-label="New window" onClick={() => props.onCreateWindow(session.name)}>
+          <Plus size={16} aria-hidden="true" />
+        </button>
+        <button
+          type="button"
+          aria-label="Delete selected window"
+          disabled={props.selectedWindowIndex === null || !canDeleteWindow(session.windowList.length)}
+          onClick={() => {
+            if (props.selectedWindowIndex !== null) {
+              props.onDeleteWindow(session.name, props.selectedWindowIndex);
+            }
+          }}
+        >
+          <Trash2 size={16} aria-hidden="true" />
+        </button>
       </div>
     </nav>
   );
+}
+
+function canDeleteWindow(windowCount: number) {
+  return windowCount > 1;
 }
 
 function WindowTab(props: {
@@ -112,7 +105,7 @@ function WindowTab(props: {
     );
   }
   return (
-    <div className={`terminal-window-tab ${props.isSelected ? "selected" : ""}`}>
+    <div className={`terminal-window-tab ${props.isSelected ? "selected" : ""} ${props.showActions ? "" : "no-actions"}`}>
       <button
         type="button"
         aria-current={props.isSelected ? "true" : undefined}

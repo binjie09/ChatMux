@@ -51,6 +51,10 @@
   transition: border-color 140ms ease, background-color 140ms ease, box-shadow 140ms ease;
 }
 
+.terminal-window-tab.no-actions {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .terminal-window-tab:not(.selected):hover {
   border-color: #3d5447;
   background: #1a261f;

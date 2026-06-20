@@ -52,6 +52,7 @@ func (s *Server) handleDeleteHost(w http.ResponseWriter, r *http.Request) {
 		writeError(w, statusForHostAccessError(err), err)
 		return
 	}
+	s.sshFallback.CloseHost(hostID)
 	if err := s.logAudit(r.Context(), hoststore.LogAuditEventInput{Type: "host.deleted", HostID: host.ID, Message: "deleted host"}); err != nil {
 		writeError(w, http.StatusInternalServerError, err)
 		return
@@ -79,6 +80,7 @@ func (s *Server) handleUpdateHost(w http.ResponseWriter, r *http.Request) {
 		writeError(w, statusForHostUpdateError(err), err)
 		return
 	}
+	s.sshFallback.CloseHost(hostID)
 	if err := s.logAudit(r.Context(), hoststore.LogAuditEventInput{Type: "host.updated", HostID: host.ID, Message: "updated host"}); err != nil {
 		writeError(w, http.StatusInternalServerError, err)
 		return
