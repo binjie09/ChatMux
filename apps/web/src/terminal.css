@@ -109,7 +109,7 @@
   white-space: nowrap;
 }
 
-.terminal-window-tab > button:last-child,
+.terminal-window-delete,
 .terminal-window-add {
   display: grid;
   place-items: center;
@@ -121,7 +121,7 @@
   background: transparent;
 }
 
-.terminal-window-tab > button:last-child:hover {
+.terminal-window-delete:hover {
   color: #ffd5d0;
   background: #3a201d;
 }

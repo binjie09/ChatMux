@@ -119,7 +119,12 @@ function WindowTab(props: {
         <OverflowText>{windowDisplayLabel(props.window)}</OverflowText>
       </button>
       {props.showActions ? (
-        <button type="button" aria-label={`Delete ${windowLabel(props.window)}`} onClick={() => props.onDeleteWindow(props.sessionName, props.window.index)}>
+        <button
+          className="terminal-window-delete"
+          type="button"
+          aria-label={`Delete ${windowLabel(props.window)}`}
+          onClick={() => props.onDeleteWindow(props.sessionName, props.window.index)}
+        >
           <Trash2 size={13} aria-hidden="true" />
         </button>
       ) : null}
