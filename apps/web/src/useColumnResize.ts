@@ -20,10 +20,11 @@ function readStoredWidth(options: ColumnResizeOptions): number {
 }
 
 /**
- * Owns the width and collapsed state of a single app-shell column. While
- * dragging, the visible width never drops below `collapseThreshold` (so the
- * column never looks cramped mid-drag); releasing below that threshold snaps
- * to `collapsedWidth`. The chosen width persists across reloads.
+ * Owns the width and collapsed state of a single app-shell column. Crossing
+ * the collapse threshold toggles collapsed live during the drag (collapse when
+ * the pointer drags the column at or below the threshold, expand when it drags
+ * it back above), so expand/collapse is fluid in both directions without
+ * waiting for pointer-up. The chosen width persists across reloads.
  */
 export function useColumnResize(options: ColumnResizeOptions) {
   const { storageKey, collapseThreshold, maxWidth, collapsedWidth } = options;
@@ -45,16 +46,14 @@ export function useColumnResize(options: ColumnResizeOptions) {
     target.setPointerCapture(event.pointerId);
     const startX = event.clientX;
     const startWidth = collapsedRef.current ? collapsedWidth : widthRef.current;
-    let wouldCollapse = collapsedRef.current;
     setResizing(true);
 
     function onMove(moveEvent: PointerEvent) {
       const next = startWidth + (moveEvent.clientX - startX);
       if (next <= collapseThreshold) {
-        wouldCollapse = true;
+        setCollapsed(true);
         return;
       }
-      wouldCollapse = false;
       setCollapsed(false);
       setWidth(Math.min(maxWidth, Math.max(collapseThreshold, next)));
     }
@@ -64,7 +63,6 @@ export function useColumnResize(options: ColumnResizeOptions) {
       target.removeEventListener("pointermove", onMove);
       target.removeEventListener("pointerup", onUp);
       setResizing(false);
-      setCollapsed(wouldCollapse);
     }
 
     target.addEventListener("pointermove", onMove);
