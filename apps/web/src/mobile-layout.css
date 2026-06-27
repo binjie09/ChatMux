@@ -52,22 +52,6 @@
     min-width: 0;
   }
 
-  .header-actions {
-    flex-wrap: nowrap;
-    width: 100%;
-    overflow-x: auto;
-    padding-bottom: 2px;
-  }
-
-  .header-actions::-webkit-scrollbar {
-    display: none;
-  }
-
-  .utility-button {
-    flex: 0 0 auto;
-    justify-content: center;
-  }
-
   .sidebar.mobile-open .brand,
   .sidebar.mobile-open .primary-action,
   .sidebar.mobile-open .nav-section h2,

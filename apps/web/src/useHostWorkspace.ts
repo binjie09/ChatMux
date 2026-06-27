@@ -3,7 +3,6 @@ import {
   createHost,
   deleteHost,
   listHosts,
-  setHostPinned,
   trustHost,
   updateHost,
   type CreateHostInput,
@@ -77,20 +76,6 @@ export function useHostWorkspace(options: HostWorkspaceOptions) {
     }
   }
 
-  async function handleTogglePin() {
-    if (!selectedHost) {
-      return;
-    }
-    try {
-      const updated = await setHostPinned(selectedHost.id, !selectedHost.pinned);
-      updateHostInList(updated);
-      options.onAuditRefresh();
-      options.onError("");
-    } catch (err) {
-      options.onError(errorMessage(err));
-    }
-  }
-
   async function handleUpdateHost(hostId: string, input: CreateHostInput) {
     try {
       const updated = await updateHost(hostId, input);
@@ -145,7 +130,6 @@ export function useHostWorkspace(options: HostWorkspaceOptions) {
     handleHostHeartbeat,
     handleHostHeartbeatStatus,
     handleSelectHost,
-    handleTogglePin,
     handleTrustHost,
     handleUpdateHost,
     hosts,

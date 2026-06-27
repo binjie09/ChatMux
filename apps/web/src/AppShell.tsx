@@ -105,8 +105,6 @@ type AppShellProps = {
   onSaveSessionMetadata: (input: SaveSessionMetadataInput) => Promise<void>;
   onSelectHost: (hostId: string) => void;
   onShowHostForm: (show: boolean) => void;
-  onTogglePin: () => void;
-  onTrustHost: () => void;
   onUploadTerminalFile: ((file: File) => Promise<void>) | null;
   onUpdateHost: (hostId: string, input: CreateHostInput) => Promise<void>;
   onInstallTmux: () => void;
@@ -212,8 +210,6 @@ export function AppShell(props: AppShellProps) {
         onQueuedInputSent={props.onQueuedInputSent}
         onRenameWindow={props.sessionHandlers.onRenameWindow}
         onSaveSessionMetadata={props.onSaveSessionMetadata}
-        onTogglePin={props.onTogglePin}
-        onTrustHost={props.onTrustHost}
         onUploadTerminalFile={props.onUploadTerminalFile}
         terminalReconnectSignal={props.terminalReconnectSignal}
       />

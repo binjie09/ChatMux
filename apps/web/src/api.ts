@@ -18,7 +18,6 @@ import type {
   TerminalTokenResponse,
   TmuxHistory,
   TmuxSessionMetadata,
-  TranscriptSummary,
   UpdateHostInput,
   UploadRemoteFileInput,
   UploadRemoteFileResponse,
@@ -50,7 +49,6 @@ export type {
   TmuxSessionMetadata,
   TmuxWindow,
   TranscriptChunk,
-  TranscriptSummary,
   UpdateHostInput,
   UploadRemoteFileInput,
   UploadRemoteFileResponse,
@@ -112,13 +110,6 @@ export async function heartbeatHost(hostId: string): Promise<HostHeartbeatRespon
   return request<HostHeartbeatResponse>(`/api/hosts/${hostId}/ssh/heartbeat`, {
     method: "POST",
     body: JSON.stringify({}),
-  });
-}
-
-export async function setHostPinned(hostId: string, pinned: boolean): Promise<Host> {
-  return request<Host>(`/api/hosts/${hostId}/pin`, {
-    method: "POST",
-    body: JSON.stringify({ pinned }),
   });
 }
 
@@ -227,18 +218,6 @@ export async function captureTmuxHistory(
   options: CaptureTmuxHistoryOptions = {},
 ): Promise<TmuxHistory> {
   return request<TmuxHistory>(`${tmuxSessionPath(hostId, sessionName)}/history`, {
-    method: "POST",
-    body: JSON.stringify({ credentialToken, ...options }),
-  });
-}
-
-export async function summarizeTmuxHistory(
-  hostId: string,
-  sessionName: string,
-  credentialToken: string,
-  options: { windowIndex?: number } = {},
-): Promise<TranscriptSummary> {
-  return request<TranscriptSummary>(`${tmuxSessionPath(hostId, sessionName)}/summary`, {
     method: "POST",
     body: JSON.stringify({ credentialToken, ...options }),
   });
