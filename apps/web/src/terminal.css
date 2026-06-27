@@ -544,6 +544,7 @@
 
 .terminal-window-tab {
   cursor: grab;
+  touch-action: none;
 }
 
 .terminal-window-tab:active {
@@ -551,9 +552,7 @@
 }
 
 .terminal-window-tab.dragging {
-  opacity: 0.45;
-}
-
-.terminal-window-tab.drag-over {
-  box-shadow: inset 2px 0 0 #4fbf7f;
+  opacity: 0.9;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.4);
+  z-index: 1;
 }

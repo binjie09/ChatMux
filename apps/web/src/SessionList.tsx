@@ -7,7 +7,7 @@ import { SessionWindowList } from "./SessionWindowList";
 import { type DisplayTmuxSession } from "./session-state-machine";
 import { isSSHFallbackSession } from "./tmux-fallback";
 import { windowCountLabel } from "./session-window-utils";
-import { arrayMove, dragItemClassName, useDragReorder } from "./drag-reorder";
+import { arrayMove, SortableList } from "./drag-reorder";
 import { OverflowText } from "./OverflowText";
 import { type SessionNotificationStatus } from "./useSessionNotifications";
 import { type SSHCredentialStatus } from "./useSSHCredentialToken";
@@ -133,9 +133,7 @@ function SessionListHeader(props: {
 }
 
 function SessionListBody(props: SessionListProps & { inputRef: RefObject<HTMLInputElement | null> }) {
-  const sessionDrag = useDragReorder((from, to) => {
-    props.onReorderSessions(arrayMove(props.sessions.map((session) => session.name), from, to));
-  });
+  const sessionIds = props.sessions.map((session) => session.id);
   return (
     <>
       <SessionConnectionStatus credentialStatus={props.credentialStatus} onListSessions={props.onListSessions} />
@@ -154,27 +152,35 @@ function SessionListBody(props: SessionListProps & { inputRef: RefObject<HTMLInp
         onEnabledChange={props.onNotificationsEnabledChange}
       />
       <SessionNotificationPrompt status={props.notificationStatus} />
-      {props.sessions.map((session, index) => (
-        <div
-          key={session.id}
-          className={dragItemClassName("session-drag-item", index, sessionDrag)}
-          {...sessionDrag.propsFor(index)}
-        >
-          <SessionGroup
-            isExpanded={!props.mobileWindowList && props.expandedSessionNames.has(session.name)}
-            isSelected={props.selectedSessionName === session.name}
-            selectedWindowIndex={props.selectedSessionName === session.name ? props.selectedWindowIndex : null}
-            session={session}
-            onDeleteWindow={canDeleteWindow(session) ? props.onDeleteWindow : undefined}
-            onDeleteSession={isSSHFallbackSession(session) ? undefined : props.onDeleteSession}
-            onExpandSession={props.onExpandSession}
-            onMoveWindow={props.onMoveWindow}
-            onOpenWindow={props.onOpenWindow}
-            onRenameSession={isSSHFallbackSession(session) ? undefined : props.onRenameSession}
-            onRenameWindow={props.onRenameWindow}
-          />
-        </div>
-      ))}
+      <SortableList
+        items={props.sessions}
+        ids={sessionIds}
+        orientation="vertical"
+        onReorder={(from, to) => props.onReorderSessions(arrayMove(props.sessions.map((session) => session.name), from, to))}
+      >
+        {(session, _index, sortable) => (
+          <div
+            ref={sortable.ref}
+            style={sortable.style}
+            className={`session-drag-item ${sortable.isDragging ? "dragging" : ""}`}
+            {...sortable.dragHandleProps}
+          >
+            <SessionGroup
+              isExpanded={!props.mobileWindowList && props.expandedSessionNames.has(session.name)}
+              isSelected={props.selectedSessionName === session.name}
+              selectedWindowIndex={props.selectedSessionName === session.name ? props.selectedWindowIndex : null}
+              session={session}
+              onDeleteWindow={canDeleteWindow(session) ? props.onDeleteWindow : undefined}
+              onDeleteSession={isSSHFallbackSession(session) ? undefined : props.onDeleteSession}
+              onExpandSession={props.onExpandSession}
+              onMoveWindow={props.onMoveWindow}
+              onOpenWindow={props.onOpenWindow}
+              onRenameSession={isSSHFallbackSession(session) ? undefined : props.onRenameSession}
+              onRenameWindow={props.onRenameWindow}
+            />
+          </div>
+        )}
+      </SortableList>
       {props.sessions.length === 0 ? <p className="session-empty">No sessions</p> : null}
     </>
   );

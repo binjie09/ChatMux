@@ -595,6 +595,7 @@
 .session-drag-item,
 .session-window-drag-item {
   cursor: grab;
+  touch-action: none;
 }
 
 .session-drag-item:active,
@@ -604,10 +605,7 @@
 
 .session-drag-item.dragging,
 .session-window-drag-item.dragging {
-  opacity: 0.45;
-}
-
-.session-drag-item.drag-over,
-.session-window-drag-item.drag-over {
-  box-shadow: inset 0 2px 0 #2c8f5a;
+  opacity: 0.9;
+  box-shadow: 0 8px 18px rgba(27, 36, 31, 0.18);
+  z-index: 1;
 }
