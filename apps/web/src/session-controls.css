@@ -121,11 +121,17 @@
   width: 100%;
   margin-bottom: 9px;
   border: 1px solid #dfd8c9;
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 12px 10px;
   color: #1b241f;
   background: #ffffff;
   text-align: left;
+  transition: border-color 140ms var(--ease), box-shadow 140ms var(--ease), transform 140ms var(--ease);
+}
+
+.session-row:not(.selected):hover {
+  border-color: #c3d6cc;
+  box-shadow: var(--shadow-sm);
 }
 
 .session-row-main {

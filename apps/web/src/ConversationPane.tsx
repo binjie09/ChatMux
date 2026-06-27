@@ -5,7 +5,6 @@ import { Composer, type ComposerMode } from "./Composer";
 import { CommandDraftPanel } from "./CommandDraftPanel";
 import { FileTreePanel } from "./FileTreePanel";
 import { downloadRemoteFileEntry } from "./file-tree-utils";
-import { HostActions } from "./HostActions";
 import { MobileTerminalBar, MobileTerminalSheetPanel, type MobileTerminalSheet } from "./MobileTerminalChrome";
 import { NativeTerminal, type QueuedTerminalInput } from "./NativeTerminal";
 import { SessionMetadataEditor } from "./SessionMetadataEditor";
@@ -66,8 +65,6 @@ type ConversationPaneProps = {
   onUploadTerminalFile: ((file: File) => Promise<void>) | null;
   onRenameWindow: (sessionName: string, windowIndex: number, name: string) => Promise<void> | void;
   onSaveSessionMetadata: (input: SaveSessionMetadataInput) => Promise<void>;
-  onTogglePin: () => void;
-  onTrustHost: () => void;
   terminalReconnectSignal: number;
 };
 
@@ -101,12 +98,11 @@ export function ConversationPane(props: ConversationPaneProps) {
         onUploadFile={props.onUploadTerminalFile}
       />
       <header className="conversation-header">
-        <div>
+        <div className="conversation-header-meta">
           <OverflowText as="p">{conversationSubtitle(props.host?.name, props.selectedWindowName)}</OverflowText>
           <OverflowText as="h2">{sessionTitle(props.selectedSession)}</OverflowText>
-          <SessionMetadataEditor session={props.selectedSession} onSave={props.onSaveSessionMetadata} />
         </div>
-        <HostActions host={props.host} onTogglePin={props.onTogglePin} onTrustHost={props.onTrustHost} />
+        <SessionMetadataEditor session={props.selectedSession} onSave={props.onSaveSessionMetadata} />
       </header>
 
       <div className="terminal-workspace">

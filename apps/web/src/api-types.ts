@@ -85,11 +85,6 @@ export type CaptureTmuxHistoryOptions = {
   windowIndex?: number;
 };
 
-export type TranscriptSummary = {
-  model: string;
-  summary: string;
-};
-
 export type CommandDraft = {
   command: string;
   explanation: string;

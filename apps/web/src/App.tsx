@@ -60,7 +60,6 @@ export function App() {
     handleHostHeartbeat,
     handleHostHeartbeatStatus,
     handleSelectHost,
-    handleTogglePin,
     handleTrustHost,
     handleUpdateHost,
     hosts,
@@ -307,7 +306,7 @@ export function App() {
     return trustPrompt.handleHostTrustError(new Error(message), reconnectTerminal, "reconnect");
   }, [reconnectTerminal, trustPrompt.handleHostTrustError]);
 
-  const summaryTarget = {
+  const target = {
     getCredentialToken: getSelectedHostCredentialToken,
     hostId: selectedHostId,
     sessionName: selection.selectedSessionName,
@@ -358,7 +357,7 @@ export function App() {
         selectedWindowName={selectedWindow ? windowDisplayLabel(selectedWindow) : ""}
         sessions={displaySessions}
         showHostForm={showHostForm}
-        target={summaryTarget}
+        target={target}
         terminalLoading={terminalRestoreLoading}
         terminalUploadProgress={uploadProgress.progress}
         terminalUploadProgressHandlers={uploadProgress}
@@ -390,8 +389,6 @@ export function App() {
         onSaveSessionMetadata={saveSessionMetadata}
         onSelectHost={handleSelectHost}
         onShowHostForm={setShowHostForm}
-        onTogglePin={handleTogglePin}
-        onTrustHost={() => void handleTrustHost()}
         onUploadTerminalFile={isMobileLayout && isMobileTerminalActive ? handleMobileTerminalFileUpload : null}
         terminalReconnectSignal={terminalReconnectSignal}
         onUpdateHost={handleUpdateHost}
