@@ -1,11 +1,11 @@
 .pwa-install-prompt {
   display: grid;
   gap: 12px;
-  border: 1px solid #33433a;
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 12px;
-  background: #202b25;
-  color: #f7f2e8;
+  background: var(--surface-raised);
+  color: var(--text);
 }
 
 .pwa-install-prompt strong,
@@ -15,7 +15,7 @@
 
 .pwa-install-prompt span {
   margin-top: 3px;
-  color: #b8c2bc;
+  color: var(--text-muted);
   font-size: 13px;
 }
 
@@ -29,18 +29,18 @@
   align-items: center;
   justify-content: center;
   gap: 7px;
-  border: 1px solid #46564d;
+  border: 1px solid var(--border-strong);
   border-radius: 8px;
   min-height: 34px;
-  color: #f7f2e8;
-  background: #17201b;
+  color: var(--text);
+  background: var(--surface);
 }
 
 .pwa-install-actions button:first-child {
   flex: 1;
-  border-color: #8fd5b2;
-  color: #0d1712;
-  background: #8fd5b2;
+  border-color: var(--accent);
+  color: var(--text-on-accent);
+  background: var(--accent);
   font-weight: 700;
 }
 

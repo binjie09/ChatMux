@@ -4,18 +4,18 @@
   min-width: 320px;
   min-height: 100vh;
   padding: 24px;
-  background: #f6f3ec;
+  background: var(--app-bg);
 }
 
 .gateway-unlock-panel {
   display: grid;
   gap: 18px;
   width: min(420px, 100%);
-  border: 1px solid #d8d0c0;
+  border: 1px solid var(--border-strong);
   border-radius: 8px;
   padding: 22px;
-  background: #17201b;
-  color: #f7f2e8;
+  background: var(--surface-raised);
+  color: var(--text);
 }
 
 .gateway-unlock-panel > header {
@@ -27,7 +27,7 @@
 .gateway-unlock-panel > header svg {
   width: 34px;
   height: 34px;
-  color: #8fd5b2;
+  color: var(--accent);
 }
 
 .gateway-unlock-panel strong,
@@ -37,13 +37,13 @@
 
 .gateway-unlock-panel span {
   margin-top: 3px;
-  color: #9fa9a3;
+  color: var(--text-muted);
   font-size: 13px;
 }
 
 .gateway-unlock-error {
   margin: 0;
-  color: #f2a397;
+  color: var(--feedback-negative);
   font-size: 12px;
   line-height: 1.45;
   word-break: break-word;

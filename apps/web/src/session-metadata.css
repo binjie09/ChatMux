@@ -8,11 +8,11 @@
 .session-metadata input {
   min-width: 0;
   width: 100%;
-  border: 1px solid #d6cebd;
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 8px 9px;
-  color: #17201b;
-  background: #ffffff;
+  color: var(--text);
+  background: var(--surface-raised);
   font-size: 13px;
 }
 
@@ -21,16 +21,16 @@
   grid-template-columns: 16px minmax(0, 1fr);
   align-items: center;
   gap: 6px;
-  color: #69746e;
+  color: var(--text-muted);
 }
 
 .session-metadata button {
   display: grid;
   place-items: center;
-  border: 1px solid #d6cebd;
+  border: 1px solid var(--border);
   border-radius: 8px;
-  color: #17201b;
-  background: #ffffff;
+  color: var(--text);
+  background: var(--surface-raised);
 }
 
 .session-metadata button:disabled {

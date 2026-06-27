@@ -12,8 +12,8 @@
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     height: 64px;
-    border-top: 1px solid #d6cebd;
-    background: #fffaf0;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
   }
 
   .mobile-nav button {
@@ -21,13 +21,13 @@
     place-items: center;
     gap: 3px;
     border: 0;
-    color: #607069;
+    color: var(--text-muted);
     background: transparent;
     font-size: 12px;
   }
 
   .mobile-nav button.active {
-    color: #17201b;
-    background: #e5f3eb;
+    color: var(--text);
+    background: var(--surface-selected);
   }
 }

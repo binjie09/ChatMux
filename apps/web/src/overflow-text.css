@@ -12,12 +12,12 @@
   margin-top: -6px;
   max-width: min(80vw, 360px);
   padding: 4px 8px;
-  background: #18201c;
-  color: #f6f3ec;
+  background: var(--surface-overlay);
+  color: var(--text);
   font-size: 12px;
   line-height: 1.4;
   border-radius: 4px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--shadow-dropdown);
   white-space: normal;
   overflow-wrap: anywhere;
   pointer-events: none;

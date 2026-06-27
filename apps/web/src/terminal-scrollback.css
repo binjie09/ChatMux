@@ -5,8 +5,8 @@
   overflow: auto;
   border-radius: 6px;
   padding: 10px;
-  color: #e6ece8;
-  background: #101713;
+  color: var(--term-text);
+  background: var(--term-bg);
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   font-size: 13px;
   line-height: 1.45;
@@ -29,13 +29,13 @@
 .terminal-scrollback-error,
 .terminal-scrollback-loading {
   min-height: 1.45em;
-  color: #aab5af;
+  color: var(--term-text-muted);
   user-select: none;
   -webkit-user-select: none;
 }
 
 .terminal-scrollback-error {
-  color: #ee7567;
+  color: var(--status-error);
 }
 
 @media (max-width: 720px) {

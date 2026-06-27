@@ -5,7 +5,7 @@
   display: grid;
   place-items: center;
   padding: 24px;
-  background: rgb(12 18 14 / 64%);
+  background: var(--scrim);
 }
 
 .composer-fullscreen-editor {
@@ -13,20 +13,20 @@
   grid-template-rows: auto minmax(0, 1fr) auto;
   width: 100%;
   height: 100%;
-  border: 1px solid #d6cebd;
+  border: 1px solid var(--border);
   border-radius: 8px;
-  color: #17201b;
-  background: #fffaf0;
-  box-shadow: 0 24px 70px rgb(12 18 14 / 28%);
+  color: var(--text);
+  background: var(--surface);
+  box-shadow: var(--shadow-overlay);
 }
 
 .composer-help-dialog {
   width: min(420px, 100%);
-  border: 1px solid #d6cebd;
+  border: 1px solid var(--border);
   border-radius: 8px;
-  color: #17201b;
-  background: #fffaf0;
-  box-shadow: 0 24px 70px rgb(12 18 14 / 28%);
+  color: var(--text);
+  background: var(--surface);
+  box-shadow: var(--shadow-overlay);
 }
 
 .composer-fullscreen-editor header,
@@ -35,7 +35,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  border-bottom: 1px solid #ded8ca;
+  border-bottom: 1px solid var(--border-soft);
   padding: 14px 16px;
 }
 
@@ -51,10 +51,10 @@
   place-items: center;
   width: 32px;
   height: 32px;
-  border: 1px solid #d6cebd;
+  border: 1px solid var(--border);
   border-radius: 8px;
-  color: #415049;
-  background: #ffffff;
+  color: var(--text-muted);
+  background: var(--surface-raised);
 }
 
 .composer-fullscreen-editor textarea {
@@ -64,11 +64,11 @@
   min-height: 0;
   margin: 16px;
   resize: none;
-  border: 1px solid #d6cebd;
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 13px;
-  color: #17201b;
-  background: #ffffff;
+  color: var(--text);
+  background: var(--surface-raised);
   font: inherit;
   line-height: 1.45;
 }
@@ -77,23 +77,23 @@
   display: flex;
   justify-content: flex-end;
   gap: 10px;
-  border-top: 1px solid #ded8ca;
+  border-top: 1px solid var(--border-soft);
   padding: 14px 16px;
 }
 
 .composer-secondary-button {
-  border: 1px solid #d6cebd;
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 11px 14px;
-  color: #17201b;
-  background: #ffffff;
+  color: var(--text);
+  background: var(--surface-raised);
   font-weight: 700;
 }
 
 .composer-help-dialog p {
   margin: 0;
   padding: 16px;
-  color: #415049;
+  color: var(--text-muted);
   font-size: 14px;
   line-height: 1.5;
 }
