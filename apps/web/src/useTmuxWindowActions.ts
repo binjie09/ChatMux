@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, type MutableRefObject } from "react";
 import {
   createTmuxWindow,
+  deleteTmuxSession,
   deleteTmuxWindow,
   listTmuxSessions,
   renameTmuxSession,
@@ -105,6 +106,23 @@ export function useTmuxWindowActions(options: UseTmuxWindowActionsOptions) {
     });
   }, []);
 
+  const deleteSession = useCallback(async (sessionName: string) => {
+    if (!ensureTmuxHostTrusted(optionsRef, () => deleteSession(sessionName))) {
+      return;
+    }
+    await runTmuxAction(optionsRef, async (current) => {
+      const credentialToken = await current.getCredentialToken();
+      const deletingSelected = current.selectedSessionName === sessionName;
+      const deletedSessionPosition = sessionListPosition(current.sessions, sessionName);
+      const nextSessions = await deleteTmuxSession(current.hostId, sessionName, credentialToken);
+      const preferred = deletingSelected
+        ? nextSelectionAfterDeletion(nextSessions, sessionName, null, deletedSessionPosition)
+        : undefined;
+      const result = applySessions(current, nextSessions, preferred);
+      await openReconciledWindow(current, result, credentialToken);
+    });
+  }, []);
+
   const renameWindow = useCallback(async (sessionName: string, windowIndex: number, name: string) => {
     if (!ensureTmuxHostTrusted(optionsRef, () => renameWindow(sessionName, windowIndex, name))) {
       return;
@@ -130,7 +148,7 @@ export function useTmuxWindowActions(options: UseTmuxWindowActionsOptions) {
     });
   }, []);
 
-  return { applySessionRefresh, createWindow, deleteWindow, refreshSessionsKeepingSelection, renameSession, renameWindow };
+  return { applySessionRefresh, createWindow, deleteSession, deleteWindow, refreshSessionsKeepingSelection, renameSession, renameWindow };
 }
 
 function sourceWindowIndexForCreate(options: UseTmuxWindowActionsOptions, sessionName: string) {

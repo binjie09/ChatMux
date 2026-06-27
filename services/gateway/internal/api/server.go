@@ -105,6 +105,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/hosts/{id}/tmux/sessions", s.handleCreateTmuxSession)
 	mux.HandleFunc("POST /api/hosts/{id}/tmux/sessions/{name}/command-draft", s.handleDraftTmuxCommand)
 	mux.HandleFunc("POST /api/hosts/{id}/tmux/sessions/{name}/rename", s.handleRenameTmuxSession)
+	mux.HandleFunc("POST /api/hosts/{id}/tmux/sessions/{name}/delete", s.handleDeleteTmuxSession)
 	mux.HandleFunc("POST /api/hosts/{id}/tmux/sessions/{name}/terminal-token", s.handleCreateTerminalToken)
 	mux.HandleFunc("POST /api/hosts/{id}/tmux/sessions/{name}/terminal-files", s.handleUploadTerminalFile)
 	mux.HandleFunc("POST /api/hosts/{id}/tmux/sessions/{name}/terminal-images", s.handleUploadTerminalImage)

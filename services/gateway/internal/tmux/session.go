@@ -67,7 +67,7 @@ func KillSessionCommand(name string) (string, error) {
 	if err := ValidateSessionName(name); err != nil {
 		return "", err
 	}
-	command := tmuxPrelude() + "\"$TMUX_BIN\" kill-session -t " + shellQuote(formatSessionTarget(name))
+	command := tmuxPrelude() + "\"$TMUX_BIN\" kill-session -t " + shellQuote(formatSessionTarget(name)) + rawListSessionsAfterSuccessCommand()
 	return loginShellCommand(command), nil
 }
 

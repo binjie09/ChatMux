@@ -28,6 +28,7 @@ type SessionListProps = {
   onCreateSession: () => void;
   onCreateWindow: (sessionName: string) => void;
   onDeleteWindow: (sessionName: string, windowIndex: number) => void;
+  onDeleteSession: (sessionName: string) => void;
   onDesktopCollapsedChange: (collapsed: boolean) => void;
   onExpandSession: (sessionName: string) => void;
   onListSessions: () => void;
@@ -154,6 +155,7 @@ function SessionListBody(props: SessionListProps & { inputRef: RefObject<HTMLInp
           selectedWindowIndex={props.selectedSessionName === session.name ? props.selectedWindowIndex : null}
           session={session}
           onDeleteWindow={canDeleteWindow(session) ? props.onDeleteWindow : undefined}
+          onDeleteSession={isSSHFallbackSession(session) ? undefined : props.onDeleteSession}
           onExpandSession={props.onExpandSession}
           onOpenWindow={props.onOpenWindow}
           onRenameSession={isSSHFallbackSession(session) ? undefined : props.onRenameSession}
@@ -235,7 +237,14 @@ function MobileWindowRows(props: Pick<MobileWindowListViewProps, "onDeleteWindow
 }
 
 function canDeleteWindow(session: DisplayTmuxSession) {
-  return session.windowList.length > 1;
+  // Normal tmux sessions may delete any window; killing the last window simply
+  // destroys the session. The gateway-managed SSH fallback keeps one shell
+  // alive, and the backend rejects deleting its last window (errFallbackLastWindow),
+  // so guard it here rather than surfacing that rejection.
+  if (isSSHFallbackSession(session)) {
+    return session.windowList.length > 1;
+  }
+  return true;
 }
 
 function SessionConnectionStatus(props: Pick<SessionListProps, "credentialStatus" | "onListSessions">) {

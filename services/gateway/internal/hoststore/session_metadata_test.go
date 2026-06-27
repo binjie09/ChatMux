@@ -59,6 +59,35 @@ func TestSaveSessionMetadataPreservesOwner(t *testing.T) {
 	}
 }
 
+func TestDeleteSessionMetadataRemovesOnlyTarget(t *testing.T) {
+	store := openTestStore(t)
+	defer closeStore(t, store)
+	ctx := context.Background()
+
+	if _, err := store.SaveSessionMetadata(ctx, SaveSessionMetadataInput{
+		HostID: "host_1", Owner: "ops", SessionName: "deploy",
+	}); err != nil {
+		t.Fatalf("SaveSessionMetadata failed: %v", err)
+	}
+	if _, err := store.SaveSessionMetadata(ctx, SaveSessionMetadataInput{
+		HostID: "host_1", Owner: "ops", SessionName: "logs",
+	}); err != nil {
+		t.Fatalf("SaveSessionMetadata failed: %v", err)
+	}
+
+	if err := store.DeleteSessionMetadata(ctx, "host_1", "deploy"); err != nil {
+		t.Fatalf("DeleteSessionMetadata failed: %v", err)
+	}
+
+	items, err := store.ListSessionMetadata(ctx, "host_1")
+	if err != nil {
+		t.Fatalf("ListSessionMetadata failed: %v", err)
+	}
+	if len(items) != 1 || items[0].SessionName != "logs" {
+		t.Fatalf("expected only the logs session metadata to remain, got %#v", items)
+	}
+}
+
 func assertTags(t *testing.T, actual []string, expected []string) {
 	t.Helper()
 	if len(actual) != len(expected) {
