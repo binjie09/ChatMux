@@ -591,3 +591,21 @@
     height: 36px;
   }
 }
+
+.session-drag-item,
+.session-window-drag-item {
+  cursor: grab;
+  touch-action: none;
+}
+
+.session-drag-item:active,
+.session-window-drag-item:active {
+  cursor: grabbing;
+}
+
+.session-drag-item.dragging,
+.session-window-drag-item.dragging {
+  opacity: 0.9;
+  box-shadow: 0 8px 18px rgba(27, 36, 31, 0.18);
+  z-index: 1;
+}

@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS session_metadata (
 	title TEXT NOT NULL DEFAULT '',
 	tags TEXT NOT NULL DEFAULT '[]',
 	owner TEXT NOT NULL DEFAULT 'local-dev',
+	sort_order REAL,
 	updated_at TIMESTAMP NOT NULL,
 	PRIMARY KEY (host_id, session_name)
 );`
@@ -71,6 +72,9 @@ ALTER TABLE hosts ADD COLUMN owner TEXT NOT NULL DEFAULT 'local-dev';`
 
 const addSessionOwnerSQL = `
 ALTER TABLE session_metadata ADD COLUMN owner TEXT NOT NULL DEFAULT 'local-dev';`
+
+const addSessionSortOrderSQL = `
+ALTER TABLE session_metadata ADD COLUMN sort_order REAL;`
 
 const listHostsSQL = `
 SELECT id, name, hostname, port, username, status, host_key_fingerprint, ssh_auth_method, ssh_password, ssh_private_key, ssh_private_key_passphrase, pinned, owner, created_at, updated_at
@@ -151,13 +155,20 @@ ON CONFLICT(host_id, session_name) DO UPDATE SET
 	owner = excluded.owner,
 	updated_at = excluded.updated_at;`
 
+const upsertSessionOrderSQL = `
+INSERT INTO session_metadata (host_id, session_name, sort_order, updated_at)
+VALUES (?, ?, ?, ?)
+ON CONFLICT(host_id, session_name) DO UPDATE SET
+	sort_order = excluded.sort_order,
+	updated_at = excluded.updated_at;`
+
 const listSessionMetadataSQL = `
-SELECT host_id, session_name, title, tags, owner, updated_at
+SELECT host_id, session_name, title, tags, owner, sort_order, updated_at
 FROM session_metadata
 WHERE host_id = ?;`
 
 const getSessionMetadataSQL = `
-SELECT host_id, session_name, title, tags, owner, updated_at
+SELECT host_id, session_name, title, tags, owner, sort_order, updated_at
 FROM session_metadata
 WHERE host_id = ? AND session_name = ?;`
 

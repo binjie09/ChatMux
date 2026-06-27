@@ -5,11 +5,13 @@ import { type TmuxWindow } from "./api";
 import { windowDisplayLabel, windowLabel } from "./session-window-utils";
 import { OverflowText } from "./OverflowText";
 import { formatTime } from "./view-utils";
+import { SortableList } from "./drag-reorder";
 
 type SessionWindowListProps = {
   selectedWindowIndex: number | null;
   windows: TmuxWindow[];
   onDeleteWindow?: (windowIndex: number) => void;
+  onMoveWindow?: (fromWindowIndex: number, toWindowIndex: number) => void;
   onOpenWindow: (windowIndex: number) => void;
   onRenameWindow?: (windowIndex: number, name: string) => Promise<void> | void;
   showRenameButton?: boolean;
@@ -20,23 +22,46 @@ export function SessionWindowList(props: SessionWindowListProps) {
   if (props.windows.length === 0) {
     return <p className="session-empty">No windows</p>;
   }
+  const renderRow = (window: TmuxWindow) => (
+    <WindowRow
+      isSelected={props.selectedWindowIndex === window.index}
+      editing={editingWindowIndex === window.index}
+      window={window}
+      onDeleteWindow={props.onDeleteWindow}
+      onRenameWindow={props.onRenameWindow}
+      showRenameButton={Boolean(props.showRenameButton)}
+      onStopEditing={() => setEditingWindowIndex(null)}
+      onStartEditing={() => setEditingWindowIndex(window.index)}
+      onOpenWindow={props.onOpenWindow}
+    />
+  );
   return (
-    <div className="session-window-list">
-      {props.windows.map((window) => (
-        <WindowRow
-          isSelected={props.selectedWindowIndex === window.index}
-          key={window.id || window.index}
-          editing={editingWindowIndex === window.index}
-          window={window}
-          onDeleteWindow={props.onDeleteWindow}
-          onRenameWindow={props.onRenameWindow}
-          showRenameButton={Boolean(props.showRenameButton)}
-          onStopEditing={() => setEditingWindowIndex(null)}
-          onStartEditing={() => setEditingWindowIndex(window.index)}
-          onOpenWindow={props.onOpenWindow}
-        />
-      ))}
-    </div>
+    <SortableList
+      className="session-window-list"
+      items={props.windows}
+      ids={props.windows.map((window) => window.id || String(window.index))}
+      orientation="vertical"
+      disabled={!props.onMoveWindow}
+      onReorder={(from, to) => {
+        const fromWindowIndex = props.windows[from]?.index;
+        const toWindowIndex = props.windows[to]?.index;
+        if (fromWindowIndex === undefined || toWindowIndex === undefined) {
+          return;
+        }
+        props.onMoveWindow?.(fromWindowIndex, toWindowIndex);
+      }}
+    >
+      {(window, _index, sortable) => (
+        <div
+          ref={sortable.ref}
+          style={sortable.style}
+          className={`session-window-drag-item ${sortable.isDragging ? "dragging" : ""}`}
+          {...sortable.dragHandleProps}
+        >
+          {renderRow(window)}
+        </div>
+      )}
+    </SortableList>
   );
 }
 

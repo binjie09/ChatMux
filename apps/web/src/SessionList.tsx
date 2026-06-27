@@ -7,6 +7,7 @@ import { SessionWindowList } from "./SessionWindowList";
 import { type DisplayTmuxSession } from "./session-state-machine";
 import { isSSHFallbackSession } from "./tmux-fallback";
 import { windowCountLabel } from "./session-window-utils";
+import { arrayMove, SortableList } from "./drag-reorder";
 import { OverflowText } from "./OverflowText";
 import { type SessionNotificationStatus } from "./useSessionNotifications";
 import { type SSHCredentialStatus } from "./useSSHCredentialToken";
@@ -32,9 +33,11 @@ type SessionListProps = {
   onDesktopCollapsedChange: (collapsed: boolean) => void;
   onExpandSession: (sessionName: string) => void;
   onListSessions: () => void;
+  onMoveWindow: (sessionName: string, fromWindowIndex: number, toWindowIndex: number) => void;
   onNewSessionNameChange: (value: string) => void;
   onNotificationsEnabledChange: (enabled: boolean) => void;
   onOpenWindow: (sessionName: string, windowIndex: number) => void;
+  onReorderSessions: (orderedNames: string[]) => void;
   onRenameSession: (sessionName: string, name: string) => Promise<void> | void;
   onRenameWindow: (sessionName: string, windowIndex: number, name: string) => Promise<void> | void;
 };
@@ -78,6 +81,7 @@ export function SessionList(props: SessionListProps) {
           selectedWindowIndex={props.selectedSessionName === windowListSession.name ? props.selectedWindowIndex : null}
           session={windowListSession}
           onDeleteWindow={canDeleteWindow(windowListSession) ? (windowIndex) => props.onDeleteWindow(windowListSession.name, windowIndex) : undefined}
+          onMoveWindow={(fromWindowIndex, toWindowIndex) => props.onMoveWindow(windowListSession.name, fromWindowIndex, toWindowIndex)}
           onOpenWindow={(windowIndex) => props.onOpenWindow(windowListSession.name, windowIndex)}
           onRenameSession={props.onRenameSession}
           onRenameWindow={(windowIndex, name) => props.onRenameWindow(windowListSession.name, windowIndex, name)}
@@ -129,6 +133,7 @@ function SessionListHeader(props: {
 }
 
 function SessionListBody(props: SessionListProps & { inputRef: RefObject<HTMLInputElement | null> }) {
+  const sessionIds = props.sessions.map((session) => session.id);
   return (
     <>
       <SessionConnectionStatus credentialStatus={props.credentialStatus} onListSessions={props.onListSessions} />
@@ -147,21 +152,35 @@ function SessionListBody(props: SessionListProps & { inputRef: RefObject<HTMLInp
         onEnabledChange={props.onNotificationsEnabledChange}
       />
       <SessionNotificationPrompt status={props.notificationStatus} />
-      {props.sessions.map((session) => (
-        <SessionGroup
-          isExpanded={!props.mobileWindowList && props.expandedSessionNames.has(session.name)}
-          isSelected={props.selectedSessionName === session.name}
-          key={session.id}
-          selectedWindowIndex={props.selectedSessionName === session.name ? props.selectedWindowIndex : null}
-          session={session}
-          onDeleteWindow={canDeleteWindow(session) ? props.onDeleteWindow : undefined}
-          onDeleteSession={isSSHFallbackSession(session) ? undefined : props.onDeleteSession}
-          onExpandSession={props.onExpandSession}
-          onOpenWindow={props.onOpenWindow}
-          onRenameSession={isSSHFallbackSession(session) ? undefined : props.onRenameSession}
-          onRenameWindow={props.onRenameWindow}
-        />
-      ))}
+      <SortableList
+        items={props.sessions}
+        ids={sessionIds}
+        orientation="vertical"
+        onReorder={(from, to) => props.onReorderSessions(arrayMove(props.sessions.map((session) => session.name), from, to))}
+      >
+        {(session, _index, sortable) => (
+          <div
+            ref={sortable.ref}
+            style={sortable.style}
+            className={`session-drag-item ${sortable.isDragging ? "dragging" : ""}`}
+            {...sortable.dragHandleProps}
+          >
+            <SessionGroup
+              isExpanded={!props.mobileWindowList && props.expandedSessionNames.has(session.name)}
+              isSelected={props.selectedSessionName === session.name}
+              selectedWindowIndex={props.selectedSessionName === session.name ? props.selectedWindowIndex : null}
+              session={session}
+              onDeleteWindow={canDeleteWindow(session) ? props.onDeleteWindow : undefined}
+              onDeleteSession={isSSHFallbackSession(session) ? undefined : props.onDeleteSession}
+              onExpandSession={props.onExpandSession}
+              onMoveWindow={props.onMoveWindow}
+              onOpenWindow={props.onOpenWindow}
+              onRenameSession={isSSHFallbackSession(session) ? undefined : props.onRenameSession}
+              onRenameWindow={props.onRenameWindow}
+            />
+          </div>
+        )}
+      </SortableList>
       {props.sessions.length === 0 ? <p className="session-empty">No sessions</p> : null}
     </>
   );
@@ -183,6 +202,7 @@ type MobileWindowListViewProps = {
   selectedWindowIndex: number | null;
   session: DisplayTmuxSession;
   onDeleteWindow?: (windowIndex: number) => void;
+  onMoveWindow?: (fromWindowIndex: number, toWindowIndex: number) => void;
   onOpenWindow: (windowIndex: number) => void;
   onRenameSession: (sessionName: string, name: string) => Promise<void> | void;
   onRenameWindow: (windowIndex: number, name: string) => Promise<void> | void;
@@ -223,12 +243,13 @@ function MobileWindowListView(props: MobileWindowListViewProps) {
   );
 }
 
-function MobileWindowRows(props: Pick<MobileWindowListViewProps, "onDeleteWindow" | "onOpenWindow" | "onRenameWindow" | "selectedWindowIndex" | "session">) {
+function MobileWindowRows(props: Pick<MobileWindowListViewProps, "onDeleteWindow" | "onMoveWindow" | "onOpenWindow" | "onRenameWindow" | "selectedWindowIndex" | "session">) {
   return (
     <SessionWindowList
       selectedWindowIndex={props.selectedWindowIndex}
       windows={props.session.windowList}
       onDeleteWindow={canDeleteWindow(props.session) ? props.onDeleteWindow : undefined}
+      onMoveWindow={props.onMoveWindow}
       onOpenWindow={props.onOpenWindow}
       onRenameWindow={props.onRenameWindow}
       showRenameButton

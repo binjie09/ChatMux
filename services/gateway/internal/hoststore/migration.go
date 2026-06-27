@@ -49,6 +49,7 @@ func (s *Store) createBaseTables(ctx context.Context) error {
 func (s *Store) migrateSessionMetadata(ctx context.Context) error {
 	columns := []tableColumnMigration{
 		{column: "owner", sql: addSessionOwnerSQL, label: "session owner"},
+		{column: "sort_order", sql: addSessionSortOrderSQL, label: "session sort order"},
 	}
 	return s.migrateColumns(ctx, "session_metadata", columns)
 }

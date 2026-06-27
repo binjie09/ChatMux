@@ -59,6 +59,7 @@ type ConversationPaneProps = {
   onDrafted: () => void;
   onInstallTmux: () => void;
   onMobileSheetChange: (sheet: MobileTerminalSheet | null) => void;
+  onMoveWindow: (sessionName: string, fromWindowIndex: number, toWindowIndex: number) => void;
   onOpenWindow: (sessionName: string, windowIndex: number) => void;
   onPasteTerminalFile: ((file: File) => Promise<string>) | null;
   onQueuedInputSent: (inputId: number) => void;
@@ -120,6 +121,7 @@ export function ConversationPane(props: ConversationPaneProps) {
             session={props.selectedSession}
             onCreateWindow={props.onCreateWindow}
             onDeleteWindow={props.onDeleteWindow}
+            onMoveWindow={props.onMoveWindow}
             onOpenWindow={props.onOpenWindow}
             onRenameWindow={props.onRenameWindow}
           />

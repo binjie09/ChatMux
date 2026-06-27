@@ -1,6 +1,9 @@
 package tmux
 
-import "errors"
+import (
+	"errors"
+	"strings"
+)
 
 var ErrInvalidWindowName = errors.New("window name must be 1-256 characters without tabs or newlines")
 
@@ -53,6 +56,43 @@ func RenameWindowCommand(target Target, name string) (string, error) {
 	command := tmuxPrelude() + "\"$TMUX_BIN\" rename-window -t " + shellQuote(formatTarget(target)) + " " + shellQuote(name) +
 		rawListSessionsAfterSuccessCommand()
 	return loginShellCommand(command), nil
+}
+
+// MoveWindowCommand reorders a tmux window by bubbling it from fromWindowIndex to
+// toWindowIndex through a chain of adjacent swap-window calls. Each swap is a
+// separate tmux invocation (run sequentially by the shell), so by the time the
+// next swap runs the previous one has already taken effect and the indices it
+// targets are current. The refreshed session list is appended so the caller
+// receives the post-move ordering.
+func MoveWindowCommand(sessionName string, fromWindowIndex int, toWindowIndex int) (string, error) {
+	if err := ValidateSessionName(sessionName); err != nil {
+		return "", err
+	}
+	if fromWindowIndex < 0 || toWindowIndex < 0 {
+		return "", ErrInvalidWindowTarget
+	}
+	if fromWindowIndex == toWindowIndex {
+		return ListSessionsCommand(), nil
+	}
+	swaps := moveWindowSwapChain(sessionName, fromWindowIndex, toWindowIndex)
+	command := tmuxPrelude() + strings.Join(swaps, "; ") + rawListSessionsAfterSuccessCommand()
+	return loginShellCommand(command), nil
+}
+
+func moveWindowSwapChain(sessionName string, fromWindowIndex int, toWindowIndex int) []string {
+	swaps := []string{}
+	current := fromWindowIndex
+	for current != toWindowIndex {
+		next := current - 1
+		if toWindowIndex > current {
+			next = current + 1
+		}
+		from := formatTarget(Target{SessionName: sessionName, WindowIndex: &current})
+		to := formatTarget(Target{SessionName: sessionName, WindowIndex: &next})
+		swaps = append(swaps, "\"$TMUX_BIN\" swap-window -s "+shellQuote(from)+" -t "+shellQuote(to))
+		current = next
+	}
+	return swaps
 }
 
 func RenameSessionCommand(sessionName string, newName string) (string, error) {

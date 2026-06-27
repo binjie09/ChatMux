@@ -79,7 +79,9 @@ type AppShellProps = {
     onCreateSession: () => void;
     onExpandSession: (sessionName: string) => void;
     onListSessions: () => void;
+    onMoveWindow: (sessionName: string, fromWindowIndex: number, toWindowIndex: number) => void;
     onOpenWindow: (sessionName: string, windowIndex: number) => void;
+    onReorderSessions: (orderedNames: string[]) => void;
     onRenameSession: (sessionName: string, name: string) => Promise<void> | void;
     onRenameWindow: (sessionName: string, windowIndex: number, name: string) => Promise<void> | void;
   };
@@ -165,9 +167,11 @@ export function AppShell(props: AppShellProps) {
         onDesktopCollapsedChange={setSessionsCollapsed}
         onExpandSession={props.sessionHandlers.onExpandSession}
         onListSessions={props.sessionHandlers.onListSessions}
+        onMoveWindow={props.sessionHandlers.onMoveWindow}
         onNewSessionNameChange={props.onNewSessionNameChange}
         onNotificationsEnabledChange={props.onNotificationsEnabledChange}
         onOpenWindow={props.sessionHandlers.onOpenWindow}
+        onReorderSessions={props.sessionHandlers.onReorderSessions}
         onRenameSession={props.sessionHandlers.onRenameSession}
         onRenameWindow={props.sessionHandlers.onRenameWindow}
       />
@@ -202,6 +206,7 @@ export function AppShell(props: AppShellProps) {
         onDrafted={props.onDrafted}
         onInstallTmux={props.onInstallTmux}
         onMobileSheetChange={props.onMobileSheetChange}
+        onMoveWindow={props.sessionHandlers.onMoveWindow}
         onOpenWindow={props.sessionHandlers.onOpenWindow}
         onPasteTerminalFile={props.onPasteTerminalFile}
         onQueuedInputSent={props.onQueuedInputSent}

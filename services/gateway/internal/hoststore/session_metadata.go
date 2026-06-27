@@ -16,6 +16,7 @@ type SessionMetadata struct {
 	Title       string    `json:"title"`
 	Tags        []string  `json:"tags"`
 	Owner       string    `json:"owner"`
+	SortOrder   *float64  `json:"-"`
 	UpdatedAt   time.Time `json:"updatedAt"`
 }
 
@@ -65,6 +66,42 @@ func (s *Store) ListSessionMetadata(ctx context.Context, hostID string) ([]Sessi
 		items = append(items, metadata)
 	}
 	return items, rows.Err()
+}
+
+// SaveSessionOrders persists explicit sort_order ranks for the given sessions
+// in one transaction. The upsert only touches sort_order (and updated_at), so a
+// session's title, tags, and owner are preserved. Sessions without an existing
+// row are created with their column defaults.
+func (s *Store) SaveSessionOrders(ctx context.Context, hostID string, orders []SessionOrderInput) error {
+	if strings.TrimSpace(hostID) == "" {
+		return errors.New("host id is required")
+	}
+	if len(orders) == 0 {
+		return nil
+	}
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("begin session order transaction: %w", err)
+	}
+	defer tx.Rollback()
+	now := time.Now().UTC()
+	for _, order := range orders {
+		if strings.TrimSpace(order.SessionName) == "" {
+			continue
+		}
+		if _, err := tx.ExecContext(ctx, upsertSessionOrderSQL, hostID, order.SessionName, order.SortOrder, now); err != nil {
+			return fmt.Errorf("save session order: %w", err)
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit session order transaction: %w", err)
+	}
+	return nil
+}
+
+type SessionOrderInput struct {
+	SessionName string
+	SortOrder   float64
 }
 
 func (s *Store) GetSessionMetadata(ctx context.Context, hostID string, sessionName string) (SessionMetadata, error) {
@@ -133,12 +170,14 @@ func newSessionMetadata(input SaveSessionMetadataInput, existing *SessionMetadat
 func scanSessionMetadata(row hostScanner) (SessionMetadata, error) {
 	var metadata SessionMetadata
 	var tagsJSON string
+	var sortOrder sql.NullFloat64
 	if err := row.Scan(
 		&metadata.HostID,
 		&metadata.SessionName,
 		&metadata.Title,
 		&tagsJSON,
 		&metadata.Owner,
+		&sortOrder,
 		&metadata.UpdatedAt,
 	); err != nil {
 		return SessionMetadata{}, err
@@ -148,6 +187,10 @@ func scanSessionMetadata(row hostScanner) (SessionMetadata, error) {
 		return SessionMetadata{}, err
 	}
 	metadata.Tags = tags
+	if sortOrder.Valid {
+		value := sortOrder.Float64
+		metadata.SortOrder = &value
+	}
 	return metadata, nil
 }
 

@@ -36,6 +36,7 @@ export type TmuxSession = {
   windowList: TmuxWindow[];
   attached: boolean;
   updatedAt: string;
+  createdAt: string;
   status: SessionStatus;
   processName: string;
   title: string;

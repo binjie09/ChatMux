@@ -4,6 +4,8 @@ import {
   deleteTmuxSession,
   deleteTmuxWindow,
   listTmuxSessions,
+  moveTmuxWindow,
+  reorderTmuxSessions,
   renameTmuxSession,
   renameTmuxWindow,
 } from "./tmux-api";
@@ -148,7 +150,49 @@ export function useTmuxWindowActions(options: UseTmuxWindowActionsOptions) {
     });
   }, []);
 
-  return { applySessionRefresh, createWindow, deleteSession, deleteWindow, refreshSessionsKeepingSelection, renameSession, renameWindow };
+  const reorderSessions = useCallback(async (orderedNames: string[]) => {
+    if (!ensureTmuxHostTrusted(optionsRef, () => reorderSessions(orderedNames))) {
+      return;
+    }
+    await runTmuxAction(optionsRef, async (current) => {
+      // Optimistically reorder so the drag feels instant; the server response is
+      // authoritative and replaces this once it lands.
+      current.onSessionsChange(reorderSessionsByName(current.sessions, orderedNames));
+      const credentialToken = await current.getCredentialToken();
+      const nextSessions = await reorderTmuxSessions(current.hostId, credentialToken, orderedNames);
+      current.onSessionsChange(nextSessions);
+    });
+  }, []);
+
+  const moveWindow = useCallback(async (sessionName: string, fromWindowIndex: number, toWindowIndex: number) => {
+    if (!ensureTmuxHostTrusted(optionsRef, () => moveWindow(sessionName, fromWindowIndex, toWindowIndex))) {
+      return;
+    }
+    await runTmuxAction(optionsRef, async (current) => {
+      const session = current.sessions.find((item) => item.name === sessionName);
+      // tmux renumbers windows during a move, so capture the stable id of the
+      // moved window (and the currently selected one) to re-follow afterwards.
+      const movedId = session?.windowList.find((window) => window.index === fromWindowIndex)?.id ?? null;
+      const followId =
+        current.selectedSessionName === sessionName && current.selectedWindowIndex !== null
+          ? session?.windowList.find((window) => window.index === current.selectedWindowIndex)?.id ?? movedId
+          : movedId;
+      // Optimistic reorder for immediate feedback.
+      current.onSessionsChange(reorderSessionWindows(current.sessions, sessionName, fromWindowIndex, toWindowIndex));
+      const credentialToken = await current.getCredentialToken();
+      const nextSessions = await moveTmuxWindow(current.hostId, sessionName, credentialToken, fromWindowIndex, toWindowIndex);
+      current.onSessionsChange(nextSessions);
+      if (followId && current.selectedSessionName === sessionName) {
+        const nextSession = nextSessions.find((item) => item.name === sessionName);
+        const nextWindow = nextSession?.windowList.find((window) => window.id === followId);
+        if (nextWindow && nextWindow.index !== current.selectedWindowIndex) {
+          await current.onOpenWindow(sessionName, nextWindow.index, credentialToken);
+        }
+      }
+    });
+  }, []);
+
+  return { applySessionRefresh, createWindow, deleteSession, deleteWindow, moveWindow, refreshSessionsKeepingSelection, reorderSessions, renameSession, renameWindow };
 }
 
 function sourceWindowIndexForCreate(options: UseTmuxWindowActionsOptions, sessionName: string) {
@@ -336,4 +380,40 @@ function findWindowIndexByName(sessions: TmuxSession[], sessionName: string, win
   const session = sessions.find((item) => item.name === sessionName);
   const window = session?.windowList.find((item) => item.name === windowName);
   return window?.index ?? null;
+}
+
+function reorderSessionsByName(sessions: TmuxSession[], orderedNames: string[]): TmuxSession[] {
+  const byName = new Map(sessions.map((session) => [session.name, session]));
+  const ordered: TmuxSession[] = [];
+  const seen = new Set<string>();
+  for (const name of orderedNames) {
+    const session = byName.get(name);
+    if (session) {
+      ordered.push(session);
+      seen.add(name);
+    }
+  }
+  for (const session of sessions) {
+    if (!seen.has(session.name)) {
+      ordered.push(session);
+    }
+  }
+  return ordered;
+}
+
+function reorderSessionWindows(sessions: TmuxSession[], sessionName: string, fromWindowIndex: number, toWindowIndex: number): TmuxSession[] {
+  return sessions.map((session) => {
+    if (session.name !== sessionName) {
+      return session;
+    }
+    const fromPosition = session.windowList.findIndex((window) => window.index === fromWindowIndex);
+    const toPosition = session.windowList.findIndex((window) => window.index === toWindowIndex);
+    if (fromPosition === -1 || toPosition === -1 || fromPosition === toPosition) {
+      return session;
+    }
+    const nextWindows = [...session.windowList];
+    const [moved] = nextWindows.splice(fromPosition, 1);
+    nextWindows.splice(toPosition, 0, moved);
+    return { ...session, windowList: nextWindows };
+  });
 }

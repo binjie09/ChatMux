@@ -14,6 +14,7 @@ type SessionGroupProps = {
   onDeleteWindow?: (sessionName: string, windowIndex: number) => void;
   onDeleteSession?: (sessionName: string) => void;
   onExpandSession: (name: string) => void;
+  onMoveWindow?: (sessionName: string, fromWindowIndex: number, toWindowIndex: number) => void;
   onOpenWindow: (name: string, windowIndex: number) => void;
   onRenameSession?: (sessionName: string, name: string) => Promise<void> | void;
   onRenameWindow?: (sessionName: string, windowIndex: number, name: string) => Promise<void> | void;
@@ -54,6 +55,7 @@ export function SessionGroup(props: SessionGroupProps) {
           selectedWindowIndex={props.selectedWindowIndex}
           windows={props.session.windowList}
           onDeleteWindow={props.onDeleteWindow ? (windowIndex) => props.onDeleteWindow?.(props.session.name, windowIndex) : undefined}
+          onMoveWindow={props.onMoveWindow ? (fromWindowIndex, toWindowIndex) => props.onMoveWindow?.(props.session.name, fromWindowIndex, toWindowIndex) : undefined}
           onOpenWindow={(windowIndex) => props.onOpenWindow(props.session.name, windowIndex)}
           onRenameWindow={props.onRenameWindow ? (windowIndex, name) => props.onRenameWindow?.(props.session.name, windowIndex, name) : undefined}
         />

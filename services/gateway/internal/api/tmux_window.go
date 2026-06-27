@@ -15,6 +15,7 @@ type tmuxWindowRequest struct {
 	CredentialToken string `json:"credentialToken"`
 	Name            string `json:"name"`
 	WindowIndex     *int   `json:"windowIndex"`
+	ToWindowIndex   *int   `json:"toWindowIndex"`
 }
 
 type tmuxMutationCommand func(string, tmuxWindowRequest) (string, error)
@@ -39,6 +40,53 @@ func (s *Server) handleDeleteTmuxWindow(w http.ResponseWriter, r *http.Request) 
 		suffix: "/windows/delete", eventType: "tmux.window.deleted", auditMessage: "deleted tmux window",
 		commandForInput: deleteWindowCommand, fallback: s.deleteFallbackWindow,
 	})
+}
+
+func (s *Server) handleMoveTmuxWindow(w http.ResponseWriter, r *http.Request) {
+	hostID, sessionName, input, ok := decodeTmuxWindowRequest(w, r, "/windows/move")
+	if !ok {
+		return
+	}
+	fromIndex, toIndex, err := moveWindowIndices(input)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+	command, err := tmux.MoveWindowCommand(sessionName, fromIndex, toIndex)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+	mutation := windowMutationInput{eventType: "tmux.window.moved", auditMessage: "moved tmux window"}
+	sessions, err := s.runManagedTmuxListMutation(r, hostID, sessionName, input.CredentialToken, command)
+	if err != nil {
+		// Moving has two indices, so it cannot reuse the generic single-index
+		// fallback path; handle the gateway-managed SSH session inline.
+		if sessionName == fallbackSSHSessionName {
+			if probe, fallbackOK := fallbackSessionFromTmuxError(err); fallbackOK {
+				moved, moveErr := s.sshFallback.MoveWindow(hostID, fromIndex, toIndex, probe.UpdatedAt)
+				if moveErr != nil {
+					writeError(w, statusForTmuxMutationError(moveErr), moveErr)
+					return
+				}
+				s.writeWindowMutationResponse(w, r, hostID, sessionName, mutation, []tmux.Session{moved})
+				return
+			}
+		}
+		writeError(w, statusForTmuxMutationError(err), err)
+		return
+	}
+	s.writeWindowMutationResponse(w, r, hostID, sessionName, mutation, sessions)
+}
+
+func moveWindowIndices(input tmuxWindowRequest) (int, int, error) {
+	if input.WindowIndex == nil || input.ToWindowIndex == nil {
+		return 0, 0, errors.New("windowIndex and toWindowIndex are required")
+	}
+	if *input.WindowIndex < 0 || *input.ToWindowIndex < 0 {
+		return 0, 0, tmux.ErrInvalidWindowTarget
+	}
+	return *input.WindowIndex, *input.ToWindowIndex, nil
 }
 
 func (s *Server) handleDeleteTmuxSession(w http.ResponseWriter, r *http.Request) {
