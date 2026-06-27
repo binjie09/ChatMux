@@ -5,11 +5,13 @@ import { type TmuxWindow } from "./api";
 import { windowDisplayLabel, windowLabel } from "./session-window-utils";
 import { OverflowText } from "./OverflowText";
 import { formatTime } from "./view-utils";
+import { dragItemClassName, useDragReorder } from "./drag-reorder";
 
 type SessionWindowListProps = {
   selectedWindowIndex: number | null;
   windows: TmuxWindow[];
   onDeleteWindow?: (windowIndex: number) => void;
+  onMoveWindow?: (fromWindowIndex: number, toWindowIndex: number) => void;
   onOpenWindow: (windowIndex: number) => void;
   onRenameWindow?: (windowIndex: number, name: string) => Promise<void> | void;
   showRenameButton?: boolean;
@@ -17,24 +19,40 @@ type SessionWindowListProps = {
 
 export function SessionWindowList(props: SessionWindowListProps) {
   const [editingWindowIndex, setEditingWindowIndex] = useState<number | null>(null);
+  const windowDrag = useDragReorder((from, to) => {
+    if (!props.onMoveWindow) {
+      return;
+    }
+    const fromWindowIndex = props.windows[from]?.index;
+    const toWindowIndex = props.windows[to]?.index;
+    if (fromWindowIndex === undefined || toWindowIndex === undefined) {
+      return;
+    }
+    props.onMoveWindow(fromWindowIndex, toWindowIndex);
+  });
   if (props.windows.length === 0) {
     return <p className="session-empty">No windows</p>;
   }
   return (
     <div className="session-window-list">
-      {props.windows.map((window) => (
-        <WindowRow
-          isSelected={props.selectedWindowIndex === window.index}
+      {props.windows.map((window, index) => (
+        <div
           key={window.id || window.index}
-          editing={editingWindowIndex === window.index}
-          window={window}
-          onDeleteWindow={props.onDeleteWindow}
-          onRenameWindow={props.onRenameWindow}
-          showRenameButton={Boolean(props.showRenameButton)}
-          onStopEditing={() => setEditingWindowIndex(null)}
-          onStartEditing={() => setEditingWindowIndex(window.index)}
-          onOpenWindow={props.onOpenWindow}
-        />
+          className={dragItemClassName("session-window-drag-item", index, windowDrag)}
+          {...(props.onMoveWindow ? windowDrag.propsFor(index) : null)}
+        >
+          <WindowRow
+            isSelected={props.selectedWindowIndex === window.index}
+            editing={editingWindowIndex === window.index}
+            window={window}
+            onDeleteWindow={props.onDeleteWindow}
+            onRenameWindow={props.onRenameWindow}
+            showRenameButton={Boolean(props.showRenameButton)}
+            onStopEditing={() => setEditingWindowIndex(null)}
+            onStartEditing={() => setEditingWindowIndex(window.index)}
+            onOpenWindow={props.onOpenWindow}
+          />
+        </div>
       ))}
     </div>
   );

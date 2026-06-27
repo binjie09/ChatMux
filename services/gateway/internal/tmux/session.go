@@ -10,7 +10,7 @@ import (
 	"unicode/utf8"
 )
 
-const listSessionFormat = "session\t#{session_id}\t#{session_name}\t#{session_windows}\t#{session_attached}\t#{session_activity}\t#{pane_current_command}\t#{pane_dead}\t#{pane_dead_status}"
+const listSessionFormat = "session\t#{session_id}\t#{session_name}\t#{session_windows}\t#{session_attached}\t#{session_activity}\t#{pane_current_command}\t#{pane_dead}\t#{pane_dead_status}\t#{session_created}"
 const listWindowFormat = "window\t#{session_name}\t#{window_id}\t#{window_index}\t#{window_name}\t#{window_active}\t#{window_activity}\t#{pane_current_command}\t#{pane_dead}\t#{pane_dead_status}\t#{automatic-rename}\t#{pane_title}"
 const listSessionNowPrefix = "__chatmux_now\t"
 const terminalOverridesClipboardSlot = "terminal-overrides[900]"
@@ -29,6 +29,7 @@ type Session struct {
 	WindowList  []Window  `json:"windowList"`
 	Attached    bool      `json:"attached"`
 	UpdatedAt   time.Time `json:"updatedAt"`
+	CreatedAt   time.Time `json:"createdAt"`
 	Status      string    `json:"status"`
 	ProcessName string    `json:"processName"`
 	Title       string    `json:"title"`
@@ -173,7 +174,10 @@ func parseSessionNow(lines []string, fallback time.Time) ([]string, time.Time) {
 func parseSessionLine(line string, now time.Time) (Session, error) {
 	line = strings.TrimPrefix(line, "session\t")
 	parts := strings.Split(line, "\t")
-	if len(parts) != 8 {
+	// Current output includes #{session_created} (9 fields); older captures and
+	// some legacy tmux output omit it (8 fields), in which case creation time is
+	// unknown and ordering falls back to the activity timestamp.
+	if len(parts) != 8 && len(parts) != 9 {
 		return Session{}, fmt.Errorf("invalid tmux session line: %q", line)
 	}
 	windows, err := strconv.Atoi(parts[2])
@@ -183,6 +187,13 @@ func parseSessionLine(line string, now time.Time) (Session, error) {
 	activity, err := strconv.ParseInt(parts[4], 10, 64)
 	if err != nil {
 		return Session{}, fmt.Errorf("parse tmux activity: %w", err)
+	}
+	var created time.Time
+	if len(parts) == 9 {
+		created, err = parseSessionCreated(parts[8])
+		if err != nil {
+			return Session{}, err
+		}
 	}
 	attached, err := parseTmuxAttached(parts[3])
 	if err != nil {
@@ -208,11 +219,30 @@ func parseSessionLine(line string, now time.Time) (Session, error) {
 		WindowList:  defaultWindowList(parts[1], updatedAt, processName, status),
 		Attached:    attached,
 		UpdatedAt:   updatedAt,
+		CreatedAt:   created,
 		ProcessName: processName,
 		Tags:        []string{},
 		Status:      status,
 		Mode:        "tmux",
 	}, nil
+}
+
+// parseSessionCreated turns the #{session_created} epoch into a UTC time. Some
+// tmux builds render an empty value, in which case we fall back to the session
+// activity timestamp so ordering still has a sensible default.
+func parseSessionCreated(value string) (time.Time, error) {
+	trimmed := strings.TrimSpace(value)
+	if trimmed == "" {
+		return time.Time{}, nil
+	}
+	created, err := strconv.ParseInt(trimmed, 10, 64)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("parse tmux session created: %w", err)
+	}
+	if created <= 0 {
+		return time.Time{}, nil
+	}
+	return time.Unix(created, 0).UTC(), nil
 }
 
 func parseTmuxAttached(value string) (bool, error) {

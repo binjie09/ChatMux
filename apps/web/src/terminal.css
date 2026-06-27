@@ -541,3 +541,19 @@
     background: #152019;
   }
 }
+
+.terminal-window-tab {
+  cursor: grab;
+}
+
+.terminal-window-tab:active {
+  cursor: grabbing;
+}
+
+.terminal-window-tab.dragging {
+  opacity: 0.45;
+}
+
+.terminal-window-tab.drag-over {
+  box-shadow: inset 2px 0 0 #4fbf7f;
+}

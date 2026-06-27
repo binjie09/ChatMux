@@ -6,18 +6,29 @@ import { type DisplayTmuxSession } from "./session-state-machine";
 import { windowDisplayLabel, windowLabel } from "./session-window-utils";
 import { isSSHFallbackSession } from "./tmux-fallback";
 import { OverflowText } from "./OverflowText";
+import { useDragReorder, type DragReorderItemProps } from "./drag-reorder";
 
 type TerminalWindowTabsProps = {
   selectedWindowIndex: number | null;
   session: DisplayTmuxSession | undefined;
   onCreateWindow: (sessionName: string) => void;
   onDeleteWindow: (sessionName: string, windowIndex: number) => void;
+  onMoveWindow: (sessionName: string, fromWindowIndex: number, toWindowIndex: number) => void;
   onOpenWindow: (sessionName: string, windowIndex: number) => void;
   onRenameWindow: (sessionName: string, windowIndex: number, name: string) => Promise<void> | void;
 };
 
 export function TerminalWindowTabs(props: TerminalWindowTabsProps) {
   const [editingWindowIndex, setEditingWindowIndex] = useState<number | null>(null);
+  const windowDrag = useDragReorder((from, to) => {
+    const list = props.session?.windowList ?? [];
+    const fromWindowIndex = list[from]?.index;
+    const toWindowIndex = list[to]?.index;
+    if (fromWindowIndex === undefined || toWindowIndex === undefined || !props.session) {
+      return;
+    }
+    props.onMoveWindow(props.session.name, fromWindowIndex, toWindowIndex);
+  });
   const session = props.session;
   if (!session) {
     return null;
@@ -26,13 +37,16 @@ export function TerminalWindowTabs(props: TerminalWindowTabsProps) {
   return (
     <nav className="terminal-window-tabs" aria-label="Terminal windows">
       <div className="terminal-window-tab-strip">
-        {session.windowList.map((window) => (
+        {session.windowList.map((window, index) => (
           <WindowTab
+            key={window.id || window.index}
             editing={editingWindowIndex === window.index}
             isSelected={window.index === props.selectedWindowIndex}
-            key={window.id || window.index}
             sessionName={session.name}
             window={window}
+            dragProps={windowDrag.propsFor(index)}
+            dragging={windowDrag.dragIndex === index}
+            dragOver={windowDrag.overIndex === index && windowDrag.dragIndex !== index}
             onDeleteWindow={props.onDeleteWindow}
             onEdit={() => setEditingWindowIndex(window.index)}
             onOpenWindow={props.onOpenWindow}
@@ -92,6 +106,9 @@ function WindowTab(props: {
   isSelected: boolean;
   sessionName: string;
   window: TmuxWindow;
+  dragProps: DragReorderItemProps;
+  dragging: boolean;
+  dragOver: boolean;
   onDeleteWindow: (sessionName: string, windowIndex: number) => void;
   onEdit: () => void;
   onOpenWindow: (sessionName: string, windowIndex: number) => void;
@@ -112,7 +129,10 @@ function WindowTab(props: {
     );
   }
   return (
-    <div className={`terminal-window-tab ${props.isSelected ? "selected" : ""} ${props.showActions ? "" : "no-actions"}`}>
+    <div
+      className={`terminal-window-tab ${props.isSelected ? "selected" : ""} ${props.showActions ? "" : "no-actions"} ${props.dragging ? "dragging" : ""} ${props.dragOver ? "drag-over" : ""}`}
+      {...props.dragProps}
+    >
       <button
         type="button"
         aria-current={props.isSelected ? "true" : undefined}

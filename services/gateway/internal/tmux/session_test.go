@@ -8,8 +8,8 @@ import (
 
 func TestParseSessions(t *testing.T) {
 	output := strings.Join([]string{
-		"session\t$0\tdeploy\t2\t2\t1710000000\tnode\t0\t",
-		"session\t$1\tlogs\t1\t0\t1710000300\tzsh\t0\t",
+		"session\t$0\tdeploy\t2\t2\t1710000000\tnode\t0\t\t1709999000",
+		"session\t$1\tlogs\t1\t0\t1710000300\tzsh\t0\t\t1710000300",
 		"window\tdeploy\t@0\t0\tapi\t1\t1710000002\tnode\t0\t\t0\tdeploy-api",
 		"window\tdeploy\t@1\t1\tworker\t0\t1710000000\tzsh\t0\t\t1\t",
 		"window\tlogs\t@2\t0\tlogs\t1\t1710000300\tzsh\t0\t\t0\tlogs-tail",
@@ -57,6 +57,12 @@ func TestParseSessions(t *testing.T) {
 	}
 	if sessions[1].Status != SessionStatusDone {
 		t.Fatalf("expected done, got %q", sessions[1].Status)
+	}
+	if !sessions[0].CreatedAt.Equal(time.Unix(1709999000, 0).UTC()) {
+		t.Fatalf("expected deploy createdAt from session_created, got %v", sessions[0].CreatedAt)
+	}
+	if !sessions[1].CreatedAt.Equal(time.Unix(1710000300, 0).UTC()) {
+		t.Fatalf("expected logs createdAt from session_created, got %v", sessions[1].CreatedAt)
 	}
 	if sessions[1].Tags == nil {
 		t.Fatal("expected empty tags slice")

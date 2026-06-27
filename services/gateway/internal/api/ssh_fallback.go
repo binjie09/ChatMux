@@ -23,8 +23,9 @@ type sshFallbackStore struct {
 }
 
 type sshFallbackSession struct {
-	hostID  string
-	windows []*sshFallbackWindow
+	hostID    string
+	windows   []*sshFallbackWindow
+	createdAt time.Time
 }
 
 type sshFallbackWindow struct {
@@ -93,6 +94,37 @@ func (s *sshFallbackStore) DeleteWindow(hostID string, windowIndex int, now time
 	return tmux.Session{}, errFallbackWindowNotFound
 }
 
+func (s *sshFallbackStore) MoveWindow(hostID string, fromWindowIndex int, toWindowIndex int, now time.Time) (tmux.Session, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	session := s.sessionLocked(hostID, now)
+	fromPos, toPos := -1, -1
+	for position, window := range session.windows {
+		if window.index == fromWindowIndex {
+			fromPos = position
+		}
+		if window.index == toWindowIndex {
+			toPos = position
+		}
+	}
+	if fromPos == -1 || toPos == -1 || fromPos == toPos {
+		return session.tmuxSession(), nil
+	}
+	moved := session.windows[fromPos]
+	without := make([]*sshFallbackWindow, 0, len(session.windows)-1)
+	without = append(without, session.windows[:fromPos]...)
+	without = append(without, session.windows[fromPos+1:]...)
+	if toPos > len(without) {
+		toPos = len(without)
+	}
+	result := make([]*sshFallbackWindow, 0, len(session.windows))
+	result = append(result, without[:toPos]...)
+	result = append(result, moved)
+	result = append(result, without[toPos:]...)
+	session.windows = result
+	return session.tmuxSession(), nil
+}
+
 func (s *sshFallbackStore) HasWindow(hostID string, windowIndex int, now time.Time) bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -146,7 +178,8 @@ func (s *sshFallbackStore) sessionLocked(hostID string, now time.Time) *sshFallb
 		return session
 	}
 	session = &sshFallbackSession{
-		hostID: hostID,
+		hostID:    hostID,
+		createdAt: now.UTC(),
 		windows: []*sshFallbackWindow{{
 			index:     0,
 			name:      "SSH shell",
@@ -196,6 +229,7 @@ func (s *sshFallbackSession) tmuxSession() tmux.Session {
 		WindowList:  windows,
 		Attached:    true,
 		UpdatedAt:   updatedAt,
+		CreatedAt:   s.createdAt,
 		Status:      fallbackSessionStatus(windows),
 		ProcessName: fallbackSSHProcessName,
 		Title:       "SSH shells",

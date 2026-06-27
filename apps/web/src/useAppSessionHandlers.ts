@@ -28,7 +28,10 @@ export function useAppSessionHandlers(options: UseAppSessionHandlersOptions) {
     onDeleteSession: (sessionName: string) => void options.tmuxWindowActions.deleteSession(sessionName),
     onExpandSession: options.onExpandSession,
     onListSessions: options.onListSessions,
+    onMoveWindow: (sessionName: string, fromWindowIndex: number, toWindowIndex: number) =>
+      void options.tmuxWindowActions.moveWindow(sessionName, fromWindowIndex, toWindowIndex),
     onOpenWindow: options.onOpenWindow,
+    onReorderSessions: (orderedNames: string[]) => void options.tmuxWindowActions.reorderSessions(orderedNames),
     onRenameSession: (sessionName: string, name: string) => options.tmuxWindowActions.renameSession(sessionName, name),
     onRenameWindow: (sessionName: string, windowIndex: number, name: string) => options.tmuxWindowActions.renameWindow(sessionName, windowIndex, name),
   };
