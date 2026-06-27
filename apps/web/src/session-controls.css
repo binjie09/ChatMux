@@ -115,7 +115,7 @@
 
 .session-row {
   display: grid;
-  grid-template-columns: 20px 1fr auto 16px;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 10px;
   width: 100%;
@@ -126,6 +126,21 @@
   color: #1b241f;
   background: #ffffff;
   text-align: left;
+}
+
+.session-row-main {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) auto 16px;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  padding: 0;
+  color: inherit;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
 }
 
 .session-group {
@@ -142,11 +157,11 @@
   border-bottom-left-radius: 0;
 }
 
-.session-row > svg:last-child {
+.session-row-main > svg:last-child {
   transition: transform 160ms ease;
 }
 
-.session-row > svg:last-child.expanded {
+.session-row-main > svg:last-child.expanded {
   transform: rotate(90deg);
 }
 
@@ -156,7 +171,7 @@
   box-shadow: inset 3px 0 0 #2c8f5a;
 }
 
-.session-row.selected > svg {
+.session-row.selected .session-row-main > svg {
   color: #24784c;
 }
 
@@ -492,17 +507,20 @@
   }
 
   .session-row {
-    grid-template-columns: 22px minmax(0, 1fr) auto;
     min-height: 72px;
     margin-bottom: 10px;
     padding: 13px 12px;
+  }
+
+  .session-row-main {
+    grid-template-columns: 22px minmax(0, 1fr) auto;
   }
 
   .session-group {
     margin-bottom: 10px;
   }
 
-  .session-row > svg:last-child {
+  .session-row-main > svg:last-child {
     display: none;
   }
 

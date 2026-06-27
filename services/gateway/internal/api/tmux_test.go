@@ -2,7 +2,9 @@ package api
 
 import (
 	"bytes"
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -447,6 +449,80 @@ func TestDeleteTmuxWindowAPI(t *testing.T) {
 	}
 	if strings.Contains(rec.Body.String(), `"worker"`) {
 		t.Fatalf("expected refreshed list without deleted window, got %s", rec.Body.String())
+	}
+}
+
+func TestDeleteTmuxSessionAPI(t *testing.T) {
+	server, closeServer := newTestServer(t)
+	defer closeServer()
+	// The kill-session command re-lists sessions afterwards; return the
+	// post-deletion list (only "logs" remains) so the response reflects removal.
+	runner := &fakeSSHRunner{outputForCommand: func(command string) string {
+		if strings.Contains(command, "kill-session") {
+			return sessionWithWindowsOutput("logs", []string{"shell"})
+		}
+		return sessionWithWindowsOutput("deploy", []string{"api"})
+	}}
+	server.ssh = runner
+	host := createTrustedTestHost(t, server)
+	token := createCredentialTokenForTest(t, server, testCredentialInput{hostID: host.ID})
+	if _, err := server.hosts.SaveSessionMetadata(testContext(t), hoststore.SaveSessionMetadataInput{
+		HostID: host.ID, SessionName: "deploy", Title: "Deploy shell", Owner: "ops",
+	}); err != nil {
+		t.Fatalf("SaveSessionMetadata failed: %v", err)
+	}
+
+	body := bytes.NewBufferString(`{"credentialToken":"` + token + `"}`)
+	req := httptest.NewRequest(http.MethodPost, "/api/hosts/"+host.ID+"/tmux/sessions/deploy/delete", body)
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+	if !containsLoginShellFragment(runner.command, "kill-session -t '=deploy'") {
+		t.Fatalf("expected kill-session command, got %q", runner.command)
+	}
+	if strings.Contains(rec.Body.String(), `"deploy"`) {
+		t.Fatalf("expected refreshed list without deleted session, got %s", rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), `"logs"`) {
+		t.Fatalf("expected refreshed list to include remaining session, got %s", rec.Body.String())
+	}
+	if _, err := server.hosts.GetSessionMetadata(testContext(t), host.ID, "deploy"); !errors.Is(err, sql.ErrNoRows) {
+		t.Fatalf("expected deploy metadata to be removed, got err: %v", err)
+	}
+}
+
+func TestDeleteLastWindowRemovesSessionMetadata(t *testing.T) {
+	server, closeServer := newTestServer(t)
+	defer closeServer()
+	// Killing the last window destroys the session, so the re-list returns no sessions.
+	runner := &fakeSSHRunner{outputForCommand: func(command string) string {
+		if strings.Contains(command, "kill-window") {
+			return ""
+		}
+		return sessionWithWindowsOutput("deploy", []string{"api"})
+	}}
+	server.ssh = runner
+	host := createTrustedTestHost(t, server)
+	token := createCredentialTokenForTest(t, server, testCredentialInput{hostID: host.ID})
+	if _, err := server.hosts.SaveSessionMetadata(testContext(t), hoststore.SaveSessionMetadataInput{
+		HostID: host.ID, SessionName: "deploy", Owner: "ops",
+	}); err != nil {
+		t.Fatalf("SaveSessionMetadata failed: %v", err)
+	}
+
+	body := bytes.NewBufferString(`{"credentialToken":"` + token + `","windowIndex":0}`)
+	req := httptest.NewRequest(http.MethodPost, "/api/hosts/"+host.ID+"/tmux/sessions/deploy/windows/delete", body)
+	rec := httptest.NewRecorder()
+
+	server.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+	if _, err := server.hosts.GetSessionMetadata(testContext(t), host.ID, "deploy"); !errors.Is(err, sql.ErrNoRows) {
+		t.Fatalf("expected deploy metadata removed after last window deleted, got err: %v", err)
 	}
 }
 

@@ -120,9 +120,17 @@ const deleteSessionMetadataForHostSQL = `
 DELETE FROM session_metadata
 WHERE host_id = ?;`
 
+const deleteSessionMetadataSQL = `
+DELETE FROM session_metadata
+WHERE host_id = ? AND session_name = ?;`
+
 const deleteHostLastWindowForHostSQL = `
 DELETE FROM host_last_window
 WHERE host_id = ?;`
+
+const deleteHostLastWindowForSessionSQL = `
+DELETE FROM host_last_window
+WHERE host_id = ? AND session_name = ?;`
 
 const insertAuditEventSQL = `
 INSERT INTO audit_events (id, type, host_id, session_name, message, created_at)

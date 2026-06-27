@@ -4,6 +4,7 @@ import { InlineNameEdit } from "./InlineNameEdit";
 import { type TmuxWindow } from "./api";
 import { type DisplayTmuxSession } from "./session-state-machine";
 import { windowDisplayLabel, windowLabel } from "./session-window-utils";
+import { isSSHFallbackSession } from "./tmux-fallback";
 import { OverflowText } from "./OverflowText";
 
 type TerminalWindowTabsProps = {
@@ -36,7 +37,7 @@ export function TerminalWindowTabs(props: TerminalWindowTabsProps) {
             onEdit={() => setEditingWindowIndex(window.index)}
             onOpenWindow={props.onOpenWindow}
             onRenameWindow={props.onRenameWindow}
-            showActions={canDeleteWindow(session.windowList.length)}
+            showActions={canDeleteWindow(session)}
             onStopEditing={() => setEditingWindowIndex(null)}
           />
         ))}
@@ -62,7 +63,7 @@ export function TerminalWindowTabs(props: TerminalWindowTabsProps) {
         <button
           type="button"
           aria-label="Delete selected window"
-          disabled={props.selectedWindowIndex === null || !canDeleteWindow(session.windowList.length)}
+          disabled={props.selectedWindowIndex === null || !canDeleteWindow(session)}
           onClick={() => {
             if (props.selectedWindowIndex !== null) {
               props.onDeleteWindow(session.name, props.selectedWindowIndex);
@@ -76,8 +77,14 @@ export function TerminalWindowTabs(props: TerminalWindowTabsProps) {
   );
 }
 
-function canDeleteWindow(windowCount: number) {
-  return windowCount > 1;
+function canDeleteWindow(session: DisplayTmuxSession | undefined) {
+  // Normal tmux sessions may delete any window (the last one takes the session
+  // with it). Only the gateway-managed SSH fallback's last window is protected,
+  // because the backend rejects emptying it.
+  if (isSSHFallbackSession(session)) {
+    return (session?.windowList.length ?? 0) > 1;
+  }
+  return true;
 }
 
 function WindowTab(props: {

@@ -25,6 +25,7 @@ export function useAppSessionHandlers(options: UseAppSessionHandlersOptions) {
     onCreateSession: options.onCreateSession,
     onCreateWindow: (sessionName: string) => void options.tmuxWindowActions.createWindow(sessionName),
     onDeleteWindow: (sessionName: string, windowIndex: number) => void options.tmuxWindowActions.deleteWindow(sessionName, windowIndex),
+    onDeleteSession: (sessionName: string) => void options.tmuxWindowActions.deleteSession(sessionName),
     onExpandSession: options.onExpandSession,
     onListSessions: options.onListSessions,
     onOpenWindow: options.onOpenWindow,

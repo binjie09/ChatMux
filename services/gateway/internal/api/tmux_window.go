@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -38,6 +39,32 @@ func (s *Server) handleDeleteTmuxWindow(w http.ResponseWriter, r *http.Request) 
 		suffix: "/windows/delete", eventType: "tmux.window.deleted", auditMessage: "deleted tmux window",
 		commandForInput: deleteWindowCommand, fallback: s.deleteFallbackWindow,
 	})
+}
+
+func (s *Server) handleDeleteTmuxSession(w http.ResponseWriter, r *http.Request) {
+	hostID, sessionName, input, ok := decodeTmuxWindowRequest(w, r, "/delete")
+	if !ok {
+		return
+	}
+	command, err := tmux.KillSessionCommand(sessionName)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+	sessions, err := s.runManagedTmuxListMutation(r, hostID, sessionName, input.CredentialToken, command)
+	if err != nil {
+		writeError(w, statusForTmuxMutationError(err), err)
+		return
+	}
+	if err := s.cleanupRemovedSession(r, hostID, sessionName); err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	if err := s.logAudit(r.Context(), hoststore.LogAuditEventInput{Type: "tmux.session.deleted", HostID: hostID, SessionName: sessionName, Message: "deleted tmux session"}); err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, sessions)
 }
 
 type windowMutationInput struct {
@@ -123,11 +150,39 @@ func (s *Server) writeWindowMutationResponse(
 	mutation windowMutationInput,
 	sessions []tmux.Session,
 ) {
+	// Killing the last window of a session also destroys the session in tmux.
+	// When that happens, drop its metadata and last-window pointer so they do
+	// not resurface if a session with the same name is created later.
+	if !sessionExists(sessions, sessionName) {
+		if err := s.cleanupRemovedSession(r, hostID, sessionName); err != nil {
+			writeError(w, http.StatusInternalServerError, err)
+			return
+		}
+	}
 	if err := s.logAudit(r.Context(), hoststore.LogAuditEventInput{Type: mutation.eventType, HostID: hostID, SessionName: sessionName, Message: mutation.auditMessage}); err != nil {
 		writeError(w, http.StatusInternalServerError, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, sessions)
+}
+
+func (s *Server) cleanupRemovedSession(r *http.Request, hostID string, sessionName string) error {
+	if err := s.hosts.DeleteSessionMetadata(r.Context(), hostID, sessionName); err != nil {
+		return fmt.Errorf("delete session metadata: %w", err)
+	}
+	if err := s.hosts.DeleteHostLastWindowForSession(r.Context(), hostID, sessionName); err != nil {
+		return fmt.Errorf("delete host last window: %w", err)
+	}
+	return nil
+}
+
+func sessionExists(sessions []tmux.Session, sessionName string) bool {
+	for _, session := range sessions {
+		if session.Name == sessionName {
+			return true
+		}
+	}
+	return false
 }
 
 func decodeTmuxWindowRequest(w http.ResponseWriter, r *http.Request, suffix string) (string, string, tmuxWindowRequest, bool) {

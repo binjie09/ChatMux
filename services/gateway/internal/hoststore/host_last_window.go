@@ -69,3 +69,13 @@ func (s *Store) GetHostLastWindow(ctx context.Context, hostID string) (HostLastW
 	}
 	return lastWindow, nil
 }
+
+func (s *Store) DeleteHostLastWindowForSession(ctx context.Context, hostID string, sessionName string) error {
+	if strings.TrimSpace(hostID) == "" || strings.TrimSpace(sessionName) == "" {
+		return errors.New("host id and session name are required")
+	}
+	if _, err := s.db.ExecContext(ctx, deleteHostLastWindowForSessionSQL, hostID, sessionName); err != nil {
+		return fmt.Errorf("delete host last window for session: %w", err)
+	}
+	return nil
+}

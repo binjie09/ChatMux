@@ -75,6 +75,7 @@ type AppShellProps = {
     onConnectionReady: (status: ConnectionStatus) => void;
     onCreateWindow: (sessionName: string) => void;
     onDeleteWindow: (sessionName: string, windowIndex: number) => void;
+    onDeleteSession: (sessionName: string) => void;
     onCreateSession: () => void;
     onExpandSession: (sessionName: string) => void;
     onListSessions: () => void;
@@ -160,6 +161,7 @@ export function AppShell(props: AppShellProps) {
         onCreateSession={props.sessionHandlers.onCreateSession}
         onCreateWindow={props.sessionHandlers.onCreateWindow}
         onDeleteWindow={props.sessionHandlers.onDeleteWindow}
+        onDeleteSession={props.sessionHandlers.onDeleteSession}
         onDesktopCollapsedChange={setSessionsCollapsed}
         onExpandSession={props.sessionHandlers.onExpandSession}
         onListSessions={props.sessionHandlers.onListSessions}
