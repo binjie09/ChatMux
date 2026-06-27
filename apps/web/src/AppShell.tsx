@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { type CSSProperties } from "react";
 import {
   type CreateHostInput,
   type Host,
@@ -15,6 +15,8 @@ import { type DisplayTmuxSession } from "./session-state-machine";
 import { Sidebar } from "./Sidebar";
 import { TerminalUploadProgressToast } from "./TerminalUploadProgressToast";
 import { type GatewayTokenState } from "./useGatewayAccessToken";
+import { useColumnResize } from "./useColumnResize";
+import { useIsWideDesktop } from "./useIsWideDesktop";
 import { usePWAInstallPrompt } from "./usePWAInstallPrompt";
 import { type SessionNotificationStatus } from "./useSessionNotifications";
 import { type SSHCredentialStatus } from "./useSSHCredentialToken";
@@ -115,21 +117,38 @@ type AppShellProps = {
 
 export function AppShell(props: AppShellProps) {
   const pwaInstallPrompt = usePWAInstallPrompt();
-  const [hostsCollapsed, setHostsCollapsed] = useState(false);
-  const [sessionsCollapsed, setSessionsCollapsed] = useState(false);
+  const isWideDesktop = useIsWideDesktop();
+  const hostsColumn = useColumnResize({
+    storageKey: "chatmux-hosts-column-width",
+    defaultWidth: 228,
+    collapseThreshold: 168,
+    maxWidth: 380,
+    collapsedWidth: 52,
+  });
+  const sessionsColumn = useColumnResize({
+    storageKey: "chatmux-sessions-column-width",
+    defaultWidth: 256,
+    collapseThreshold: 196,
+    maxWidth: 460,
+    collapsedWidth: 52,
+  });
 
   if (!props.gatewayToken.ready) {
     return <GatewayUnlockPage error={props.error} tokenState={props.gatewayToken} />;
   }
 
   return (
-    <main className={appShellClassName({
-      hostsCollapsed,
-      isMobileTerminalActive: props.isMobileTerminalActive,
-      sessionsCollapsed,
-    })}>
+    <main
+      className={appShellClassName({
+        hostsCollapsed: hostsColumn.collapsed,
+        isMobileTerminalActive: props.isMobileTerminalActive,
+        resizing: hostsColumn.resizing || sessionsColumn.resizing,
+        sessionsCollapsed: sessionsColumn.collapsed,
+      })}
+      style={columnStyleVars(isWideDesktop, hostsColumn.effectiveWidth, sessionsColumn.effectiveWidth)}
+    >
       <Sidebar
-        desktopCollapsed={hostsCollapsed}
+        desktopCollapsed={hostsColumn.collapsed}
         error={props.error}
         gatewayToken={props.gatewayToken}
         hosts={props.hosts}
@@ -141,14 +160,14 @@ export function AppShell(props: AppShellProps) {
         onDeleteHost={props.onDeleteHost}
         onSelectHost={props.onSelectHost}
         onShowHostForm={props.onShowHostForm}
-        onDesktopCollapsedChange={setHostsCollapsed}
+        onDesktopCollapsedChange={hostsColumn.setCollapsed}
         onReorderHosts={props.onReorderHosts}
         onUpdateHost={props.onUpdateHost}
       />
 
       <SessionList
         credentialStatus={props.credentialStatus}
-        desktopCollapsed={sessionsCollapsed}
+        desktopCollapsed={sessionsColumn.collapsed}
         expandedSessionNames={props.expandedSessionNames}
         mobileOpen={props.mobilePanel === "sessions"}
         mobileWindowList={props.mobileWindowList}
@@ -164,7 +183,7 @@ export function AppShell(props: AppShellProps) {
         onCreateWindow={props.sessionHandlers.onCreateWindow}
         onDeleteWindow={props.sessionHandlers.onDeleteWindow}
         onDeleteSession={props.sessionHandlers.onDeleteSession}
-        onDesktopCollapsedChange={setSessionsCollapsed}
+        onDesktopCollapsedChange={sessionsColumn.setCollapsed}
         onExpandSession={props.sessionHandlers.onExpandSession}
         onListSessions={props.sessionHandlers.onListSessions}
         onMoveWindow={props.sessionHandlers.onMoveWindow}
@@ -215,6 +234,20 @@ export function AppShell(props: AppShellProps) {
         onUploadTerminalFile={props.onUploadTerminalFile}
         terminalReconnectSignal={props.terminalReconnectSignal}
       />
+      {isWideDesktop ? (
+        <>
+          <div
+            className="column-resizer column-resizer-hosts"
+            aria-hidden="true"
+            onPointerDown={hostsColumn.beginResize}
+          />
+          <div
+            className="column-resizer column-resizer-sessions"
+            aria-hidden="true"
+            onPointerDown={sessionsColumn.beginResize}
+          />
+        </>
+      ) : null}
       <TerminalUploadProgressToast
         progress={props.terminalUploadProgress}
         onHide={props.onTerminalUploadProgressHide}
@@ -227,12 +260,28 @@ export function AppShell(props: AppShellProps) {
 function appShellClassName(options: {
   hostsCollapsed: boolean;
   isMobileTerminalActive: boolean;
+  resizing: boolean;
   sessionsCollapsed: boolean;
 }) {
   return [
     "app-shell",
     options.hostsCollapsed ? "hosts-collapsed" : "",
     options.sessionsCollapsed ? "sessions-collapsed" : "",
+    options.resizing ? "resizing" : "",
     options.isMobileTerminalActive ? "mobile-terminal-active" : "",
   ].filter(Boolean).join(" ");
+}
+
+function columnStyleVars(
+  isWideDesktop: boolean,
+  hostsWidth: number,
+  sessionsWidth: number,
+): CSSProperties | undefined {
+  if (!isWideDesktop) {
+    return undefined;
+  }
+  return {
+    "--hosts-column-width": `${hostsWidth}px`,
+    "--sessions-column-width": `${sessionsWidth}px`,
+  } as CSSProperties;
 }
