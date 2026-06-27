@@ -3,6 +3,7 @@ import {
   createHost,
   deleteHost,
   listHosts,
+  reorderHosts,
   trustHost,
   updateHost,
   type CreateHostInput,
@@ -100,6 +101,20 @@ export function useHostWorkspace(options: HostWorkspaceOptions) {
     }
   }
 
+  async function handleReorderHosts(orderedIds: string[]) {
+    // Optimistically reorder so the drag feels instant; the server response is
+    // authoritative and replaces this once it lands.
+    setHosts((current) => reorderHostsById(current, orderedIds));
+    try {
+      const nextHosts = await reorderHosts(orderedIds);
+      setHosts(nextHosts);
+      options.onAuditRefresh();
+      options.onError("");
+    } catch (err) {
+      options.onError(errorMessage(err));
+    }
+  }
+
   function handleHostHeartbeat(host: Host) {
     updateHostInList(host);
   }
@@ -129,6 +144,7 @@ export function useHostWorkspace(options: HostWorkspaceOptions) {
     handleDeleteHost,
     handleHostHeartbeat,
     handleHostHeartbeatStatus,
+    handleReorderHosts,
     handleSelectHost,
     handleTrustHost,
     handleUpdateHost,
@@ -141,6 +157,25 @@ export function useHostWorkspace(options: HostWorkspaceOptions) {
     setShowHostForm,
     showHostForm,
   };
+}
+
+function reorderHostsById(hosts: Host[], orderedIds: string[]): Host[] {
+  const byId = new Map(hosts.map((host) => [host.id, host]));
+  const ordered: Host[] = [];
+  const seen = new Set<string>();
+  for (const id of orderedIds) {
+    const host = byId.get(id);
+    if (host) {
+      ordered.push(host);
+      seen.add(id);
+    }
+  }
+  for (const host of hosts) {
+    if (!seen.has(host.id)) {
+      ordered.push(host);
+    }
+  }
+  return ordered;
 }
 
 function selectedHostIdFromHosts(current: string, hosts: Host[]) {

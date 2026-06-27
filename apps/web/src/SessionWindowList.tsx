@@ -5,7 +5,7 @@ import { type TmuxWindow } from "./api";
 import { windowDisplayLabel, windowLabel } from "./session-window-utils";
 import { OverflowText } from "./OverflowText";
 import { formatTime } from "./view-utils";
-import { SortableList } from "./drag-reorder";
+import { DragHandle, SortableList } from "./drag-reorder";
 
 type SessionWindowListProps = {
   selectedWindowIndex: number | null;
@@ -56,9 +56,9 @@ export function SessionWindowList(props: SessionWindowListProps) {
           ref={sortable.ref}
           style={sortable.style}
           className={`session-window-drag-item ${sortable.isDragging ? "dragging" : ""}`}
-          {...sortable.dragHandleProps}
         >
-          {renderRow(window)}
+          {props.onMoveWindow ? <DragHandle dragHandleProps={sortable.dragHandleProps} /> : null}
+          <div className="session-window-drag-content">{renderRow(window)}</div>
         </div>
       )}
     </SortableList>

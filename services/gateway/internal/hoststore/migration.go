@@ -23,6 +23,7 @@ func (s *Store) migrate(ctx context.Context) error {
 		{column: "ssh_private_key_passphrase", sql: addHostSSHPrivateKeyPassphraseSQL, label: "host ssh private key passphrase"},
 		{column: "pinned", sql: addHostPinnedSQL, label: "host pinned"},
 		{column: "owner", sql: addHostOwnerSQL, label: "host owner"},
+		{column: "sort_order", sql: addHostSortOrderSQL, label: "host sort order"},
 	}
 	if err := s.migrateColumns(ctx, "hosts", hostColumns); err != nil {
 		return err

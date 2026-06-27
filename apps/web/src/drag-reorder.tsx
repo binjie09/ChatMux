@@ -1,4 +1,5 @@
 import { type ReactNode } from "react";
+import { GripVertical } from "lucide-react";
 import {
   closestCenter,
   DndContext,
@@ -96,4 +97,17 @@ function SortableItem(props: { id: string; disabled?: boolean; children: (sortab
     isDragging,
   };
   return <>{props.children(sortable)}</>;
+}
+
+// DragHandle is the dedicated grip that initiates a drag. Restricting the drag
+// trigger to this small handle (instead of the whole row) means the rest of the
+// row keeps normal touch scrolling on mobile — swiping the list scrolls it, and
+// only pressing the grip reorders.
+export function DragHandle(props: { dragHandleProps: React.HTMLAttributes<HTMLElement>; label?: string; className?: string }) {
+  const className = ["drag-handle", props.className].filter(Boolean).join(" ");
+  return (
+    <span className={className} aria-label={props.label ?? "Drag to reorder"} {...props.dragHandleProps}>
+      <GripVertical size={16} aria-hidden="true" />
+    </span>
+  );
 }

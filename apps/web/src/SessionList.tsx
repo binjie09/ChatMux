@@ -7,7 +7,7 @@ import { SessionWindowList } from "./SessionWindowList";
 import { type DisplayTmuxSession } from "./session-state-machine";
 import { isSSHFallbackSession } from "./tmux-fallback";
 import { windowCountLabel } from "./session-window-utils";
-import { arrayMove, SortableList } from "./drag-reorder";
+import { arrayMove, DragHandle, SortableList } from "./drag-reorder";
 import { OverflowText } from "./OverflowText";
 import { type SessionNotificationStatus } from "./useSessionNotifications";
 import { type SSHCredentialStatus } from "./useSSHCredentialToken";
@@ -163,8 +163,8 @@ function SessionListBody(props: SessionListProps & { inputRef: RefObject<HTMLInp
             ref={sortable.ref}
             style={sortable.style}
             className={`session-drag-item ${sortable.isDragging ? "dragging" : ""}`}
-            {...sortable.dragHandleProps}
           >
+            <DragHandle dragHandleProps={sortable.dragHandleProps} />
             <SessionGroup
               isExpanded={!props.mobileWindowList && props.expandedSessionNames.has(session.name)}
               isSelected={props.selectedSessionName === session.name}

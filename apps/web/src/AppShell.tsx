@@ -104,6 +104,7 @@ type AppShellProps = {
   onQueuedInputSent: (inputId: number) => void;
   onSaveSessionMetadata: (input: SaveSessionMetadataInput) => Promise<void>;
   onSelectHost: (hostId: string) => void;
+  onReorderHosts: (orderedIds: string[]) => void;
   onShowHostForm: (show: boolean) => void;
   onUploadTerminalFile: ((file: File) => Promise<void>) | null;
   onUpdateHost: (hostId: string, input: CreateHostInput) => Promise<void>;
@@ -141,6 +142,7 @@ export function AppShell(props: AppShellProps) {
         onSelectHost={props.onSelectHost}
         onShowHostForm={props.onShowHostForm}
         onDesktopCollapsedChange={setHostsCollapsed}
+        onReorderHosts={props.onReorderHosts}
         onUpdateHost={props.onUpdateHost}
       />
 

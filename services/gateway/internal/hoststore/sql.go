@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS hosts (
 	ssh_private_key TEXT NOT NULL DEFAULT '',
 	ssh_private_key_passphrase TEXT NOT NULL DEFAULT '',
 	pinned BOOLEAN NOT NULL DEFAULT FALSE,
+	sort_order REAL,
 	owner TEXT NOT NULL DEFAULT 'local-dev',
 	created_at TIMESTAMP NOT NULL,
 	updated_at TIMESTAMP NOT NULL
@@ -67,6 +68,9 @@ ALTER TABLE hosts ADD COLUMN ssh_private_key_passphrase TEXT NOT NULL DEFAULT ''
 const addHostPinnedSQL = `
 ALTER TABLE hosts ADD COLUMN pinned BOOLEAN NOT NULL DEFAULT FALSE;`
 
+const addHostSortOrderSQL = `
+ALTER TABLE hosts ADD COLUMN sort_order REAL;`
+
 const addHostOwnerSQL = `
 ALTER TABLE hosts ADD COLUMN owner TEXT NOT NULL DEFAULT 'local-dev';`
 
@@ -77,18 +81,18 @@ const addSessionSortOrderSQL = `
 ALTER TABLE session_metadata ADD COLUMN sort_order REAL;`
 
 const listHostsSQL = `
-SELECT id, name, hostname, port, username, status, host_key_fingerprint, ssh_auth_method, ssh_password, ssh_private_key, ssh_private_key_passphrase, pinned, owner, created_at, updated_at
+SELECT id, name, hostname, port, username, status, host_key_fingerprint, ssh_auth_method, ssh_password, ssh_private_key, ssh_private_key_passphrase, pinned, sort_order, owner, created_at, updated_at
 FROM hosts
 ORDER BY pinned DESC, created_at DESC;`
 
 const listVisibleHostsSQL = `
-SELECT id, name, hostname, port, username, status, host_key_fingerprint, ssh_auth_method, ssh_password, ssh_private_key, ssh_private_key_passphrase, pinned, owner, created_at, updated_at
+SELECT id, name, hostname, port, username, status, host_key_fingerprint, ssh_auth_method, ssh_password, ssh_private_key, ssh_private_key_passphrase, pinned, sort_order, owner, created_at, updated_at
 FROM hosts
 WHERE owner = ?
 ORDER BY pinned DESC, created_at DESC;`
 
 const getHostSQL = `
-SELECT id, name, hostname, port, username, status, host_key_fingerprint, ssh_auth_method, ssh_password, ssh_private_key, ssh_private_key_passphrase, pinned, owner, created_at, updated_at
+SELECT id, name, hostname, port, username, status, host_key_fingerprint, ssh_auth_method, ssh_password, ssh_private_key, ssh_private_key_passphrase, pinned, sort_order, owner, created_at, updated_at
 FROM hosts
 WHERE id = ?;`
 
@@ -110,6 +114,11 @@ const setHostPinnedSQL = `
 UPDATE hosts
 SET pinned = ?, updated_at = ?
 WHERE id = ?;`
+
+const updateHostOrderSQL = `
+UPDATE hosts
+SET sort_order = ?, updated_at = ?
+WHERE id = ? AND owner = ?;`
 
 const setHostStatusSQL = `
 UPDATE hosts

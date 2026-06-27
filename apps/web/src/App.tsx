@@ -59,6 +59,7 @@ export function App() {
     handleDeleteHost,
     handleHostHeartbeat,
     handleHostHeartbeatStatus,
+    handleReorderHosts,
     handleSelectHost,
     handleTrustHost,
     handleUpdateHost,
@@ -389,6 +390,7 @@ export function App() {
         onSaveSessionMetadata={saveSessionMetadata}
         onSelectHost={handleSelectHost}
         onShowHostForm={setShowHostForm}
+        onReorderHosts={handleReorderHosts}
         onUploadTerminalFile={isMobileLayout && isMobileTerminalActive ? handleMobileTerminalFileUpload : null}
         terminalReconnectSignal={terminalReconnectSignal}
         onUpdateHost={handleUpdateHost}

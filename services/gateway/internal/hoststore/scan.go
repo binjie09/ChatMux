@@ -8,6 +8,7 @@ type hostScanner interface {
 
 func scanHost(row hostScanner) (Host, error) {
 	var host Host
+	var sortOrder sql.NullFloat64
 	if err := row.Scan(
 		&host.ID,
 		&host.Name,
@@ -21,11 +22,16 @@ func scanHost(row hostScanner) (Host, error) {
 		&host.SSHPrivateKey,
 		&host.SSHKeyPassphrase,
 		&host.Pinned,
+		&sortOrder,
 		&host.Owner,
 		&host.CreatedAt,
 		&host.UpdatedAt,
 	); err != nil {
 		return Host{}, err
+	}
+	if sortOrder.Valid {
+		value := sortOrder.Float64
+		host.SortOrder = &value
 	}
 	return normalizeHostCredential(host), nil
 }

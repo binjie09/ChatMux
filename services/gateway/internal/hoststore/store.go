@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"sort"
+	"strings"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -39,6 +41,7 @@ type Host struct {
 	HasPassword        bool      `json:"hasPassword"`
 	HasCredential      bool      `json:"hasCredential"`
 	Pinned             bool      `json:"pinned"`
+	SortOrder          *float64  `json:"-"`
 	Owner              string    `json:"owner"`
 	CreatedAt          time.Time `json:"createdAt"`
 	UpdatedAt          time.Time `json:"updatedAt"`
@@ -93,7 +96,11 @@ func (s *Store) ListHosts(ctx context.Context) ([]Host, error) {
 		}
 		hosts = append(hosts, host)
 	}
-	return hosts, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	sortHostsInPlace(hosts)
+	return hosts, nil
 }
 
 func (s *Store) ListHostsVisibleTo(ctx context.Context, owner string) ([]Host, error) {
@@ -111,7 +118,37 @@ func (s *Store) ListHostsVisibleTo(ctx context.Context, owner string) ([]Host, e
 		}
 		hosts = append(hosts, host)
 	}
-	return hosts, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	sortHostsInPlace(hosts)
+	return hosts, nil
+}
+
+// sortHostsInPlace orders hosts pinned-first, then by their effective sort key
+// (an explicit sort_order from drag-to-reorder, falling back to the creation
+// time so the default order is stable), with name and id as final tiebreakers.
+func sortHostsInPlace(hosts []Host) {
+	sort.SliceStable(hosts, func(i int, j int) bool {
+		if hosts[i].Pinned != hosts[j].Pinned {
+			return hosts[i].Pinned
+		}
+		left, right := hostSortKey(hosts[i]), hostSortKey(hosts[j])
+		if left != right {
+			return left > right
+		}
+		if hosts[i].Name != hosts[j].Name {
+			return hosts[i].Name < hosts[j].Name
+		}
+		return hosts[i].ID < hosts[j].ID
+	})
+}
+
+func hostSortKey(host Host) float64 {
+	if host.SortOrder != nil {
+		return *host.SortOrder
+	}
+	return float64(host.CreatedAt.Unix())
 }
 
 func (s *Store) GetHost(ctx context.Context, id string) (Host, error) {
@@ -187,6 +224,42 @@ func (s *Store) SetHostPinned(ctx context.Context, id string, pinned bool) (Host
 		return Host{}, ErrHostNotFound
 	}
 	return s.GetHost(ctx, id)
+}
+
+// SaveHostOrders stamps explicit sort_order ranks for the given hosts in one
+// transaction. The update is scoped to `owner` so a request can only reorder
+// hosts the principal owns, and only touches sort_order (plus updated_at),
+// preserving every other host field.
+func (s *Store) SaveHostOrders(ctx context.Context, owner string, orders []HostOrderInput) error {
+	if strings.TrimSpace(owner) == "" {
+		return errors.New("owner is required")
+	}
+	if len(orders) == 0 {
+		return nil
+	}
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("begin host order transaction: %w", err)
+	}
+	defer tx.Rollback()
+	now := time.Now().UTC()
+	for _, order := range orders {
+		if strings.TrimSpace(order.HostID) == "" {
+			continue
+		}
+		if _, err := tx.ExecContext(ctx, updateHostOrderSQL, order.SortOrder, now, order.HostID, owner); err != nil {
+			return fmt.Errorf("save host order: %w", err)
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit host order transaction: %w", err)
+	}
+	return nil
+}
+
+type HostOrderInput struct {
+	HostID    string
+	SortOrder float64
 }
 
 func (s *Store) TrustHostKey(ctx context.Context, id string, fingerprint string) (Host, error) {

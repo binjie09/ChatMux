@@ -92,6 +92,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/automation/tools/{name}/run", s.handleRunAutomationTool)
 	mux.HandleFunc("GET /api/hosts", s.handleListHosts)
 	mux.HandleFunc("POST /api/hosts", s.handleCreateHost)
+	mux.HandleFunc("POST /api/hosts/order", s.handleReorderHosts)
 	mux.HandleFunc("DELETE /api/hosts/{id}", s.handleDeleteHost)
 	mux.HandleFunc("PATCH /api/hosts/{id}", s.handleUpdateHost)
 	mux.HandleFunc("POST /api/hosts/{id}/pin", s.handlePinHost)

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/chatmux/chatmux/services/gateway/internal/hoststore"
 )
@@ -133,6 +134,56 @@ func (s *Server) handlePinHost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, host)
+}
+
+type reorderHostsRequest struct {
+	OrderedIds []string `json:"orderedIds"`
+}
+
+func (s *Server) handleReorderHosts(w http.ResponseWriter, r *http.Request) {
+	var input reorderHostsRequest
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+	if len(input.OrderedIds) == 0 {
+		writeError(w, http.StatusBadRequest, errors.New("orderedIds is required"))
+		return
+	}
+	owner := principalName(r)
+	existing, err := s.listHostsForPrincipal(r)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	// Stamp evenly-spaced ranks above every existing key so the posted order is
+	// the exact result. Ranks stay on the epoch-second scale, so hosts a user has
+	// never dragged (key = creation time) keep interleaving naturally.
+	base := float64(time.Now().UTC().Unix())
+	for _, host := range existing {
+		if host.SortOrder != nil && *host.SortOrder > base {
+			base = *host.SortOrder
+		}
+	}
+	base += float64(len(input.OrderedIds)) + 1
+	orders := make([]hoststore.HostOrderInput, 0, len(input.OrderedIds))
+	for index, id := range input.OrderedIds {
+		orders = append(orders, hoststore.HostOrderInput{HostID: id, SortOrder: base - float64(index)})
+	}
+	if err := s.hosts.SaveHostOrders(r.Context(), owner, orders); err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	if err := s.logAudit(r.Context(), hoststore.LogAuditEventInput{Type: "hosts.reordered", Message: "reordered hosts"}); err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	hosts, err := s.listHostsForPrincipal(r)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, hosts)
 }
 
 func (s *Server) listHostsForPrincipal(r *http.Request) ([]hoststore.Host, error) {

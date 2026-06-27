@@ -92,6 +92,13 @@ export async function deleteHost(hostId: string): Promise<void> {
   });
 }
 
+export async function reorderHosts(orderedIds: string[]): Promise<Host[]> {
+  return request<Host[]>("/api/hosts/order", {
+    method: "POST",
+    body: JSON.stringify({ orderedIds }),
+  });
+}
+
 export async function trustHost(hostId: string): Promise<Host> {
   const response = await request<{ host: Host }>(`/api/hosts/${hostId}/ssh/trust`, {
     method: "POST",

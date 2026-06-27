@@ -8,6 +8,7 @@ import { type GatewayTokenState } from "./useGatewayAccessToken";
 import { type PWAInstallPromptState } from "./usePWAInstallPrompt";
 import "./sidebar-host-actions.css";
 import { OverflowText } from "./OverflowText";
+import { arrayMove, DragHandle, SortableList } from "./drag-reorder";
 
 type SidebarProps = {
   desktopCollapsed: boolean;
@@ -21,6 +22,7 @@ type SidebarProps = {
   onCreateHost: (input: CreateHostInput) => Promise<void>;
   onDeleteHost: (hostId: string) => Promise<void>;
   onDesktopCollapsedChange: (collapsed: boolean) => void;
+  onReorderHosts: (orderedIds: string[]) => void;
   onSelectHost: (hostId: string) => void;
   onShowHostForm: (show: boolean) => void;
   onUpdateHost: (hostId: string, input: CreateHostInput) => Promise<void>;
@@ -55,18 +57,32 @@ export function Sidebar(props: SidebarProps) {
 
       <section className="nav-section">
         <h2>Hosts</h2>
-        <div className="host-list">
-          {props.hosts.map((host) => (
-            <HostEntry
-              host={host}
-              isSelected={props.selectedHostId === host.id}
-              key={host.id}
-              onDeleteHost={props.onDeleteHost}
-              onSelectHost={props.onSelectHost}
-              onUpdateHost={props.onUpdateHost}
-            />
-          ))}
-        </div>
+        <SortableList
+          className="host-list"
+          items={props.hosts}
+          ids={props.hosts.map((host) => host.id)}
+          orientation="vertical"
+          onReorder={(from, to) => props.onReorderHosts(arrayMove(props.hosts.map((host) => host.id), from, to))}
+        >
+          {(host, _index, sortable) => (
+            <div
+              ref={sortable.ref}
+              style={sortable.style}
+              className={`host-drag-item ${sortable.isDragging ? "dragging" : ""}`}
+            >
+              <DragHandle dragHandleProps={sortable.dragHandleProps} />
+              <div className="host-drag-content">
+                <HostEntry
+                  host={host}
+                  isSelected={props.selectedHostId === host.id}
+                  onDeleteHost={props.onDeleteHost}
+                  onSelectHost={props.onSelectHost}
+                  onUpdateHost={props.onUpdateHost}
+                />
+              </div>
+            </div>
+          )}
+        </SortableList>
         {props.error ? <p className="sidebar-error">{props.error}</p> : null}
       </section>
 

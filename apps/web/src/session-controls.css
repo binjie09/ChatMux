@@ -600,17 +600,70 @@
 
 .session-drag-item,
 .session-window-drag-item {
-  cursor: grab;
-  touch-action: none;
+  display: flex;
+  align-items: center;
+  gap: 2px;
 }
 
-.session-drag-item:active,
-.session-window-drag-item:active {
-  cursor: grabbing;
+.session-drag-item {
+  margin-bottom: 9px;
+}
+
+.session-drag-item > .session-group,
+.session-window-drag-item > .session-window-drag-content {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.session-drag-item > .session-group {
+  margin-bottom: 0;
 }
 
 .session-drag-item.dragging,
 .session-window-drag-item.dragging {
+  opacity: 0.9;
+  box-shadow: 0 8px 18px rgba(27, 36, 31, 0.18);
+  z-index: 1;
+}
+
+/* Only the grip initiates a drag and pins touch-action, so the rest of the row
+   keeps normal touch scrolling on mobile. */
+.drag-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 22px;
+  min-height: 32px;
+  border: 0;
+  border-radius: 4px;
+  color: #a59d8e;
+  background: transparent;
+  cursor: grab;
+  touch-action: none;
+}
+
+.drag-handle:hover {
+  color: #5b5448;
+  background: rgba(43, 143, 90, 0.08);
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+.host-drag-item {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.host-drag-item > .host-drag-content {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.host-drag-item.dragging {
   opacity: 0.9;
   box-shadow: 0 8px 18px rgba(27, 36, 31, 0.18);
   z-index: 1;
