@@ -111,3 +111,33 @@ export function DragHandle(props: { dragHandleProps: React.HTMLAttributes<HTMLEl
     </span>
   );
 }
+
+// DraggableItem renders one sortable row. On touch/mobile it exposes a grip
+// handle as the only drag trigger (so the rest of the row keeps scrolling); on
+// desktop the whole row is draggable directly, like before. touch-action lives
+// on the grip alone, which is all PointerSensor needs for touch — mouse drags
+// work without it.
+export function DraggableItem(props: {
+  sortable: SortableItemBag;
+  isMobile: boolean;
+  className?: string;
+  draggable?: boolean;
+  children: ReactNode;
+}) {
+  const enabled = props.draggable !== false;
+  const className = [props.className, props.sortable.isDragging ? "dragging" : ""].filter(Boolean).join(" ");
+  if (enabled && props.isMobile) {
+    return (
+      <div ref={props.sortable.ref} style={props.sortable.style} className={className}>
+        <DragHandle dragHandleProps={props.sortable.dragHandleProps} />
+        {props.children}
+      </div>
+    );
+  }
+  const desktopHandle = enabled ? props.sortable.dragHandleProps : {};
+  return (
+    <div ref={props.sortable.ref} style={props.sortable.style} className={className} {...desktopHandle}>
+      {props.children}
+    </div>
+  );
+}

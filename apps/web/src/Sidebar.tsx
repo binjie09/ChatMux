@@ -8,7 +8,8 @@ import { type GatewayTokenState } from "./useGatewayAccessToken";
 import { type PWAInstallPromptState } from "./usePWAInstallPrompt";
 import "./sidebar-host-actions.css";
 import { OverflowText } from "./OverflowText";
-import { arrayMove, DragHandle, SortableList } from "./drag-reorder";
+import { arrayMove, DraggableItem, SortableList } from "./drag-reorder";
+import { useIsMobileLayout } from "./useIsMobileLayout";
 
 type SidebarProps = {
   desktopCollapsed: boolean;
@@ -29,6 +30,7 @@ type SidebarProps = {
 };
 
 export function Sidebar(props: SidebarProps) {
+  const isMobile = useIsMobileLayout();
   return (
     <aside className={`sidebar ${props.desktopCollapsed ? "desktop-collapsed" : ""} ${props.mobileOpen ? "mobile-open" : ""}`}>
       <div className="brand">
@@ -65,12 +67,7 @@ export function Sidebar(props: SidebarProps) {
           onReorder={(from, to) => props.onReorderHosts(arrayMove(props.hosts.map((host) => host.id), from, to))}
         >
           {(host, _index, sortable) => (
-            <div
-              ref={sortable.ref}
-              style={sortable.style}
-              className={`host-drag-item ${sortable.isDragging ? "dragging" : ""}`}
-            >
-              <DragHandle dragHandleProps={sortable.dragHandleProps} />
+            <DraggableItem sortable={sortable} isMobile={isMobile} className="host-drag-item">
               <div className="host-drag-content">
                 <HostEntry
                   host={host}
@@ -80,7 +77,7 @@ export function Sidebar(props: SidebarProps) {
                   onUpdateHost={props.onUpdateHost}
                 />
               </div>
-            </div>
+            </DraggableItem>
           )}
         </SortableList>
         {props.error ? <p className="sidebar-error">{props.error}</p> : null}

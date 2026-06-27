@@ -7,8 +7,9 @@ import { SessionWindowList } from "./SessionWindowList";
 import { type DisplayTmuxSession } from "./session-state-machine";
 import { isSSHFallbackSession } from "./tmux-fallback";
 import { windowCountLabel } from "./session-window-utils";
-import { arrayMove, DragHandle, SortableList } from "./drag-reorder";
+import { arrayMove, DraggableItem, SortableList } from "./drag-reorder";
 import { OverflowText } from "./OverflowText";
+import { useIsMobileLayout } from "./useIsMobileLayout";
 import { type SessionNotificationStatus } from "./useSessionNotifications";
 import { type SSHCredentialStatus } from "./useSSHCredentialToken";
 
@@ -133,6 +134,7 @@ function SessionListHeader(props: {
 }
 
 function SessionListBody(props: SessionListProps & { inputRef: RefObject<HTMLInputElement | null> }) {
+  const isMobile = useIsMobileLayout();
   const sessionIds = props.sessions.map((session) => session.id);
   return (
     <>
@@ -159,12 +161,7 @@ function SessionListBody(props: SessionListProps & { inputRef: RefObject<HTMLInp
         onReorder={(from, to) => props.onReorderSessions(arrayMove(props.sessions.map((session) => session.name), from, to))}
       >
         {(session, _index, sortable) => (
-          <div
-            ref={sortable.ref}
-            style={sortable.style}
-            className={`session-drag-item ${sortable.isDragging ? "dragging" : ""}`}
-          >
-            <DragHandle dragHandleProps={sortable.dragHandleProps} />
+          <DraggableItem sortable={sortable} isMobile={isMobile} className="session-drag-item">
             <SessionGroup
               isExpanded={!props.mobileWindowList && props.expandedSessionNames.has(session.name)}
               isSelected={props.selectedSessionName === session.name}
@@ -178,7 +175,7 @@ function SessionListBody(props: SessionListProps & { inputRef: RefObject<HTMLInp
               onRenameSession={isSSHFallbackSession(session) ? undefined : props.onRenameSession}
               onRenameWindow={props.onRenameWindow}
             />
-          </div>
+          </DraggableItem>
         )}
       </SortableList>
       {props.sessions.length === 0 ? <p className="session-empty">No sessions</p> : null}

@@ -5,7 +5,8 @@ import { type TmuxWindow } from "./api";
 import { windowDisplayLabel, windowLabel } from "./session-window-utils";
 import { OverflowText } from "./OverflowText";
 import { formatTime } from "./view-utils";
-import { DragHandle, SortableList } from "./drag-reorder";
+import { DraggableItem, SortableList } from "./drag-reorder";
+import { useIsMobileLayout } from "./useIsMobileLayout";
 
 type SessionWindowListProps = {
   selectedWindowIndex: number | null;
@@ -18,7 +19,9 @@ type SessionWindowListProps = {
 };
 
 export function SessionWindowList(props: SessionWindowListProps) {
+  const isMobile = useIsMobileLayout();
   const [editingWindowIndex, setEditingWindowIndex] = useState<number | null>(null);
+  const dragEnabled = Boolean(props.onMoveWindow);
   if (props.windows.length === 0) {
     return <p className="session-empty">No windows</p>;
   }
@@ -41,7 +44,7 @@ export function SessionWindowList(props: SessionWindowListProps) {
       items={props.windows}
       ids={props.windows.map((window) => window.id || String(window.index))}
       orientation="vertical"
-      disabled={!props.onMoveWindow}
+      disabled={!dragEnabled}
       onReorder={(from, to) => {
         const fromWindowIndex = props.windows[from]?.index;
         const toWindowIndex = props.windows[to]?.index;
@@ -52,14 +55,9 @@ export function SessionWindowList(props: SessionWindowListProps) {
       }}
     >
       {(window, _index, sortable) => (
-        <div
-          ref={sortable.ref}
-          style={sortable.style}
-          className={`session-window-drag-item ${sortable.isDragging ? "dragging" : ""}`}
-        >
-          {props.onMoveWindow ? <DragHandle dragHandleProps={sortable.dragHandleProps} /> : null}
+        <DraggableItem sortable={sortable} isMobile={isMobile} className="session-window-drag-item" draggable={dragEnabled}>
           <div className="session-window-drag-content">{renderRow(window)}</div>
-        </div>
+        </DraggableItem>
       )}
     </SortableList>
   );
