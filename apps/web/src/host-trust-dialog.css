@@ -5,16 +5,16 @@
   display: grid;
   place-items: center;
   padding: 24px;
-  background: rgb(12 18 14 / 64%);
+  background: var(--scrim);
 }
 
 .host-trust-dialog {
   width: min(440px, 100%);
-  border: 1px solid #d6cebd;
+  border: 1px solid var(--border);
   border-radius: 8px;
-  color: #17201b;
-  background: #fffaf0;
-  box-shadow: 0 24px 70px rgb(12 18 14 / 28%);
+  color: var(--text);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-overlay);
 }
 
 .host-trust-dialog header,
@@ -27,11 +27,11 @@
 }
 
 .host-trust-dialog header {
-  border-bottom: 1px solid #ded8ca;
+  border-bottom: 1px solid var(--border-soft);
 }
 
 .host-trust-dialog footer {
-  border-top: 1px solid #ded8ca;
+  border-top: 1px solid var(--border-soft);
 }
 
 .host-trust-title {
@@ -43,7 +43,7 @@
 
 .host-trust-title svg {
   flex: 0 0 auto;
-  color: #4f8f6f;
+  color: var(--accent-strong);
 }
 
 .host-trust-dialog h2 {
@@ -56,10 +56,10 @@
   place-items: center;
   width: 32px;
   height: 32px;
-  border: 1px solid #d6cebd;
+  border: 1px solid var(--border);
   border-radius: 8px;
-  color: #415049;
-  background: #ffffff;
+  color: var(--text-muted);
+  background: var(--surface);
 }
 
 .host-trust-body {
@@ -70,18 +70,18 @@
 
 .host-trust-body p {
   margin: 0;
-  color: #415049;
+  color: var(--text-muted);
   font-size: 14px;
   line-height: 1.5;
 }
 
 .host-trust-body code {
   overflow-wrap: anywhere;
-  border: 1px solid #ded8ca;
+  border: 1px solid var(--border-soft);
   border-radius: 8px;
   padding: 10px 12px;
-  background: #ffffff;
-  color: #17201b;
+  background: var(--surface);
+  color: var(--text);
 }
 
 .host-trust-primary,
@@ -97,14 +97,14 @@
 
 .host-trust-primary {
   border: 0;
-  color: #0d1712;
-  background: #8fd5b2;
+  color: var(--text-on-accent);
+  background: var(--accent);
 }
 
 .host-trust-secondary {
-  border: 1px solid #d6cebd;
-  color: #17201b;
-  background: #ffffff;
+  border: 1px solid var(--border);
+  color: var(--text);
+  background: var(--surface);
 }
 
 .host-trust-primary:disabled,

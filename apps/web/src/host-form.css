@@ -1,20 +1,20 @@
 .host-form {
   display: grid;
   gap: 8px;
-  border: 1px solid #2c3931;
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 10px;
-  background: #202b25;
+  background: var(--surface-raised);
 }
 
 .host-form input,
 .host-form textarea {
   min-width: 0;
-  border: 1px solid #405146;
+  border: 1px solid var(--border-strong);
   border-radius: 6px;
   padding: 8px 9px;
-  color: #f7f2e8;
-  background: #17201b;
+  color: var(--text);
+  background: var(--surface);
 }
 
 .host-form textarea {
@@ -27,7 +27,7 @@
 
 .host-form input::placeholder,
 .host-form textarea::placeholder {
-  color: #8c9891;
+  color: var(--text-faint);
 }
 
 .host-auth-method {
@@ -38,16 +38,16 @@
 
 .host-auth-method button {
   height: 32px;
-  border: 1px solid #405146;
+  border: 1px solid var(--border-strong);
   border-radius: 6px;
-  color: #cdd6d0;
-  background: #17201b;
+  color: var(--text-muted);
+  background: var(--surface);
 }
 
 .host-auth-method button.selected {
-  border-color: #8fd5b2;
-  color: #102018;
-  background: #8fd5b2;
+  border-color: var(--accent);
+  color: var(--text-on-accent);
+  background: var(--accent);
 }
 
 .host-form-clear-credential {
@@ -55,7 +55,7 @@
   grid-template-columns: 14px minmax(0, 1fr);
   align-items: center;
   gap: 7px;
-  color: #c5ccc8;
+  color: var(--text-muted);
   font-size: 12px;
 }
 
@@ -63,7 +63,7 @@
   width: 14px;
   height: 14px;
   padding: 0;
-  accent-color: #8fd5b2;
+  accent-color: var(--accent);
 }
 
 .host-form-actions {
@@ -78,11 +78,11 @@
   height: 34px;
   border: 0;
   border-radius: 6px;
-  color: #102018;
-  background: #8fd5b2;
+  color: var(--text-on-accent);
+  background: var(--accent);
 }
 
 .host-form-actions button[type="button"] {
-  color: #f3ebe1;
-  background: #3a463f;
+  color: var(--text);
+  background: var(--surface-hover);
 }

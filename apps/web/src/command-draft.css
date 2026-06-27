@@ -1,7 +1,7 @@
 .command-draft-panel {
   display: grid;
   gap: 8px;
-  border-top: 1px solid #ded8ca;
+  border-top: 1px solid var(--border-soft);
   padding-top: 12px;
 }
 
@@ -18,11 +18,11 @@
 
 .command-draft-panel input {
   min-width: 0;
-  border: 1px solid #d6cebd;
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 10px 12px;
-  color: #17201b;
-  background: #ffffff;
+  color: var(--text);
+  background: var(--surface-raised);
 }
 
 .command-draft-panel form button,
@@ -34,8 +34,8 @@
   gap: 7px;
   border: 0;
   border-radius: 8px;
-  color: #f7fbf8;
-  background: #2f5f59;
+  color: var(--text-on-accent);
+  background: var(--accent);
   font-weight: 700;
 }
 
@@ -45,36 +45,36 @@
 }
 
 .command-draft-panel form button:disabled {
-  color: #738079;
-  background: #e9eee8;
+  color: var(--text-faint);
+  background: var(--surface-sunken);
 }
 
 .command-draft-error {
   margin: 0;
-  border: 1px solid #e4bab0;
+  border: 1px solid var(--danger-strong);
   border-radius: 8px;
   padding: 8px 10px;
-  color: #8e3329;
-  background: #fff4f1;
+  color: var(--feedback-negative);
+  background: var(--danger-bg);
   font-size: 12px;
 }
 
 .command-draft-result {
   display: grid;
   gap: 8px;
-  border: 1px solid #d6cebd;
-  border-left: 4px solid #58736a;
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--border-strong);
   border-radius: 8px;
   padding: 10px;
-  background: #fffdf8;
+  background: var(--surface);
 }
 
 .command-draft-result.medium {
-  border-left-color: #9b7a2e;
+  border-left-color: var(--warning-border);
 }
 
 .command-draft-result.high {
-  border-left-color: #a54035;
+  border-left-color: var(--danger-strong);
 }
 
 .command-draft-result header {
@@ -85,7 +85,7 @@
 }
 
 .command-draft-result strong {
-  color: #34443d;
+  color: var(--text);
   font-size: 12px;
   text-transform: uppercase;
 }
@@ -93,7 +93,7 @@
 .command-draft-result small,
 .command-draft-result p {
   margin: 0;
-  color: #59655f;
+  color: var(--text-muted);
   font-size: 12px;
 }
 
@@ -102,8 +102,8 @@
   overflow: auto;
   border-radius: 6px;
   padding: 9px;
-  color: #e6ece8;
-  background: #17201b;
+  color: var(--text);
+  background: var(--surface-sunken);
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   font-size: 12px;
   line-height: 1.45;
@@ -120,9 +120,9 @@
 }
 
 .command-draft-result-actions .command-draft-close-button {
-  border: 1px solid #c8d1ca;
-  color: #34443d;
-  background: #f5f8f5;
+  border: 1px solid var(--border);
+  color: var(--text);
+  background: var(--surface);
 }
 
 @media (max-width: 760px) {

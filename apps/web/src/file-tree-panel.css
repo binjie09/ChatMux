@@ -4,14 +4,14 @@
   grid-template-rows: auto auto auto minmax(0, 1fr);
   min-height: 0;
   overflow: hidden;
-  border: 1px solid #d9d2c3;
+  border: 1px solid var(--border);
   border-radius: 8px;
-  color: #1a231e;
-  background: #fffaf0;
+  color: var(--text);
+  background: var(--surface);
 }
 
 .file-tree-panel.drag-active {
-  border-color: #527a64;
+  border-color: var(--accent-strong);
   outline: 2px solid rgba(143, 213, 178, 0.45);
 }
 
@@ -21,7 +21,7 @@
   align-items: center;
   gap: 10px;
   min-height: 54px;
-  border-bottom: 1px solid #e2dccf;
+  border-bottom: 1px solid var(--border-soft);
   padding: 10px;
 }
 
@@ -40,7 +40,7 @@
 
 .file-tree-header span {
   margin-top: 2px;
-  color: #69746e;
+  color: var(--text-muted);
   font-size: 12px;
 }
 
@@ -54,10 +54,10 @@
   display: grid;
   place-items: center;
   height: 32px;
-  border: 1px solid #d6cebd;
+  border: 1px solid var(--border);
   border-radius: 8px;
-  color: #1c251f;
-  background: #ffffff;
+  color: var(--text);
+  background: var(--surface-raised);
 }
 
 .file-tree-actions button {
@@ -74,18 +74,18 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) 48px;
   gap: 6px;
-  border-bottom: 1px solid #e8e0d1;
+  border-bottom: 1px solid var(--border-soft);
   padding: 8px 10px;
 }
 
 .file-tree-path-form input {
   min-width: 0;
   height: 32px;
-  border: 1px solid #d6cebd;
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 0 9px;
-  color: #17201b;
-  background: #ffffff;
+  color: var(--text);
+  background: var(--surface-raised);
   font-size: 12px;
 }
 
@@ -104,10 +104,10 @@
 }
 
 .file-tree-drop-hint {
-  border-bottom: 1px solid #e8e0d1;
+  border-bottom: 1px solid var(--border-soft);
   padding: 7px 10px;
-  color: #69746e;
-  background: #f8f2e6;
+  color: var(--text-muted);
+  background: var(--surface-hover);
   font-size: 12px;
 }
 
@@ -115,7 +115,7 @@
   min-height: 0;
   overflow: auto;
   padding: 6px;
-  scrollbar-color: #c7bdac #fffaf0;
+  scrollbar-color: var(--scrollbar-thumb) var(--surface);
 }
 
 .file-tree-node-group {
@@ -135,24 +135,24 @@
   border: 1px solid transparent;
   border-radius: 6px;
   padding: 4px 8px 4px calc(8px + var(--tree-depth) * 16px);
-  color: #24302a;
+  color: var(--text);
   background: transparent;
   font-size: 12px;
   text-align: left;
 }
 
 .file-tree-row:hover {
-  border-color: #ded6c7;
-  background: #f4ecdd;
+  border-color: var(--border);
+  background: var(--surface-hover);
 }
 
 .file-tree-row.selected {
-  border-color: #8fd5b2;
-  background: #e4f4ea;
+  border-color: var(--accent);
+  background: var(--surface-selected);
 }
 
 .file-tree-row svg {
-  color: #60736a;
+  color: var(--text-subtle);
 }
 
 .file-tree-row span {
@@ -163,7 +163,7 @@
 }
 
 .file-tree-row small {
-  color: #7a847e;
+  color: var(--text-subtle);
   font-size: 11px;
   white-space: nowrap;
 }
@@ -177,7 +177,7 @@
 .file-tree-state {
   margin: 0;
   padding: 10px;
-  color: #69746e;
+  color: var(--text-muted);
   font-size: 12px;
 }
 
@@ -188,7 +188,7 @@
 .file-tree-panel.mobile {
   height: 100%;
   border: 0;
-  background: #fffaf0;
+  background: var(--surface);
 }
 
 .file-tree-panel.mobile .file-tree-row {
@@ -214,11 +214,11 @@
   display: grid;
   min-width: 128px;
   overflow: hidden;
-  border: 1px solid #d3caba;
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 4px;
-  background: #ffffff;
-  box-shadow: 0 12px 28px rgba(28, 37, 31, 0.2);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-dropdown);
 }
 
 .file-tree-context-menu button {
@@ -230,16 +230,16 @@
   border: 0;
   border-radius: 6px;
   padding: 0 8px;
-  color: #1c251f;
+  color: var(--text);
   background: transparent;
   font-size: 12px;
   text-align: left;
 }
 
 .file-tree-context-menu button:hover {
-  background: #f4ecdd;
+  background: var(--surface-hover);
 }
 
 .file-tree-context-menu button.danger {
-  color: #9f2d23;
+  color: var(--danger-strong);
 }

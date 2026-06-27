@@ -1,10 +1,10 @@
 .gateway-token-control {
   display: grid;
   gap: 9px;
-  border: 1px solid #2c3931;
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 10px;
-  background: #202b25;
+  background: var(--surface-raised);
 }
 
 .gateway-token-control header {
@@ -12,13 +12,13 @@
   grid-template-columns: 16px 1fr auto;
   align-items: center;
   gap: 8px;
-  color: #d9dedb;
+  color: var(--text-muted);
   font-size: 13px;
   font-weight: 700;
 }
 
 .gateway-token-control small {
-  color: #9fa9a3;
+  color: var(--text-muted);
   font-size: 11px;
   font-weight: 600;
 }
@@ -31,15 +31,15 @@
 
 .gateway-token-control form > input {
   min-width: 0;
-  border: 1px solid #405146;
+  border: 1px solid var(--border-strong);
   border-radius: 6px;
   padding: 8px 9px;
-  color: #f7f2e8;
-  background: #17201b;
+  color: var(--text);
+  background: var(--surface);
 }
 
 .gateway-token-control form > input::placeholder {
-  color: #8c9891;
+  color: var(--text-faint);
 }
 
 .gateway-token-control form > button,
@@ -48,14 +48,14 @@
   place-items: center;
   border: 0;
   border-radius: 6px;
-  color: #102018;
-  background: #8fd5b2;
+  color: var(--text-on-accent);
+  background: var(--accent);
 }
 
 .gateway-token-control form > button:last-child,
 .gateway-token-biometric button {
-  color: #f3ebe1;
-  background: #3a463f;
+  color: var(--text);
+  background: var(--surface-hover);
 }
 
 .gateway-token-biometric {
@@ -70,14 +70,14 @@
   grid-template-columns: 16px 15px minmax(0, 1fr);
   gap: 7px;
   align-items: center;
-  color: #c5ccc8;
+  color: var(--text-muted);
   font-size: 12px;
 }
 
 .gateway-token-biometric input {
   width: 14px;
   height: 14px;
-  accent-color: #8fd5b2;
+  accent-color: var(--accent);
 }
 
 .gateway-token-control button:disabled,

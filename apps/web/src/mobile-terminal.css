@@ -10,7 +10,7 @@
   .mobile-terminal-active {
     height: 100dvh;
     min-height: 100dvh;
-    background: #0b110e;
+    background: var(--term-bg-deep);
   }
 
   .mobile-terminal-active .sidebar,
@@ -29,7 +29,7 @@
     height: 100dvh;
     min-height: 100dvh;
     padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
-    background: #0b110e;
+    background: var(--term-bg-deep);
   }
 
   .mobile-terminal-active .terminal-workspace {
@@ -59,10 +59,10 @@
     align-items: center;
     gap: 5px 4px;
     min-height: 88px;
-    border-bottom: 1px solid #203029;
+    border-bottom: 1px solid var(--term-border-soft);
     padding: 6px 8px 8px;
-    color: #eff7f1;
-    background: #111a15;
+    color: var(--term-text);
+    background: var(--term-surface);
   }
 
   .mobile-terminal-bar.tmux-fallback {
@@ -98,10 +98,10 @@
     place-items: center;
     width: 40px;
     height: 40px;
-    border: 1px solid #293a32;
+    border: 1px solid var(--term-border);
     border-radius: 8px;
-    color: #dce9e1;
-    background: #18231d;
+    color: var(--term-text);
+    background: var(--term-raised);
   }
 
   .mobile-terminal-title {
@@ -118,13 +118,13 @@
   }
 
   .mobile-terminal-bar strong {
-    color: #f5faf7;
+    color: var(--term-text-strong);
     font-size: 15px;
   }
 
   .mobile-terminal-bar span {
     margin-top: 2px;
-    color: #91a79b;
+    color: var(--term-text-muted);
     font-size: 12px;
   }
 
@@ -139,11 +139,11 @@
   .mobile-terminal-window-picker select {
     min-width: 0;
     height: 38px;
-    border: 1px solid #293a32;
+    border: 1px solid var(--term-border);
     border-radius: 8px;
     padding: 0 9px;
-    color: #eff7f1;
-    background: #0f1713;
+    color: var(--term-text);
+    background: var(--term-bg);
     font-size: 13px;
   }
 
@@ -165,9 +165,9 @@
     height: 40px;
     min-width: 112px;
     padding: 0 11px;
-    color: #251b0b;
-    background: #f3c766;
-    border-color: #e5c47d;
+    color: var(--warning-strong-text);
+    background: var(--warning-strong);
+    border-color: var(--warning-strong);
     font-size: 12px;
     font-weight: 700;
     white-space: nowrap;
@@ -199,7 +199,7 @@
     position: absolute;
     inset: 0;
     border: 0;
-    background: rgba(5, 10, 7, 0.55);
+    background: var(--scrim);
   }
 
   .mobile-terminal-sheet {
@@ -210,12 +210,12 @@
     display: grid;
     grid-template-rows: auto minmax(0, 1fr);
     height: min(72dvh, 620px);
-    border: 1px solid #26372f;
+    border: 1px solid var(--border);
     border-bottom: 0;
     border-radius: 12px 12px 0 0;
     overflow: hidden;
-    background: #f7f3ea;
-    box-shadow: 0 -18px 40px rgba(0, 0, 0, 0.28);
+    background: var(--surface);
+    box-shadow: 0 -18px 40px var(--drag-shadow);
   }
 
   .mobile-terminal-sheet > header {
@@ -224,10 +224,10 @@
     align-items: center;
     gap: 8px;
     min-height: 50px;
-    border-bottom: 1px solid #ded8ca;
+    border-bottom: 1px solid var(--border-soft);
     padding: 6px 12px;
-    color: #17201b;
-    background: #fffaf0;
+    color: var(--text);
+    background: var(--surface);
   }
 
   .mobile-terminal-sheet > header.has-action {
@@ -239,10 +239,10 @@
     place-items: center;
     width: 36px;
     height: 36px;
-    border: 1px solid #d6cebd;
+    border: 1px solid var(--border);
     border-radius: 8px;
-    color: #17201b;
-    background: #ffffff;
+    color: var(--text);
+    background: var(--surface-raised);
   }
 
   .mobile-terminal-sheet-body {

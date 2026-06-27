@@ -11,8 +11,8 @@
 }
 
 .host-row.selected {
-  border-color: #8fd5b2;
-  background: #26352e;
+  border-color: var(--accent);
+  background: var(--surface-selected);
 }
 
 .host-row span {
@@ -36,22 +36,22 @@
   place-items: center;
   width: 34px;
   height: 34px;
-  border: 1px solid #2c3931;
+  border: 1px solid var(--border);
   border-radius: 8px;
-  color: #d9dedb;
-  background: #202b25;
+  color: var(--text-muted);
+  background: var(--surface-raised);
 }
 
 .host-action-button:hover,
 .host-action-button:focus-visible {
-  border-color: #8fd5b2;
-  color: #8fd5b2;
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .host-action-button.danger:hover,
 .host-action-button.danger:focus-visible {
-  border-color: #f2a397;
-  color: #f2a397;
+  border-color: var(--feedback-negative);
+  color: var(--feedback-negative);
 }
 
 @media (max-width: 980px) and (min-width: 721px) {

@@ -3,16 +3,16 @@
   grid-template-rows: auto 1fr;
   min-height: 0;
   overflow: hidden;
-  border: 1px solid #ddd6c7;
+  border: 1px solid var(--border);
   border-radius: 8px;
-  background: #ffffff;
+  background: var(--surface-raised);
 }
 
 .audit-panel h3 {
   margin: 0;
-  border-bottom: 1px solid #ddd6c7;
+  border-bottom: 1px solid var(--border);
   padding: 9px 10px;
-  color: #263029;
+  color: var(--text);
   font-size: 13px;
 }
 
@@ -28,11 +28,11 @@
 .audit-event {
   display: grid;
   gap: 3px;
-  color: #263029;
+  color: var(--text);
   font-size: 12px;
 }
 
 .audit-event span,
 .audit-event small {
-  color: #69746e;
+  color: var(--text-muted);
 }

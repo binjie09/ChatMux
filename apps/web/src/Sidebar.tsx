@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Github, KeyRound, Monitor, PanelLeftClose, PanelLeftOpen, Pencil, Plus, Server, ShieldCheck, Smartphone, TerminalSquare, Trash2 } from "lucide-react";
+import { Github, KeyRound, Monitor, Moon, PanelLeftClose, PanelLeftOpen, Pencil, Plus, Server, ShieldCheck, Smartphone, Sun, TerminalSquare, Trash2 } from "lucide-react";
 import { type CreateHostInput, type Host } from "./api";
 import { GatewayTokenControl } from "./GatewayTokenControl";
 import { HostForm } from "./HostForm";
@@ -10,6 +10,7 @@ import "./sidebar-host-actions.css";
 import { OverflowText } from "./OverflowText";
 import { arrayMove, DraggableItem, SortableList } from "./drag-reorder";
 import { useIsMobileLayout } from "./useIsMobileLayout";
+import { useTheme } from "./useTheme";
 
 type SidebarProps = {
   desktopCollapsed: boolean;
@@ -31,6 +32,7 @@ type SidebarProps = {
 
 export function Sidebar(props: SidebarProps) {
   const isMobile = useIsMobileLayout();
+  const { theme, toggleTheme } = useTheme();
   return (
     <aside className={`sidebar ${props.desktopCollapsed ? "desktop-collapsed" : ""} ${props.mobileOpen ? "mobile-open" : ""}`}>
       <div className="brand">
@@ -39,6 +41,15 @@ export function Sidebar(props: SidebarProps) {
           <strong>ChatMux</strong>
           <span>SSH tmux workspaces</span>
         </div>
+        <button
+          className="sidebar-theme-toggle"
+          type="button"
+          aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+          title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+          onClick={toggleTheme}
+        >
+          {theme === "dark" ? <Sun size={18} aria-hidden="true" /> : <Moon size={18} aria-hidden="true" />}
+        </button>
         <button
           className="desktop-collapse-button sidebar-collapse-button"
           type="button"
