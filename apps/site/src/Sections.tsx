@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useC } from "./ctx";
 import {
   IconAlert,
@@ -119,37 +119,208 @@ const PHONE_SHOTS = [
 
 export function MobileShowcase() {
   const c = useC();
-  return (
-    <section id="mobile">
-      <div className="wrap mobile__grid">
-        <div className="reveal">
-          <span className="section-label">{c.mobile.label}</span>
-          <h2 className="section-title">{c.mobile.title}</h2>
-          <p className="lead mobile__copy">{c.mobile.lead}</p>
-          <ul className="mobile__bullets">
-            {c.mobile.captions.map((cap) => (
-              <li key={cap}>
-                <span className="mk">▸</span>
-                <span>
-                  <b>{cap.split(" ")[0]}</b>{" "}
-                  {cap.replace(/^[^ ]+ ?/, "")}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
-        <div className="phones reveal" style={{ transitionDelay: "120ms" }}>
+  const captions = c.mobile.captions;
+  const N = PHONE_SHOTS.length;
+
+  const stageRef = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+  // rangeRef holds the latest measured translate range so the scroll handler
+  // (bound once) always reads current values without re-subscribing.
+  const rangeRef = useRef({ start: 0, end: 0 });
+  const [range, setRange] = useState({ start: 0, end: 0 });
+  const [active, setActive] = useState(0);
+  // The immersive pinned gallery only runs on fine-pointer (mouse) wide
+  // screens. Touch devices get a native swipe carousel instead.
+  const [enabled, setEnabled] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 821px) and (pointer: fine)");
+    const rm = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const apply = () => setEnabled(mq.matches && !rm.matches);
+    apply();
+    const onChange = () => apply();
+    mq.addEventListener("change", onChange);
+    rm.addEventListener("change", onChange);
+    return () => {
+      mq.removeEventListener("change", onChange);
+      rm.removeEventListener("change", onChange);
+    };
+  }, []);
+
+  // Measure the horizontal translate range that centres the first and last phone.
+  useLayoutEffect(() => {
+    if (!enabled) return;
+    const track = trackRef.current;
+    if (!track) return;
+    const measure = () => {
+      const phones = track.querySelectorAll<HTMLElement>(".mx-phone");
+      const first = phones[0];
+      const last = phones[phones.length - 1];
+      if (!first || !last) return;
+      const vw = window.innerWidth;
+      const start = vw / 2 - (first.offsetLeft + first.offsetWidth / 2);
+      const end = vw / 2 - (last.offsetLeft + last.offsetWidth / 2);
+      rangeRef.current = { start, end };
+      setRange({ start, end });
+    };
+    measure();
+    // Re-measure shortly after, once the (lazy-ish) images have a layout.
+    const t = window.setTimeout(measure, 400);
+    window.addEventListener("resize", measure);
+    return () => {
+      window.clearTimeout(t);
+      window.removeEventListener("resize", measure);
+    };
+  }, [enabled]);
+
+  // Drive the transform from scroll progress. Imperative (no per-frame React
+  // state) for smoothness; the page's native vertical scroll is the source of
+  // truth — no wheel hijacking, so trackpads and smooth-scroll stay native.
+  useEffect(() => {
+    if (!enabled) return;
+    const stage = stageRef.current;
+    const track = trackRef.current;
+    if (!stage || !track) return;
+    const ENTRY = 0.12;
+    const EXIT = 0.9;
+    let raf = 0;
+    const update = () => {
+      const vh = window.innerHeight;
+      const total = stage.offsetHeight - vh;
+      const top = stage.getBoundingClientRect().top;
+      const p = total > 0 ? Math.min(Math.max(-top, 0), total) / total : 0;
+      const { start, end } = rangeRef.current;
+      let tx = start;
+      let scale = 1;
+      let op = 1;
+      let panT = 0;
+      if (p < ENTRY) {
+        // zoom-in: the first phone grows into the viewport
+        const t = p / ENTRY;
+        scale = 0.6 + 0.4 * t;
+        op = 0.35 + 0.65 * t;
+        tx = start;
+        panT = 0;
+      } else if (p > EXIT) {
+        const t = (p - EXIT) / (1 - EXIT);
+        scale = 1 - 0.05 * t;
+        tx = end;
+        panT = 1;
+      } else {
+        const t = (p - ENTRY) / (EXIT - ENTRY);
+        tx = start + (end - start) * t;
+        panT = t;
+      }
+      track.style.transform = `translate3d(${tx}px, -50%, 0) scale(${scale})`;
+      track.style.opacity = op.toFixed(3);
+      const ai = Math.round(panT * (N - 1));
+      setActive((prev) => (prev !== ai ? ai : prev));
+    };
+    const onScroll = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(update);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    update();
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      cancelAnimationFrame(raf);
+    };
+  }, [enabled, range, N]);
+
+  const scrollToPhone = (i: number) => {
+    const stage = stageRef.current;
+    if (!stage) return;
+    const vh = window.innerHeight;
+    const total = stage.offsetHeight - vh;
+    const ENTRY = 0.12;
+    const EXIT = 0.9;
+    const panT = N > 1 ? i / (N - 1) : 0;
+    const p = ENTRY + panT * (EXIT - ENTRY);
+    const top = stage.getBoundingClientRect().top + window.scrollY + p * total;
+    window.scrollTo({ top, behavior: "smooth" });
+  };
+
+  const heading = (
+    <div className="wrap">
+      <div className="reveal">
+        <span className="section-label">{c.mobile.label}</span>
+        <h2 className="section-title">{c.mobile.title}</h2>
+        <p className="lead">{c.mobile.lead}</p>
+      </div>
+    </div>
+  );
+
+  if (!enabled) {
+    // Touch / reduced-motion: native horizontal swipe carousel, large phones.
+    return (
+      <section id="mobile">
+        {heading}
+        <div className="mx-carousel" aria-label="ChatMux mobile screenshots">
           {PHONE_SHOTS.map((src, i) => (
-            <figure className="phone" key={src}>
-              <img
-                src={`./shots/${src}`}
-                alt={`ChatMux ${c.mobile.captions[i]}`}
-                loading="lazy"
-                decoding="async"
-              />
-              <figcaption className="cap">{c.mobile.captions[i]}</figcaption>
+            <figure className="mx-phone is-active" key={src}>
+              <div className="mx-phone__screen">
+                <img
+                  src={`./shots/${src}`}
+                  alt={`ChatMux ${captions[i]}`}
+                  loading="lazy"
+                  decoding="async"
+                />
+              </div>
+              <figcaption className="mx-phone__cap">{captions[i]}</figcaption>
             </figure>
           ))}
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section id="mobile">
+      {heading}
+      <div
+        className="mx-stage"
+        ref={stageRef}
+        style={{ height: `${(N + 1) * 100}vh` }}
+      >
+        <div className="mx-panel">
+          <div className="mx-frame">
+            <div className="mx-track" ref={trackRef}>
+              {PHONE_SHOTS.map((src, i) => (
+                <figure
+                  className={`mx-phone ${i === active ? "is-active" : ""}`}
+                  key={src}
+                >
+                  <div className="mx-phone__screen">
+                    <img
+                      src={`./shots/${src}`}
+                      alt={`ChatMux ${captions[i]}`}
+                      decoding="async"
+                    />
+                  </div>
+                  <figcaption className="mx-phone__cap">{captions[i]}</figcaption>
+                </figure>
+              ))}
+            </div>
+            <div className="mx-dots" role="tablist" aria-label="screenshots">
+              {PHONE_SHOTS.map((src, i) => (
+                <button
+                  key={src}
+                  type="button"
+                  className={`mx-dot ${i === active ? "is-on" : ""}`}
+                  role="tab"
+                  aria-selected={i === active}
+                  aria-label={captions[i]}
+                  onClick={() => scrollToPhone(i)}
+                />
+              ))}
+            </div>
+            <div className="mx-hint" aria-hidden="true">
+              scroll to browse ⟶
+            </div>
+          </div>
         </div>
       </div>
     </section>
