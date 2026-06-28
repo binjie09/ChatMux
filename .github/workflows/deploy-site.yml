@@ -1,0 +1,93 @@
+name: Deploy Site
+
+# Builds the @chatmux/site marketing site and deploys it to GitHub Pages
+# (canonical URL https://binjie09.github.io/ChatMux/). When the Aliyun OSS
+# secrets are configured, the same build is mirrored to an OSS bucket that
+# acts as the origin for the China-accelerated domain https://chatmux.binjie.fun
+# (served by Aliyun DCDN).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/site/**"
+      - ".github/workflows/deploy-site.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one in-flight deployment, cancel superseded runs.
+concurrency:
+  group: deploy-site
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "24.14.1"
+  PNPM_VERSION: "10.33.2"
+
+jobs:
+  build:
+    name: Build site
+    runs-on: ubuntu-24.04
+    outputs:
+      oss-configured: ${{ steps.oss-gate.outputs.configured }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Enable pnpm
+        run: |
+          corepack enable
+          corepack prepare "pnpm@${PNPM_VERSION}" --activate
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build marketing site
+        run: pnpm --filter @chatmux/site build
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: apps/site/dist
+
+      - name: Sync to Aliyun OSS (China origin)
+        id: oss-gate
+        if: ${{ vars.OSS_BUCKET != '' }}
+        env:
+          OSS_ACCESS_KEY_ID: ${{ secrets.OSS_ACCESS_KEY_ID }}
+          OSS_ACCESS_KEY_SECRET: ${{ secrets.OSS_ACCESS_KEY_SECRET }}
+          OSS_BUCKET: ${{ vars.OSS_BUCKET }}
+          OSS_ENDPOINT: ${{ vars.OSS_ENDPOINT }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${OSS_ACCESS_KEY_ID}" || -z "${OSS_ACCESS_KEY_SECRET}" ]]; then
+            echo "OSS_BUCKET var is set but OSS_ACCESS_KEY_ID/SECRET secrets are missing — skipping OSS sync."
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          curl -fsSL "https://gosspublic.alicdn.com/ossutil/1.7.19/ossutil64" -o /tmp/ossutil
+          chmod +x /tmp/ossutil
+          /tmp/ossutil cp -r -f --update \
+            apps/site/dist/ "oss://${OSS_BUCKET}/" \
+            -i "${OSS_ACCESS_KEY_ID}" -k "${OSS_ACCESS_KEY_SECRET}" -e "${OSS_ENDPOINT}"
+          echo "OSS sync complete → oss://${OSS_BUCKET}/"
+          echo "configured=true" >> "$GITHUB_OUTPUT"
+
+  deploy:
+    name: Deploy to Pages
+    needs: build
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

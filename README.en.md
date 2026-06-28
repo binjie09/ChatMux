@@ -3,6 +3,7 @@
 > A self-hosted SSH / tmux workspace client. Connect to your own Gateway from the browser, desktop, or mobile app, restore remote tmux sessions, inspect historical context, and keep working in a real terminal.
 
 <p align="center">
+  <a href="https://chatmux.binjie.fun"><img alt="Website" src="https://img.shields.io/badge/website-chatmux.binjie.fun-0e1612"></a>
   <a href="https://github.com/binjie09/ChatMux"><img alt="GitHub repo" src="https://img.shields.io/badge/GitHub-ChatMux-111827?logo=github"></a>
   <img alt="React" src="https://img.shields.io/badge/React-19-61dafb?logo=react&logoColor=111827">
   <img alt="Go" src="https://img.shields.io/badge/Go-1.23-00add8?logo=go&logoColor=white">
@@ -11,7 +12,7 @@
 </p>
 
 <p align="center">
-  <a href="README.md">简体中文</a> | English
+  <a href="README.md">简体中文</a> | English · <a href="https://chatmux.binjie.fun">chatmux.binjie.fun</a>
 </p>
 
 ## Important Security Warning
