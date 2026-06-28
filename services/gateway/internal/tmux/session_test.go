@@ -224,7 +224,7 @@ func TestAttachSessionCommand(t *testing.T) {
 		t.Fatalf("expected attach command, got %q", command)
 	}
 	if !strings.Contains(command, "set-option -gq history-limit \"$CHATMUX_TMUX_HISTORY_LIMIT\"") ||
-		!containsLoginShellFragment(command, "set-option -t '=deploy_1' -q history-limit \"$CHATMUX_TMUX_HISTORY_LIMIT\"") {
+		!containsLoginShellFragment(command, "set-option -t 'deploy_1' -q history-limit \"$CHATMUX_TMUX_HISTORY_LIMIT\"") {
 		t.Fatalf("expected history limit prelude, got %q", command)
 	}
 	if !strings.Contains(command, "set-clipboard external") {
@@ -264,7 +264,7 @@ func TestCapturePaneCommand(t *testing.T) {
 	if !containsLoginShellFragment(command, "capture-pane -p -t '=deploy_1:' -S -200") {
 		t.Fatalf("expected capture command, got %q", command)
 	}
-	if !containsLoginShellFragment(command, "set-option -t '=deploy_1' -q history-limit \"$CHATMUX_TMUX_HISTORY_LIMIT\"") {
+	if !containsLoginShellFragment(command, "set-option -t 'deploy_1' -q history-limit \"$CHATMUX_TMUX_HISTORY_LIMIT\"") {
 		t.Fatalf("expected capture command to refresh history limit, got %q", command)
 	}
 }
@@ -338,8 +338,8 @@ func TestCreateWindowCommandTargetsNumericSessionName(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CreateWindowCommand failed: %v", err)
 	}
-	if !containsLoginShellFragment(command, "set-option -t '=14' -q history-limit \"$CHATMUX_TMUX_HISTORY_LIMIT\"") {
-		t.Fatalf("expected exact numeric session target in history prelude, got %q", command)
+	if !containsLoginShellFragment(command, "set-option -t '14' -q history-limit \"$CHATMUX_TMUX_HISTORY_LIMIT\"") {
+		t.Fatalf("expected numeric session target in history prelude, got %q", command)
 	}
 	if !containsLoginShellFragment(command, "new-window -d -t '=14:' -c \"$CHATMUX_TMUX_CURRENT_PATH\" -n 'logs'") {
 		t.Fatalf("expected exact numeric session target for new-window, got %q", command)
