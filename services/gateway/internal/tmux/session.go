@@ -332,7 +332,7 @@ func tmuxPrelude() string {
 
 func tmuxCreateSessionCommand(name string) string {
 	quotedName := shellQuote(name)
-	quotedTarget := shellQuote(formatSessionTarget(name))
+	quotedTarget := shellQuote(formatSessionOptionTarget(name))
 	return "\"$TMUX_BIN\" start-server \\; " +
 		"set-option -gq history-limit \"$CHATMUX_TMUX_HISTORY_LIMIT\" \\; " +
 		"new-session -d -s " + quotedName + " \\; " +
@@ -340,7 +340,7 @@ func tmuxCreateSessionCommand(name string) string {
 }
 
 func tmuxHistoryPrelude(name string) string {
-	quotedTarget := shellQuote(formatSessionTarget(name))
+	quotedTarget := shellQuote(formatSessionOptionTarget(name))
 	return "\"$TMUX_BIN\" set-option -gq history-limit \"$CHATMUX_TMUX_HISTORY_LIMIT\" || exit $?; " +
 		"\"$TMUX_BIN\" set-option -t " + quotedTarget + " -q history-limit \"$CHATMUX_TMUX_HISTORY_LIMIT\" || exit $?; "
 }
