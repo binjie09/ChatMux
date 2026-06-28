@@ -127,7 +127,7 @@ func TestMoveTmuxWindowAPI(t *testing.T) {
 	host := createTrustedTestHost(t, server)
 	token := createCredentialTokenForTest(t, server, testCredentialInput{hostID: host.ID})
 
-	body := bytes.NewBufferString(`{"credentialToken":"` + token + `","windowIndex":1,"toWindowIndex":0}`)
+	body := bytes.NewBufferString(`{"credentialToken":"` + token + `","windowIndex":1,"toWindowIndex":0,"swaps":[[1,0]]}`)
 	req := httptest.NewRequest(http.MethodPost, "/api/hosts/"+host.ID+"/tmux/sessions/deploy/windows/move", body)
 	rec := httptest.NewRecorder()
 	server.Handler().ServeHTTP(rec, req)

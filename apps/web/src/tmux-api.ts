@@ -49,10 +49,17 @@ export async function renameTmuxWindow(hostId: string, sessionName: string, cred
   });
 }
 
-export async function moveTmuxWindow(hostId: string, sessionName: string, credentialToken: string, windowIndex: number, toWindowIndex: number): Promise<TmuxSession[]> {
+export async function moveTmuxWindow(
+  hostId: string,
+  sessionName: string,
+  credentialToken: string,
+  swaps: Array<[number, number]>,
+  windowIndex: number,
+  toWindowIndex: number,
+): Promise<TmuxSession[]> {
   return request<TmuxSession[]>(`${tmuxSessionPath(hostId, sessionName)}/windows/move`, {
     method: "POST",
-    body: JSON.stringify({ credentialToken, windowIndex, toWindowIndex }),
+    body: JSON.stringify({ credentialToken, swaps, windowIndex, toWindowIndex }),
   });
 }
 

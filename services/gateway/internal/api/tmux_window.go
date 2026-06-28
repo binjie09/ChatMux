@@ -12,10 +12,11 @@ import (
 )
 
 type tmuxWindowRequest struct {
-	CredentialToken string `json:"credentialToken"`
-	Name            string `json:"name"`
-	WindowIndex     *int   `json:"windowIndex"`
-	ToWindowIndex   *int   `json:"toWindowIndex"`
+	CredentialToken string  `json:"credentialToken"`
+	Name            string  `json:"name"`
+	WindowIndex     *int    `json:"windowIndex"`
+	ToWindowIndex   *int    `json:"toWindowIndex"`
+	Swaps           [][]int `json:"swaps"`
 }
 
 type tmuxMutationCommand func(string, tmuxWindowRequest) (string, error)
@@ -47,12 +48,12 @@ func (s *Server) handleMoveTmuxWindow(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	fromIndex, toIndex, err := moveWindowIndices(input)
+	fromIndex, toIndex, swaps, err := moveWindowPayload(input)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err)
 		return
 	}
-	command, err := tmux.MoveWindowCommand(sessionName, fromIndex, toIndex)
+	command, err := tmux.MoveWindowsCommand(sessionName, swaps)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err)
 		return
@@ -61,7 +62,9 @@ func (s *Server) handleMoveTmuxWindow(w http.ResponseWriter, r *http.Request) {
 	sessions, err := s.runManagedTmuxListMutation(r, hostID, sessionName, input.CredentialToken, command)
 	if err != nil {
 		// Moving has two indices, so it cannot reuse the generic single-index
-		// fallback path; handle the gateway-managed SSH session inline.
+		// fallback path; handle the gateway-managed SSH session inline. The
+		// fallback reorders in memory by position and is unaffected by gaps in
+		// window indices, so it still uses from/to rather than the swap chain.
 		if sessionName == fallbackSSHSessionName {
 			if probe, fallbackOK := fallbackSessionFromTmuxError(err); fallbackOK {
 				moved, moveErr := s.sshFallback.MoveWindow(hostID, fromIndex, toIndex, probe.UpdatedAt)
@@ -79,14 +82,17 @@ func (s *Server) handleMoveTmuxWindow(w http.ResponseWriter, r *http.Request) {
 	s.writeWindowMutationResponse(w, r, hostID, sessionName, mutation, sessions)
 }
 
-func moveWindowIndices(input tmuxWindowRequest) (int, int, error) {
+// moveWindowPayload returns the from/to indices (used by the in-memory SSH
+// fallback) and the explicit swap chain (used by the real tmux path). The swap
+// chain is what makes reordering robust to non-contiguous window indices.
+func moveWindowPayload(input tmuxWindowRequest) (fromIndex int, toIndex int, swaps [][]int, err error) {
 	if input.WindowIndex == nil || input.ToWindowIndex == nil {
-		return 0, 0, errors.New("windowIndex and toWindowIndex are required")
+		return 0, 0, nil, errors.New("windowIndex and toWindowIndex are required")
 	}
 	if *input.WindowIndex < 0 || *input.ToWindowIndex < 0 {
-		return 0, 0, tmux.ErrInvalidWindowTarget
+		return 0, 0, nil, tmux.ErrInvalidWindowTarget
 	}
-	return *input.WindowIndex, *input.ToWindowIndex, nil
+	return *input.WindowIndex, *input.ToWindowIndex, input.Swaps, nil
 }
 
 func (s *Server) handleDeleteTmuxSession(w http.ResponseWriter, r *http.Request) {

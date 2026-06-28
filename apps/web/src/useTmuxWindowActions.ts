@@ -11,7 +11,7 @@ import {
 } from "./tmux-api";
 import { type TmuxSession } from "./api";
 import { type MobilePanel } from "./MobileNavigation";
-import { findSessionWindow, firstSessionWindowIndex } from "./session-window-utils";
+import { buildWindowSwaps, findSessionWindow, firstSessionWindowIndex } from "./session-window-utils";
 import { errorMessage } from "./view-utils";
 
 type SelectionTarget = {
@@ -180,7 +180,10 @@ export function useTmuxWindowActions(options: UseTmuxWindowActionsOptions) {
       // Optimistic reorder for immediate feedback.
       current.onSessionsChange(reorderSessionWindows(current.sessions, sessionName, fromWindowIndex, toWindowIndex));
       const credentialToken = await current.getCredentialToken();
-      const nextSessions = await moveTmuxWindow(current.hostId, sessionName, credentialToken, fromWindowIndex, toWindowIndex);
+      // Derive the swap chain from the real window indices so it never targets
+      // an index emptied by a deleted window (tmux would reject that).
+      const swaps = buildWindowSwaps(session?.windowList ?? [], fromWindowIndex, toWindowIndex);
+      const nextSessions = await moveTmuxWindow(current.hostId, sessionName, credentialToken, swaps, fromWindowIndex, toWindowIndex);
       current.onSessionsChange(nextSessions);
       if (followId && current.selectedSessionName === sessionName) {
         const nextSession = nextSessions.find((item) => item.name === sessionName);
