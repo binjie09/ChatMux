@@ -106,7 +106,8 @@ func (s *Server) runFallbackTerminal(r *http.Request, conn *websocket.Conn, toke
 	listener, backlog := terminal.Subscribe()
 	defer terminal.Unsubscribe(listener)
 	if !token.Recovering && len(backlog) > 0 {
-		_ = writer.WriteJSON(terminalServerMessage{Type: "output", Data: string(backlog)})
+		safe, _ := safeUTF8Prefix(backlog)
+		writeTerminalOutput(writer, safe)
 	}
 	go streamFallbackTerminalOutput(writer, listener)
 	s.readTerminalInput(terminalInputContext{
@@ -185,6 +186,7 @@ func (w *terminalWriter) WriteJSON(payload any) error {
 
 func streamTerminalOutput(writer *terminalWriter, reader io.Reader, done <-chan struct{}) {
 	buffer := make([]byte, terminalBufferSize)
+	var chunker utf8Chunker
 	for {
 		select {
 		case <-done:
@@ -193,24 +195,35 @@ func streamTerminalOutput(writer *terminalWriter, reader io.Reader, done <-chan 
 		}
 		count, err := reader.Read(buffer)
 		if count > 0 {
-			message := terminalServerMessage{Type: "output", Data: string(buffer[:count])}
-			if writer.WriteJSON(message) != nil {
+			if !writeTerminalOutput(writer, chunker.push(buffer[:count])) {
 				return
 			}
 		}
 		if err != nil {
+			writeTerminalOutput(writer, chunker.flush())
 			return
 		}
 	}
 }
 
+// writeTerminalOutput sends an output chunk split on a complete UTF-8 rune
+// boundary. Empty chunks are skipped (e.g. when a split rune is still buffered
+// waiting for its remaining bytes). Returns false if the write failed.
+func writeTerminalOutput(writer *terminalWriter, data []byte) bool {
+	if len(data) == 0 {
+		return true
+	}
+	return writer.WriteJSON(terminalServerMessage{Type: "output", Data: string(data)}) == nil
+}
+
 func streamFallbackTerminalOutput(writer *terminalWriter, listener *sshFallbackListener) {
+	var chunker utf8Chunker
 	for data := range listener.ch {
-		message := terminalServerMessage{Type: "output", Data: string(data)}
-		if writer.WriteJSON(message) != nil {
+		if !writeTerminalOutput(writer, chunker.push(data)) {
 			return
 		}
 	}
+	writeTerminalOutput(writer, chunker.flush())
 }
 
 func (s *Server) readTerminalInput(ctx terminalInputContext) {
