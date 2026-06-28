@@ -3,6 +3,7 @@
 > 自托管的 SSH / tmux 工作空间客户端。用浏览器、桌面端或移动端连接你自己的 Gateway，恢复远程 tmux 会话、查看历史上下文，并在真实终端里继续工作。
 
 <p align="center">
+  <a href="https://chatmux.binjie.fun"><img alt="Website" src="https://img.shields.io/badge/官网-chatmux.binjie.fun-0e1612"></a>
   <a href="https://github.com/binjie09/ChatMux"><img alt="GitHub repo" src="https://img.shields.io/badge/GitHub-ChatMux-111827?logo=github"></a>
   <img alt="React" src="https://img.shields.io/badge/React-19-61dafb?logo=react&logoColor=111827">
   <img alt="Go" src="https://img.shields.io/badge/Go-1.23-00add8?logo=go&logoColor=white">
@@ -11,7 +12,7 @@
 </p>
 
 <p align="center">
-  简体中文 | <a href="README.en.md">English</a>
+  <a href="https://chatmux.binjie.fun">官网 chatmux.binjie.fun</a> · 简体中文 | <a href="README.en.md">English</a>
 </p>
 
 ## 重要安全警告

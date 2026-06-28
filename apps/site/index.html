@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#0a0f0d" />
+    <meta name="color-scheme" content="dark" />
+
+    <title>ChatMux — 自托管 SSH / tmux 工作空间</title>
+    <meta
+      name="description"
+      content="ChatMux 是自托管的 SSH / tmux 工作空间客户端。浏览器、桌面、手机共享同一套真实终端，跨设备恢复 tmux 会话与历史上下文。"
+    />
+    <meta name="keywords" content="ChatMux, SSH, tmux, 终端, 自托管, 远程开发, mobile terminal, self-hosted" />
+    <meta name="author" content="ChatMux" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="ChatMux" />
+    <meta property="og:title" content="ChatMux — 自托管 SSH / tmux 工作空间" />
+    <meta
+      property="og:description"
+      content="真实终端，随身续接。跨设备的自托管 SSH / tmux 工作空间。"
+    />
+    <meta property="og:image" content="./shots/chatmux-web.png" />
+    <meta property="og:url" content="https://chatmux.binjie.fun/" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="ChatMux — 自托管 SSH / tmux 工作空间" />
+    <meta name="twitter:description" content="真实终端，随身续接。跨设备的自托管 SSH / tmux 工作空间。" />
+    <meta name="twitter:image" content="./shots/chatmux-web.png" />
+
+    <!-- Fonts: Martian Mono (display/terminal voice) + Hanken Grotesk (prose/UI) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,400;0,500;0,600;0,700;0,800;1,500&family=Martian+Mono:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="./src/main.tsx"></script>
+  </body>
+</html>
