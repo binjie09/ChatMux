@@ -15,6 +15,35 @@ cd services/gateway
 CHATMUX_GATEWAY_TOKEN=dev-token go test ./...
 ```
 
+### 使用 docker-compose
+
+根目录的 `docker-compose.yml` 是本地开发栈：gateway 用 `go run ./cmd/chatmux-gateway` 直接运行，web 用 vite dev server，两者都通过 volume 把仓库源码挂载进容器（`.:/workspace`），所以改源码即生效、无需重建镜像。
+
+前置准备：
+
+```bash
+cp .env.example .env
+```
+
+- 至少设置 `CHATMUX_GATEWAY_TOKEN`。
+- 若要用登录、SSH 或 AI 功能，再填 `CHATMUX_USERS_JSON`、`OPENAI_API_KEY` 等。
+
+启动开发栈（web 依赖 gateway 健康检查通过后才启动）：
+
+```bash
+docker compose up -d
+```
+
+日常开发：
+
+- 后端 Go 改动后：`docker compose restart gateway` 即可生效（go run 会重新编译挂载的源码，无需 `--build`）。
+- 前端改动：vite HMR 自动热更新，通常无需重启；必要时 `docker compose restart web`。
+- 查看日志：`docker compose logs -f gateway` 或 `web`。
+
+默认端口：gateway `:19327`、web `:5173`，端口由 `.env` 的 `CHATMUX_GATEWAY_PORT` / `CHATMUX_WEB_PORT` 控制。
+
+注意区分：根目录 `docker-compose.yml` 用于开发；`deploy/web/docker-compose.yml` 是生产镜像构建，不要混用。
+
 提交 PR 前请确认：
 
 - 没有提交 `.env`、数据库、私钥、token、构建产物或本地日志。
