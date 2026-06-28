@@ -15,6 +15,38 @@ export function findSessionWindow(session: TmuxSession | undefined, windowIndex:
   return session.windowList.find((window) => window.index === windowIndex);
 }
 
+/**
+ * Build the chain of adjacent swap-window pairs that move the window at
+ * fromIndex into toIndex's slot. Each pair uses the *real* tmux window indices
+ * of neighbouring list entries, so it never references an index that has been
+ * left empty by a deleted window (which would make tmux fail with
+ * "can't find window"). Returns [] for a no-op move or when either index can no
+ * longer be located in the list.
+ */
+export function buildWindowSwaps(windows: TmuxWindow[], fromIndex: number, toIndex: number): Array<[number, number]> {
+  const swaps: Array<[number, number]> = [];
+  const fromPosition = windows.findIndex((window) => window.index === fromIndex);
+  const toPosition = windows.findIndex((window) => window.index === toIndex);
+  if (fromPosition === -1 || toPosition === -1 || fromPosition === toPosition) {
+    return swaps;
+  }
+  let movedIndex = fromIndex;
+  if (fromPosition < toPosition) {
+    for (let position = fromPosition; position < toPosition; position += 1) {
+      const nextIndex = windows[position + 1].index;
+      swaps.push([movedIndex, nextIndex]);
+      movedIndex = nextIndex;
+    }
+  } else {
+    for (let position = fromPosition; position > toPosition; position -= 1) {
+      const nextIndex = windows[position - 1].index;
+      swaps.push([movedIndex, nextIndex]);
+      movedIndex = nextIndex;
+    }
+  }
+  return swaps;
+}
+
 export function windowLabel(window: TmuxWindow) {
   return window.name || `Window ${window.index}`;
 }
