@@ -30,22 +30,41 @@ const SCRIPT_EN: Seg[][] = [
   [{ t: "✓ ", c: "g" }, { t: "Gateway ready · ", c: "dim" }, { t: ":19327", c: "g" }],
 ];
 
-function renderLine(segs: Seg[], upto: number) {
-  const out: React.ReactNode[] = [];
+// Render a whole line so its box height never changes while typing: the
+// already-typed characters are visible, the not-yet-typed remainder stays in
+// the flow with visibility:hidden (so wrapping is identical), and an optional
+// caret sits at the cursor position. This keeps the terminal — and therefore
+// the page — from reflowing as the typewriter types or loops (which on mobile
+// made the scroll position jump around).
+function renderLine(segs: Seg[], upto: number, caret: boolean) {
+  const vis: React.ReactNode[] = [];
+  const hid: React.ReactNode[] = [];
   let used = 0;
-  segs.forEach((s, i) => {
-    if (used >= upto) return;
-    const take = Math.min(s.t.length, upto - used);
-    if (take > 0) {
-      out.push(
-        <span key={i} className={s.c || undefined}>
-          {s.t.slice(0, take)}
+  let total = 0;
+  for (const s of segs) total += s.t.length;
+  for (const s of segs) {
+    const segVis = Math.max(0, Math.min(s.t.length, upto - used));
+    if (segVis > 0)
+      vis.push(
+        <span key={"v" + used} className={s.c || undefined}>
+          {s.t.slice(0, segVis)}
         </span>,
       );
-      used += take;
-    }
-  });
-  return out;
+    if (segVis < s.t.length)
+      hid.push(
+        <span key={"h" + used} className={s.c || undefined}>
+          {s.t.slice(segVis)}
+        </span>,
+      );
+    used += s.t.length;
+  }
+  return (
+    <>
+      {vis}
+      {caret ? <span className="caret" /> : null}
+      {upto < total ? <span className="ln-hidden">{hid}</span> : null}
+    </>
+  );
 }
 
 function TerminalHero() {
@@ -97,31 +116,16 @@ function TerminalHero() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lang, loopKey, totalChars]);
 
-  // split pos into lines
-  const doneLines: React.ReactNode[] = [];
-  let remaining = pos;
-  let activeIdx = 0;
+  // How many characters of each line are currently revealed.
+  const revealed: number[] = [];
+  let rem = pos;
   for (let i = 0; i < script.length; i++) {
-    if (remaining >= lineLens[i]) {
-      doneLines.push(
-        <span key={i} className="ln">
-          {renderLine(script[i], lineLens[i])}
-        </span>,
-      );
-      remaining -= lineLens[i];
-      activeIdx = i + 1;
-    } else {
-      activeIdx = i;
-      break;
-    }
+    const r = Math.min(lineLens[i], Math.max(0, rem));
+    revealed.push(r);
+    rem -= r;
   }
-  const activeLine =
-    activeIdx < script.length ? (
-      <span key="active" className="ln">
-        {renderLine(script[activeIdx], remaining)}
-        <span className="caret" />
-      </span>
-    ) : null;
+  // The active (currently typing) line is the first one not yet fully revealed.
+  const activeIdx = revealed.findIndex((r, i) => r < lineLens[i]);
 
   const h = c.hero;
   return (
@@ -134,8 +138,11 @@ function TerminalHero() {
       </div>
       <div className="term__body">
         <div className="term__pane">
-          {doneLines}
-          {activeLine}
+          {script.map((line, i) => (
+            <span key={i} className="ln">
+              {renderLine(line, revealed[i], i === activeIdx)}
+            </span>
+          ))}
         </div>
         <div className="term__side">
           <h6>tmux / sessions</h6>

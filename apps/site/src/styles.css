@@ -438,6 +438,10 @@ h2.section-title {
   border-right: 1px solid var(--line);
   padding-right: 16px;
   min-width: 0;
+  /* Reserve space for the whole typed script (7 lines) so the pane never
+     grows/shrinks as the typewriter types or loops — otherwise the page
+     reflows and the scroll position jumps, especially on mobile. */
+  min-height: 11rem;
 }
 .term__side {
   padding-left: 16px;
@@ -487,14 +491,28 @@ h2.section-title {
 }
 .term__status .s-right { margin-left: auto; color: #9fd9b6; }
 .caret {
+  /* Layout-neutral: zero width so appearing/moving the caret never changes
+     line wrapping. The visible bar is drawn by an absolutely positioned
+     pseudo-element (which overlaps the following hidden text). */
   display: inline-block;
+  width: 0;
+  height: 1.05em;
+  vertical-align: -2px;
+  position: relative;
+}
+.caret::after {
+  content: "";
+  position: absolute;
+  left: 1px;
+  top: 0;
   width: 8px;
   height: 1.05em;
   background: var(--green-bright);
-  margin-left: 2px;
-  vertical-align: -2px;
   box-shadow: 0 0 10px var(--green-bright);
   animation: blink 1.05s steps(1) infinite;
+}
+.ln-hidden {
+  visibility: hidden;
 }
 @keyframes blink {
   50% { opacity: 0; }
