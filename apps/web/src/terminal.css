@@ -331,13 +331,17 @@
   background: currentColor;
 }
 
-/* The / shortcut needs a physical keyboard; hide the hint on touch and compact mobile layouts. */
-.mobile-terminal-active .terminal-focus-hint {
-  display: none;
-}
-
+/* The / shortcut needs a physical keyboard; hide the hint on touch devices
+   and on the compact mobile terminal layout. Note: .mobile-terminal-active is
+   also set on desktop, so it MUST be gated by the narrow-screen media query. */
 @media (pointer: coarse) {
   .terminal-focus-hint {
+    display: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .mobile-terminal-active .terminal-focus-hint {
     display: none;
   }
 }
