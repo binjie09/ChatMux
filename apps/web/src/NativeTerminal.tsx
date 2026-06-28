@@ -56,6 +56,7 @@ export function NativeTerminal(props: NativeTerminalProps) {
   const [status, setStatus] = useState<ConnectionStatus>("idle");
   const [mobileInteractionMode, setMobileInteractionMode] = useState<MobileTerminalInteractionMode>("input");
   const [reconnectAttempt, setReconnectAttempt] = useState(0);
+  const [terminalFocused, setTerminalFocused] = useState(false);
   const reconnecting = status === "connecting" || status === "recovering";
   const canReconnect = Boolean(props.sessionKey && props.createWebSocketURL && !reconnecting);
   const terminalStatus = props.loading ? "loading" : status;
@@ -88,6 +89,8 @@ export function NativeTerminal(props: NativeTerminalProps) {
   });
   useQueuedInput(props.queuedInput, socketRef, status, props.onQueuedInputSent);
   useExternalReconnect(props.reconnectSignal, reconnect);
+  useTerminalFocusEvents(terminalInstanceRef, terminalReady, setTerminalFocused);
+  useTerminalFocusShortcut(terminalInstanceRef);
 
   function reconnect() {
     const socket = socketRef.current;
@@ -102,10 +105,19 @@ export function NativeTerminal(props: NativeTerminalProps) {
     terminalInstanceRef.current?.focus();
   }
 
+  function focusTerminal() {
+    terminalInstanceRef.current?.focus();
+  }
+
   return (
     <div className={`terminal-shell terminal-${mobileInteractionMode}-mode ${props.loading ? "loading" : ""}`} aria-label="Terminal">
       <div className="terminal-toolbar">
-        <span className={`terminal-connection ${terminalStatus}`}>{props.loading ? "Loading" : statusLabel[status]}</span>
+        <div className="terminal-status-group">
+          <span className={`terminal-connection ${terminalStatus}`}>{props.loading ? "Loading" : statusLabel[status]}</span>
+          {props.loading ? null : (
+            <TerminalFocusHint focused={terminalFocused} onFocus={focusTerminal} />
+          )}
+        </div>
         {props.loading ? null : (
           <div className="terminal-toolbar-actions">
             <MobileInteractionToggle mode={mobileInteractionMode} onModeChange={setMobileInteractionMode} />
@@ -167,6 +179,86 @@ function blurFocusedInput() {
   if (document.activeElement instanceof HTMLElement) {
     document.activeElement.blur();
   }
+}
+
+function TerminalFocusHint(props: { focused: boolean; onFocus: () => void }) {
+  return (
+    <button
+      type="button"
+      className={`terminal-focus-hint ${props.focused ? "focused" : ""}`}
+      aria-pressed={props.focused}
+      title={props.focused ? "Terminal is focused" : "Focus the terminal with the / key"}
+      onClick={props.onFocus}
+    >
+      {props.focused ? (
+        <>
+          <span className="terminal-focus-hint-dot" aria-hidden="true" />
+          Focused
+        </>
+      ) : (
+        <>
+          <kbd aria-hidden="true">/</kbd>
+          Focus
+        </>
+      )}
+    </button>
+  );
+}
+
+function useTerminalFocusEvents(
+  terminalRef: MutableRefObject<Terminal | null>,
+  ready: boolean,
+  onFocusChange: (focused: boolean) => void,
+) {
+  useEffect(() => {
+    const textarea = terminalRef.current?.textarea;
+    if (!textarea) {
+      return;
+    }
+    const handleFocus = () => onFocusChange(true);
+    const handleBlur = () => onFocusChange(false);
+    textarea.addEventListener("focus", handleFocus);
+    textarea.addEventListener("blur", handleBlur);
+    return () => {
+      textarea.removeEventListener("focus", handleFocus);
+      textarea.removeEventListener("blur", handleBlur);
+    };
+  }, [terminalRef, ready, onFocusChange]);
+}
+
+function useTerminalFocusShortcut(terminalRef: MutableRefObject<Terminal | null>) {
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.defaultPrevented) {
+        return;
+      }
+      if (event.key !== "/" || event.ctrlKey || event.metaKey || event.altKey) {
+        return;
+      }
+      if (isEditableElement(document.activeElement)) {
+        return;
+      }
+      const terminal = terminalRef.current;
+      if (!terminal) {
+        return;
+      }
+      event.preventDefault();
+      terminal.focus();
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [terminalRef]);
+}
+
+function isEditableElement(element: Element | null): boolean {
+  if (!(element instanceof HTMLElement)) {
+    return false;
+  }
+  if (element.isContentEditable) {
+    return true;
+  }
+  const tag = element.tagName;
+  return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
 }
 
 type TerminalMountOptions = {

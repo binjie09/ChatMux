@@ -270,6 +270,78 @@
   background: var(--status-error);
 }
 
+.terminal-status-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.terminal-toolbar .terminal-focus-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 22px;
+  border: 1px solid var(--term-border);
+  border-radius: 7px;
+  padding: 0 8px;
+  color: var(--term-text-muted);
+  background: transparent;
+  font-size: 11px;
+  cursor: pointer;
+  transition: color 0.12s ease, border-color 0.12s ease, background 0.12s ease;
+}
+
+.terminal-toolbar .terminal-focus-hint:hover {
+  color: var(--term-text);
+  border-color: var(--term-border-strong);
+}
+
+.terminal-toolbar .terminal-focus-hint:focus-visible {
+  outline: none;
+  border-color: var(--term-accent);
+  box-shadow: 0 0 0 2px rgba(143, 213, 178, 0.25);
+}
+
+.terminal-toolbar .terminal-focus-hint kbd {
+  display: inline-grid;
+  place-items: center;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 4px;
+  border: 1px solid var(--term-border-strong);
+  border-radius: 4px;
+  background: var(--term-raised);
+  color: var(--term-text);
+  font-family: inherit;
+  font-size: 11px;
+  line-height: 1;
+}
+
+.terminal-toolbar .terminal-focus-hint.focused {
+  color: var(--text-on-accent);
+  background: var(--term-accent);
+  border-color: var(--term-accent);
+}
+
+.terminal-focus-hint-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 99px;
+  background: currentColor;
+}
+
+/* The / shortcut needs a physical keyboard; hide the hint on touch and compact mobile layouts. */
+.mobile-terminal-active .terminal-focus-hint {
+  display: none;
+}
+
+@media (pointer: coarse) {
+  .terminal-focus-hint {
+    display: none;
+  }
+}
+
 .terminal-toolbar button {
   display: inline-flex;
   align-items: center;
