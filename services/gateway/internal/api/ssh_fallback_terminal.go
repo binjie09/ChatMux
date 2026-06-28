@@ -3,6 +3,7 @@ package api
 import (
 	"io"
 	"sync"
+	"unicode/utf8"
 
 	"github.com/chatmux/chatmux/services/gateway/internal/sshclient"
 )
@@ -126,5 +127,11 @@ func appendFallbackBuffer(buffer []byte, data []byte) []byte {
 	if len(buffer) <= fallbackSSHOutputBufferLimit {
 		return buffer
 	}
-	return append([]byte(nil), buffer[len(buffer)-fallbackSSHOutputBufferLimit:]...)
+	trimmed := append([]byte(nil), buffer[len(buffer)-fallbackSSHOutputBufferLimit:]...)
+	// Drop leading bytes of any rune split by the byte-window trim so the
+	// buffer always starts on a rune boundary and stays valid UTF-8.
+	for len(trimmed) > 0 && !utf8.RuneStart(trimmed[0]) {
+		trimmed = trimmed[1:]
+	}
+	return trimmed
 }
