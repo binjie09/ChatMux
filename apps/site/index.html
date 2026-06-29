@@ -7,30 +7,106 @@
     <meta name="theme-color" content="#0a0f0d" />
     <meta name="color-scheme" content="dark" />
 
-    <title>ChatMux — 自托管 SSH / tmux 工作空间</title>
+    <!-- Primary SEO -->
+    <title>ChatMux — 自托管 SSH / tmux 终端客户端（Web · 桌面 · 移动）</title>
     <meta
       name="description"
-      content="ChatMux 是自托管的 SSH / tmux 工作空间客户端。浏览器、桌面、手机共享同一套真实终端，跨设备恢复 tmux 会话与历史上下文。"
+      content="ChatMux 是开源的自托管 SSH / tmux 终端客户端：用浏览器、桌面或手机连接你自己的 Gateway，恢复远程 tmux 会话、查看历史上下文，在真实终端里继续工作。支持 xterm.js 真实终端、移动端 SSH、生物识别解锁，Web / Windows / macOS / Linux / Android / iOS 全平台。"
     />
-    <meta name="keywords" content="ChatMux, SSH, tmux, 终端, 自托管, 远程开发, mobile terminal, self-hosted" />
+    <meta
+      name="keywords"
+      content="ChatMux,SSH 客户端,tmux,tmux 客户端,远程终端,手机终端,移动终端,移动端 SSH,手机 SSH,自托管终端,自托管 SSH,Web 终端,在线终端,终端复用,服务器管理,远程开发,Linux 终端,远程服务器,xterm.js,Codex 终端,SSH client,tmux client,tmux web,mobile terminal,mobile SSH,web terminal,online terminal,self-hosted terminal,persistent terminal,terminal multiplexer,remote development"
+    />
     <meta name="author" content="ChatMux" />
+    <meta name="application-name" content="ChatMux" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
+    <meta name="googlebot" content="index, follow" />
+    <meta name="baiduspider" content="index, follow" />
+    <link rel="canonical" href="https://chatmux.binjie.fun/" />
+    <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
 
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="ChatMux" />
-    <meta property="og:title" content="ChatMux — 自托管 SSH / tmux 工作空间" />
+    <meta property="og:locale" content="zh_CN" />
+    <meta property="og:locale:alternate" content="en_US" />
+    <meta property="og:url" content="https://chatmux.binjie.fun/" />
+    <meta property="og:title" content="ChatMux — 自托管 SSH / tmux 终端客户端" />
     <meta
       property="og:description"
-      content="真实终端，随身续接。跨设备的自托管 SSH / tmux 工作空间。"
+      content="真实终端，随身续接。跨设备的自托管 SSH / tmux 工作空间：Web · 桌面 · 移动共享同一套真实终端，跨设备恢复 tmux 会话与历史上下文。"
     />
-    <meta property="og:image" content="./shots/chatmux-web.png" />
-    <meta property="og:url" content="https://chatmux.binjie.fun/" />
+    <meta property="og:image" content="https://chatmux.binjie.fun/shots/chatmux-web.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="3600" />
+    <meta property="og:image:height" content="2063" />
+    <meta property="og:image:alt" content="ChatMux 桌面端工作台截图" />
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="ChatMux — 自托管 SSH / tmux 工作空间" />
+    <meta name="twitter:title" content="ChatMux — 自托管 SSH / tmux 终端客户端" />
     <meta name="twitter:description" content="真实终端，随身续接。跨设备的自托管 SSH / tmux 工作空间。" />
-    <meta name="twitter:image" content="./shots/chatmux-web.png" />
+    <meta name="twitter:image" content="https://chatmux.binjie.fun/shots/chatmux-web.png" />
+    <meta name="twitter:image:alt" content="ChatMux 桌面端工作台截图" />
+
+    <!--
+      搜索引擎站长验证：把本站添加到
+        - 百度搜索资源平台 https://ziyuan.baidu.com
+        - Google Search Console https://search.google.com/search-console
+      后，将下面对应的 meta 标签取消注释并填入验证码，再重新部署。
+    -->
+    <!-- <meta name="baidu-site-verification" content="codeva-XXXXXX" /> -->
+    <!-- <meta name="google-site-verification" content="XXXXXX" /> -->
+
+    <!-- Structured data: helps Google/Baidu rich results -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "WebSite",
+            "@id": "https://chatmux.binjie.fun/#website",
+            "url": "https://chatmux.binjie.fun/",
+            "name": "ChatMux",
+            "description": "自托管的 SSH / tmux 终端客户端",
+            "inLanguage": ["zh-CN", "en"],
+            "publisher": { "@id": "https://chatmux.binjie.fun/#org" }
+          },
+          {
+            "@type": "Organization",
+            "@id": "https://chatmux.binjie.fun/#org",
+            "name": "ChatMux",
+            "url": "https://chatmux.binjie.fun/",
+            "logo": "https://chatmux.binjie.fun/favicon.svg",
+            "sameAs": ["https://github.com/binjie09/ChatMux"]
+          },
+          {
+            "@type": "SoftwareApplication",
+            "name": "ChatMux",
+            "url": "https://chatmux.binjie.fun/",
+            "description": "自托管的开源 SSH / tmux 终端客户端。用浏览器、桌面或手机连接你自己的 Gateway，恢复远程 tmux 会话、查看历史上下文，在真实终端里继续工作。",
+            "applicationCategory": "DeveloperApplication",
+            "operatingSystem": "Web, Windows, macOS, Linux, Android, iOS",
+            "softwareVersion": "0.0.1",
+            "downloadUrl": "https://github.com/binjie09/ChatMux/releases",
+            "installUrl": "https://github.com/binjie09/ChatMux#readme",
+            "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+            "license": "https://github.com/binjie09/ChatMux/blob/main/LICENSE",
+            "author": { "@id": "https://chatmux.binjie.fun/#org" },
+            "publisher": { "@id": "https://chatmux.binjie.fun/#org" },
+            "featureList": [
+              "真实终端（xterm.js + WebSocket PTY）",
+              "tmux 会话管理",
+              "历史上下文恢复",
+              "移动端优先 / 手机 SSH",
+              "自托管与本地优先 SQLite",
+              "生物识别解锁与审计",
+              "Web · 桌面 · 移动全平台"
+            ]
+          }
+        ]
+      }
+    </script>
 
     <!-- Fonts: Martian Mono (display/terminal voice) + Hanken Grotesk (prose/UI) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -42,6 +118,40 @@
   </head>
   <body>
     <div id="root"></div>
+
+    <!--
+      Static, keyword-rich fallback for crawlers that don't execute JavaScript
+      (notably Baiduspider). The React app renders the full interactive site on
+      top of this when JS is available.
+    -->
+    <noscript>
+      <div style="max-width:760px;margin:0 auto;padding:32px 20px;font-family:system-ui,sans-serif;color:#e9f2ed;background:#0a0f0d">
+        <h1>ChatMux — 自托管 SSH / tmux 终端客户端</h1>
+        <p>
+          ChatMux 是开源的自托管 SSH / tmux 工作空间客户端。用浏览器、桌面或手机连接你自己的
+          Gateway，恢复远程 tmux 会话、查看历史上下文，并在真实终端里继续工作。Web、桌面（Tauri）、移动（Capacitor）共享同一套真实终端体验。
+        </p>
+        <h2>核心功能</h2>
+        <ul>
+          <li>真实终端：xterm.js + WebSocket PTY，兼容 vim、top、htop、lazygit、codex 等 TUI</li>
+          <li>tmux 会话管理：列出、创建、命名、标记、跨设备恢复远程 tmux session</li>
+          <li>移动端优先：手机 / 平板上的主机管理、会话列表、窗口切换、真实终端输入</li>
+          <li>历史上下文：捕获 tmux pane 历史，侧栏搜索与回溯</li>
+          <li>自托管与安全：Gateway 边界、凭据不回传、本地优先 SQLite、审计与生物识别解锁</li>
+          <li>全平台客户端：Web SPA、Windows 便携 exe、macOS dmg、Linux deb/AppImage、Android APK、iOS</li>
+        </ul>
+        <h2>快速自托管</h2>
+        <pre style="overflow:auto;background:#0e1612;padding:12px;border-radius:8px">git clone git@github.com:binjie09/ChatMux.git && cd ChatMux
+cp deploy/web/.env.example deploy/web/.env
+docker compose --env-file deploy/web/.env -f deploy/web/docker-compose.yml up -d --build</pre>
+        <p>
+          <a href="https://github.com/binjie09/ChatMux">GitHub 源码</a> ·
+          <a href="https://github.com/binjie09/ChatMux/releases">下载客户端</a> ·
+          <a href="https://github.com/binjie09/ChatMux/blob/main/docs/web-deployment.md">部署文档</a>
+        </p>
+      </div>
+    </noscript>
+
     <script type="module" src="./src/main.tsx"></script>
   </body>
 </html>
