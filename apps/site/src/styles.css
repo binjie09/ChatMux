@@ -737,6 +737,7 @@ h2.section-title {
   width: 100%;
   height: 100%;
   overflow: hidden;
+  perspective: 1400px;
 }
 .mx-track {
   position: absolute;
@@ -752,27 +753,53 @@ h2.section-title {
   will-change: transform, opacity;
 }
 .mx-phone {
+  --mx-shift-x: 0px;
+  --mx-lift: 0px;
+  --mx-depth: 0px;
+  --mx-tilt-y: 0deg;
+  --mx-scale: 1;
+  --mx-saturate: 1.16;
+  --mx-brightness: 1.02;
+  --mx-opacity: 1;
+  --mx-border-alpha: 0.6;
+  --mx-shadow-y: 56px;
+  --mx-shadow-blur: 102px;
+  --mx-shadow-spread: -29px;
+  --mx-glow-blur: 116px;
+  --mx-glow-spread: -20px;
+  --mx-glow-alpha: 0.44;
+  --mx-ring-alpha: 0.2;
+  --mx-cap-alpha: 1;
+  --mx-cap-lift: -4px;
   flex: 0 0 auto;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 18px;
   margin: 0;
-  transition: filter 0.3s var(--ease);
-  filter: saturate(0.85) brightness(0.82);
+  transform:
+    translate3d(var(--mx-shift-x), var(--mx-lift), var(--mx-depth))
+    rotateY(var(--mx-tilt-y))
+    scale(var(--mx-scale));
+  filter:
+    saturate(var(--mx-saturate))
+    brightness(var(--mx-brightness));
+  opacity: var(--mx-opacity);
+  will-change: transform, filter, opacity;
 }
-.mx-phone.is-active { filter: none; }
 .mx-phone__screen {
   height: clamp(320px, 70vh, 760px);
   aspect-ratio: 1200 / 2670;
   border-radius: clamp(20px, 2.4vw, 30px);
   padding: 9px;
   background: linear-gradient(180deg, #1a2420, #0a0f0d);
-  border: 1px solid var(--line-strong);
+  border: 1px solid rgba(124, 255, 178, var(--mx-border-alpha));
   box-shadow:
-    0 50px 90px -34px rgba(0, 0, 0, 0.92),
-    0 0 0 1px rgba(124, 255, 178, 0.06),
-    0 0 80px -24px rgba(124, 255, 178, 0.22);
+    0 var(--mx-shadow-y) var(--mx-shadow-blur) var(--mx-shadow-spread)
+      rgba(0, 0, 0, 0.94),
+    0 0 0 1px rgba(124, 255, 178, var(--mx-ring-alpha)),
+    0 0 var(--mx-glow-blur) var(--mx-glow-spread)
+      rgba(124, 255, 178, var(--mx-glow-alpha));
   overflow: hidden;
 }
 .mx-phone__screen img {
@@ -786,9 +813,10 @@ h2.section-title {
 .mx-phone__cap {
   font-family: var(--mono);
   font-size: 0.82rem;
-  color: var(--text-dim);
+  color: rgba(187, 201, 194, var(--mx-cap-alpha));
   letter-spacing: -0.01em;
-  transition: color 0.3s var(--ease);
+  transform: translateY(var(--mx-cap-lift));
+  opacity: var(--mx-cap-alpha);
 }
 .mx-phone.is-active .mx-phone__cap { color: var(--green-bright); }
 .mx-dots {
