@@ -20,6 +20,7 @@ import {
   IconTerminal,
   IconWindows,
 } from "./icons";
+import { applyPhoneFocus } from "./mobileShowcaseFocus";
 
 /* ---------------- Why ---------------- */
 export function Why() {
@@ -185,6 +186,7 @@ export function MobileShowcase() {
     const stage = stageRef.current;
     const track = trackRef.current;
     if (!stage || !track) return;
+    const phones = Array.from(track.querySelectorAll<HTMLElement>(".mx-phone"));
     let raf = 0;
     const update = () => {
       const vh = window.innerHeight;
@@ -215,6 +217,7 @@ export function MobileShowcase() {
         tx = start + (end - start) * t;
         panT = t;
       }
+      applyPhoneFocus(phones, panT);
       track.style.transform = `translate3d(${tx}px, -50%, 0) scale(${scale})`;
       track.style.opacity = op.toFixed(3);
       const ai = Math.round(panT * (N - 1));
