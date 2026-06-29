@@ -116,6 +116,10 @@ const PHONE_SHOTS = [
   "chatmux-mobile-windows.jpg",
   "chatmux-mobile-hosts.jpg",
 ];
+const SHOWCASE_SCROLL_SPEED_MULTIPLIER = 5;
+const SHOWCASE_STAGE_BASE_VH = 100;
+const SHOWCASE_PAN_ENTRY = 0.12;
+const SHOWCASE_PAN_EXIT = 0.9;
 
 export function MobileShowcase() {
   const c = useC();
@@ -181,8 +185,6 @@ export function MobileShowcase() {
     const stage = stageRef.current;
     const track = trackRef.current;
     if (!stage || !track) return;
-    const ENTRY = 0.12;
-    const EXIT = 0.9;
     let raf = 0;
     const update = () => {
       const vh = window.innerHeight;
@@ -194,20 +196,22 @@ export function MobileShowcase() {
       let scale = 1;
       let op = 1;
       let panT = 0;
-      if (p < ENTRY) {
+      if (p < SHOWCASE_PAN_ENTRY) {
         // zoom-in: the first phone grows into the viewport
-        const t = p / ENTRY;
+        const t = p / SHOWCASE_PAN_ENTRY;
         scale = 0.6 + 0.4 * t;
         op = 0.35 + 0.65 * t;
         tx = start;
         panT = 0;
-      } else if (p > EXIT) {
-        const t = (p - EXIT) / (1 - EXIT);
+      } else if (p > SHOWCASE_PAN_EXIT) {
+        const t = (p - SHOWCASE_PAN_EXIT) / (1 - SHOWCASE_PAN_EXIT);
         scale = 1 - 0.05 * t;
         tx = end;
         panT = 1;
       } else {
-        const t = (p - ENTRY) / (EXIT - ENTRY);
+        const t =
+          (p - SHOWCASE_PAN_ENTRY) /
+          (SHOWCASE_PAN_EXIT - SHOWCASE_PAN_ENTRY);
         tx = start + (end - start) * t;
         panT = t;
       }
@@ -235,10 +239,10 @@ export function MobileShowcase() {
     if (!stage) return;
     const vh = window.innerHeight;
     const total = stage.offsetHeight - vh;
-    const ENTRY = 0.12;
-    const EXIT = 0.9;
     const panT = N > 1 ? i / (N - 1) : 0;
-    const p = ENTRY + panT * (EXIT - ENTRY);
+    const p =
+      SHOWCASE_PAN_ENTRY +
+      panT * (SHOWCASE_PAN_EXIT - SHOWCASE_PAN_ENTRY);
     const top = stage.getBoundingClientRect().top + window.scrollY + p * total;
     window.scrollTo({ top, behavior: "smooth" });
   };
@@ -283,7 +287,12 @@ export function MobileShowcase() {
       <div
         className="mx-stage"
         ref={stageRef}
-        style={{ height: `${(N + 1) * 100}vh` }}
+        style={{
+          height: `${
+            SHOWCASE_STAGE_BASE_VH +
+            (N * SHOWCASE_STAGE_BASE_VH) / SHOWCASE_SCROLL_SPEED_MULTIPLIER
+          }vh`,
+        }}
       >
         <div className="mx-panel">
           <div className="mx-frame">
