@@ -1,0 +1,6 @@
+# ChatMux marketing site — https://chatmux.binjie.fun/
+User-agent: *
+Allow: /
+Disallow: /ChatMux/
+
+Sitemap: https://chatmux.binjie.fun/sitemap.xml

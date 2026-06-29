@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+  <url>
+    <loc>https://chatmux.binjie.fun/</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+    <image:image>
+      <image:loc>https://chatmux.binjie.fun/shots/chatmux-web.png</image:loc>
+      <image:title>ChatMux 桌面端工作台</image:title>
+      <image:caption>ChatMux 自托管 SSH / tmux 终端客户端桌面端截图</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://chatmux.binjie.fun/shots/chatmux-mobile-terminal.png</image:loc>
+      <image:title>ChatMux 移动端真实终端</image:title>
+      <image:caption>ChatMux 在手机上的 SSH / tmux 真实终端界面</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://chatmux.binjie.fun/shots/chatmux-mobile-files.png</image:loc>
+      <image:title>ChatMux 移动端远程文件管理</image:title>
+    </image:image>
+    <image:image>
+      <image:loc>https://chatmux.binjie.fun/shots/chatmux-mobile-sessions.jpg</image:loc>
+      <image:title>ChatMux 移动端 tmux 会话列表</image:title>
+    </image:image>
+    <image:image>
+      <image:loc>https://chatmux.binjie.fun/shots/chatmux-mobile-windows.jpg</image:loc>
+      <image:title>ChatMux 移动端 tmux 窗口管理</image:title>
+    </image:image>
+    <image:image>
+      <image:loc>https://chatmux.binjie.fun/shots/chatmux-mobile-hosts.jpg</image:loc>
+      <image:title>ChatMux 移动端主机与 Gateway 管理</image:title>
+    </image:image>
+  </url>
+</urlset>

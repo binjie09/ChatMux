@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { CONTENT, type Lang } from "./i18n";
 import { LangContext } from "./ctx";
 import Hero from "./Hero";
+import { applySeoMeta } from "./seo";
 import {
   CTA,
   Download,
@@ -157,11 +158,7 @@ export default function App() {
   };
 
   useEffect(() => {
-    document.documentElement.lang = lang === "en" ? "en" : "zh-CN";
-    document.title =
-      lang === "en"
-        ? "ChatMux — Self-hosted SSH / tmux workspace"
-        : "ChatMux — 自托管 SSH / tmux 工作空间";
+    applySeoMeta(lang);
   }, [lang]);
 
   // scroll-reveal: observe every `.reveal` once on mount.
