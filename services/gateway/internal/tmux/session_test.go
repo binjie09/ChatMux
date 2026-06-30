@@ -189,8 +189,11 @@ func TestCreateSessionCommand(t *testing.T) {
 	if !strings.Contains(command, "CHATMUX_TMUX_HISTORY_LIMIT=\"${CHATMUX_TMUX_HISTORY_LIMIT:-100000}\"") {
 		t.Fatalf("expected default history limit, got %q", command)
 	}
-	if !containsLoginShellFragment(command, "\"$TMUX_BIN\" start-server \\; set-option -gq history-limit \"$CHATMUX_TMUX_HISTORY_LIMIT\" \\; new-session -d -s 'deploy_1'") {
-		t.Fatalf("expected new-session command with history limit, got %q", command)
+	if !containsLoginShellFragment(command, "\"$TMUX_BIN\" start-server \\; set-option -gq history-limit \"$CHATMUX_TMUX_HISTORY_LIMIT\" \\; set-option -gq mouse on \\; new-session -d -s 'deploy_1'") {
+		t.Fatalf("expected new-session command with history and mouse options, got %q", command)
+	}
+	if !containsLoginShellFragment(command, "set-option -t 'deploy_1' -q history-limit \"$CHATMUX_TMUX_HISTORY_LIMIT\" \\; set-option -t 'deploy_1' -q mouse on") {
+		t.Fatalf("expected session history and mouse options, got %q", command)
 	}
 	if !containsLoginShellFragment(command, "new-session -d -s 'deploy_1'") {
 		t.Fatalf("expected new-session command, got %q", command)
@@ -226,6 +229,10 @@ func TestAttachSessionCommand(t *testing.T) {
 	if !strings.Contains(command, "set-option -gq history-limit \"$CHATMUX_TMUX_HISTORY_LIMIT\"") ||
 		!containsLoginShellFragment(command, "set-option -t 'deploy_1' -q history-limit \"$CHATMUX_TMUX_HISTORY_LIMIT\"") {
 		t.Fatalf("expected history limit prelude, got %q", command)
+	}
+	if !strings.Contains(command, "set-option -gq mouse on") ||
+		!containsLoginShellFragment(command, "set-option -t 'deploy_1' -q mouse on") {
+		t.Fatalf("expected mouse scroll prelude, got %q", command)
 	}
 	if !strings.Contains(command, "set-clipboard external") {
 		t.Fatalf("expected clipboard synchronization option, got %q", command)
