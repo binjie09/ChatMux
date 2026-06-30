@@ -34,7 +34,32 @@ run_root() {
   exit 1
 }
 
+configure_tmux_scrollback() {
+  conf_file="$HOME/.tmux.conf"
+  tmp_file="$conf_file.chatmux.$$"
+  if [ -f "$conf_file" ]; then
+    awk '
+      $0 == "# >>> ChatMux tmux defaults >>>" { skip = 1; next }
+      $0 == "# <<< ChatMux tmux defaults <<<" { skip = 0; next }
+      skip != 1 { print }
+    ' "$conf_file" >"$tmp_file"
+  else
+    : >"$tmp_file"
+  fi
+  cat >>"$tmp_file" <<'CHATMUX_TMUX_CONF'
+# >>> ChatMux tmux defaults >>>
+set -g history-limit 100000
+set -g mouse on
+# <<< ChatMux tmux defaults <<<
+CHATMUX_TMUX_CONF
+  mv "$tmp_file" "$conf_file"
+  tmux start-server >/dev/null 2>&1
+  tmux set-option -gq history-limit 100000
+  tmux set-option -gq mouse on
+}
+
 if command -v tmux >/dev/null 2>&1; then
+  configure_tmux_scrollback
   tmux -V
   exit 0
 fi
@@ -61,6 +86,7 @@ else
   exit 1
 fi
 
+configure_tmux_scrollback
 tmux -V
 CHATMUX_TMUX_INSTALL
 sh /tmp/chatmux-install-tmux.sh

@@ -334,15 +334,45 @@ func tmuxCreateSessionCommand(name string) string {
 	quotedName := shellQuote(name)
 	quotedTarget := shellQuote(formatSessionOptionTarget(name))
 	return "\"$TMUX_BIN\" start-server \\; " +
-		"set-option -gq history-limit \"$CHATMUX_TMUX_HISTORY_LIMIT\" \\; " +
+		tmuxGlobalOptionsCommand(" \\; ") + " \\; " +
 		"new-session -d -s " + quotedName + " \\; " +
-		"set-option -t " + quotedTarget + " -q history-limit \"$CHATMUX_TMUX_HISTORY_LIMIT\""
+		tmuxSessionOptionsCommand(quotedTarget, " \\; ")
 }
 
 func tmuxHistoryPrelude(name string) string {
 	quotedTarget := shellQuote(formatSessionOptionTarget(name))
-	return "\"$TMUX_BIN\" set-option -gq history-limit \"$CHATMUX_TMUX_HISTORY_LIMIT\" || exit $?; " +
-		"\"$TMUX_BIN\" set-option -t " + quotedTarget + " -q history-limit \"$CHATMUX_TMUX_HISTORY_LIMIT\" || exit $?; "
+	return tmuxGlobalOptionsPrelude() +
+		tmuxSessionOptionsPrelude(quotedTarget)
+}
+
+func tmuxGlobalOptionsCommand(separator string) string {
+	return strings.Join([]string{
+		"set-option -gq history-limit \"$CHATMUX_TMUX_HISTORY_LIMIT\"",
+		"set-option -gq mouse on",
+	}, separator)
+}
+
+func tmuxGlobalOptionsPrelude() string {
+	parts := strings.Split(tmuxGlobalOptionsCommand("\n"), "\n")
+	for index, part := range parts {
+		parts[index] = "\"$TMUX_BIN\" " + part + " || exit $?; "
+	}
+	return strings.Join(parts, "")
+}
+
+func tmuxSessionOptionsCommand(quotedTarget string, separator string) string {
+	return strings.Join([]string{
+		"set-option -t " + quotedTarget + " -q history-limit \"$CHATMUX_TMUX_HISTORY_LIMIT\"",
+		"set-option -t " + quotedTarget + " -q mouse on",
+	}, separator)
+}
+
+func tmuxSessionOptionsPrelude(quotedTarget string) string {
+	parts := strings.Split(tmuxSessionOptionsCommand(quotedTarget, "\n"), "\n")
+	for index, part := range parts {
+		parts[index] = "\"$TMUX_BIN\" " + part + " || exit $?; "
+	}
+	return strings.Join(parts, "")
 }
 
 func tmuxClipboardPrelude() string {
