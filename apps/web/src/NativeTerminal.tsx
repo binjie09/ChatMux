@@ -9,6 +9,7 @@ import { bindTerminalPaste, type TerminalPasteHandlers } from "./terminal-file-p
 import { sendTerminalInput, sendTerminalResize, terminalSize } from "./terminal-protocol";
 import { terminalTheme } from "./terminal-theme";
 import { useExternalReconnect } from "./useExternalReconnect";
+import { type Theme, useTheme } from "./useTheme";
 import { type ConnectionStatus, type TerminalHandlers, useTerminalSocket } from "./useTerminalSocket";
 import "@xterm/xterm/css/xterm.css";
 import "./terminal.css";
@@ -47,11 +48,13 @@ const statusLabel: Record<ConnectionStatus, string> = {
 type MobileTerminalInteractionMode = "input" | "select";
 
 export function NativeTerminal(props: NativeTerminalProps) {
+  const { theme } = useTheme();
   const terminalRef = useRef<HTMLDivElement | null>(null);
   const socketRef = useRef<WebSocket | null>(null);
   const terminalInstanceRef = useRef<Terminal | null>(null);
   const connectorRef = useRef(props.createWebSocketURL);
   const handlersRef = useRef<NativeTerminalHandlers>(props);
+  const themeRef = useRef(theme);
   const [terminalReady, setTerminalReady] = useState(false);
   const [status, setStatus] = useState<ConnectionStatus>("idle");
   const [mobileInteractionMode, setMobileInteractionMode] = useState<MobileTerminalInteractionMode>("input");
@@ -69,6 +72,10 @@ export function NativeTerminal(props: NativeTerminalProps) {
     handlersRef.current = props;
   }, [props]);
 
+  useEffect(() => {
+    themeRef.current = theme;
+  }, [theme]);
+
   useTerminalMount({
     handlersRef,
     mode: mobileInteractionMode,
@@ -76,7 +83,9 @@ export function NativeTerminal(props: NativeTerminalProps) {
     socketRef,
     terminalInstanceRef,
     terminalRef,
+    themeRef,
   });
+  useTerminalTheme(terminalInstanceRef, terminalReady, theme);
   useSessionReset(props.sessionKey, props.loading, terminalInstanceRef);
   useTerminalSocket({
     connectorRef,
@@ -268,6 +277,7 @@ type TerminalMountOptions = {
   handlersRef: MutableRefObject<NativeTerminalHandlers>;
   mode: MobileTerminalInteractionMode;
   setTerminalReady: (ready: boolean) => void;
+  themeRef: MutableRefObject<Theme>;
 };
 
 function useTerminalMount(options: TerminalMountOptions) {
@@ -281,7 +291,7 @@ function useTerminalMount(options: TerminalMountOptions) {
       return;
     }
 
-    const terminal = createTerminal();
+    const terminal = createTerminal(options.themeRef.current);
     const fit = mountTerminal(terminal, options.terminalRef.current);
     options.terminalInstanceRef.current = terminal;
     options.setTerminalReady(true);
@@ -314,17 +324,30 @@ function useTerminalMount(options: TerminalMountOptions) {
     options.socketRef,
     options.terminalInstanceRef,
     options.terminalRef,
+    options.themeRef,
   ]);
 }
 
-function createTerminal() {
+function useTerminalTheme(
+  terminalRef: MutableRefObject<Terminal | null>,
+  ready: boolean,
+  theme: Theme,
+) {
+  useEffect(() => {
+    if (ready && terminalRef.current) {
+      terminalRef.current.options.theme = terminalTheme(theme);
+    }
+  }, [ready, terminalRef, theme]);
+}
+
+function createTerminal(theme: Theme) {
   return new Terminal({
     allowProposedApi: false,
     scrollback: 5000,
     cursorBlink: true,
     fontFamily: '"SFMono-Regular", Consolas, "Liberation Mono", monospace',
     fontSize: 13,
-    theme: terminalTheme,
+    theme: terminalTheme(theme),
   });
 }
 

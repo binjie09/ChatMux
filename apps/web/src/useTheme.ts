@@ -1,15 +1,22 @@
-import { useCallback, useEffect, useState } from "react";
+import { createContext, createElement, type ReactNode, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
 export type Theme = "dark" | "light";
 
 const THEME_STORAGE_KEY = "chatmux-theme";
 const DEFAULT_THEME: Theme = "dark";
 
+type ThemeContextValue = {
+  theme: Theme;
+  toggleTheme: () => void;
+};
+
+const ThemeContext = createContext<ThemeContextValue | null>(null);
+
 function readStoredTheme(): Theme {
   return localStorage.getItem(THEME_STORAGE_KEY) === "light" ? "light" : DEFAULT_THEME;
 }
 
-export function useTheme() {
+export function ThemeProvider(props: { children: ReactNode }) {
   const [theme, setTheme] = useState<Theme>(readStoredTheme);
 
   useEffect(() => {
@@ -23,5 +30,14 @@ export function useTheme() {
     setTheme((current) => (current === "dark" ? "light" : "dark"));
   }, []);
 
-  return { theme, toggleTheme };
+  const value = useMemo(() => ({ theme, toggleTheme }), [theme, toggleTheme]);
+  return createElement(ThemeContext.Provider, { value }, props.children);
+}
+
+export function useTheme() {
+  const context = useContext(ThemeContext);
+  if (!context) {
+    throw new Error("useTheme must be used within ThemeProvider");
+  }
+  return context;
 }

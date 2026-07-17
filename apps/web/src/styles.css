@@ -9,11 +9,7 @@
   --radius-sm: 9px;
   --ease: cubic-bezier(0.4, 0, 0.2, 1);
 
-  /*
-   * Terminal surface tokens stay dark in every theme: the xterm canvas and its
-   * chrome form a deliberately dark island, and the ANSI palette is tuned for a
-   * dark background. Flip these values to give the terminal a light shell.
-   */
+  /* Terminal surface tokens match the xterm dark palette by default. */
   --term-bg: #101713;
   --term-bg-deep: #0b110e;
   --term-surface: #151f1a;
@@ -166,6 +162,24 @@
   --scrollbar-thumb-hover: #b3aa97;
   --scrim: rgba(12, 18, 14, 0.40);
   --drag-shadow: rgba(27, 36, 31, 0.18);
+
+  --term-bg: #fffdf8;
+  --term-bg-deep: #ede8dc;
+  --term-surface: #f4f1e9;
+  --term-surface-hover: #ebe6da;
+  --term-surface-active: #e1f1e8;
+  --term-raised: #fffdf8;
+  --term-border: #cec7b8;
+  --term-border-soft: #ddd6c9;
+  --term-border-strong: #aaa294;
+  --term-text: #25332b;
+  --term-text-strong: #17231d;
+  --term-text-muted: #647269;
+  --term-text-faint: #7a867f;
+  --term-loading-track: #d5d1c7;
+  --term-accent: #2c8f5a;
+  --term-delete-text: #8a2d2d;
+  --term-delete-bg: #fbe9e6;
 }
 
 * {
