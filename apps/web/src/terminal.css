@@ -1,7 +1,7 @@
 .terminal-workspace {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(240px, 320px);
-  gap: 12px;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 300px);
+  gap: 8px;
   height: 100%;
   min-height: 0;
   min-width: 0;
@@ -11,7 +11,7 @@
 .terminal-column {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
-  gap: 8px;
+  gap: 6px;
   min-height: 0;
   min-width: 0;
 }
@@ -28,7 +28,7 @@
 .terminal-window-tab-strip {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 2px;
   min-width: 0;
   overflow-x: auto;
   padding-bottom: 2px;
@@ -38,17 +38,17 @@
 .terminal-window-tab {
   position: relative;
   display: inline-grid;
-  grid-template-columns: minmax(0, 1fr) 28px;
+  grid-template-columns: minmax(0, 1fr) 22px;
   align-items: center;
-  flex: 0 1 176px;
-  min-width: 92px;
-  max-width: 210px;
-  height: 32px;
-  border: 1px solid var(--term-border);
-  border-radius: 8px;
+  flex: 0 1 160px;
+  min-width: 84px;
+  max-width: 190px;
+  height: 26px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-xs);
   overflow: hidden;
-  background: var(--term-surface);
-  transition: border-color 140ms ease, background-color 140ms ease, box-shadow 140ms ease;
+  background: transparent;
+  transition: background-color 140ms ease;
 }
 
 .terminal-window-tab.no-actions {
@@ -56,14 +56,14 @@
 }
 
 .terminal-window-tab:not(.selected):hover {
-  border-color: var(--term-border-strong);
+  border-color: transparent;
   background: var(--term-surface-hover);
 }
 
 .terminal-window-tab.selected {
-  border-color: var(--term-accent);
+  border-color: transparent;
   background: var(--term-surface-active);
-  box-shadow: 0 0 0 1px var(--term-accent), 0 2px 8px rgba(143, 213, 178, 0.18);
+  box-shadow: none;
 }
 
 .terminal-window-tab > button:first-child {
@@ -128,11 +128,10 @@
 .terminal-window-add {
   display: grid;
   place-items: center;
-  width: 28px;
-  height: 30px;
+  width: 22px;
+  height: 26px;
   border: 0;
-  border-left: 1px solid var(--term-border);
-  color: var(--term-text);
+  color: var(--term-text-muted);
   background: transparent;
 }
 
@@ -142,12 +141,17 @@
 }
 
 .terminal-window-add {
-  flex: 0 0 34px;
-  width: 34px;
-  border: 1px solid var(--term-border);
-  border-radius: 8px;
+  flex: 0 0 26px;
+  width: 26px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-xs);
+  color: var(--term-text-muted);
+  background: transparent;
+}
+
+.terminal-window-add:hover {
   color: var(--term-text);
-  background: var(--term-raised);
+  background: var(--term-surface-hover);
 }
 
 .terminal-window-tab.editing {
@@ -229,15 +233,15 @@
 
 .terminal-shell {
   display: grid;
-  grid-template-rows: 30px minmax(0, 1fr) auto;
-  gap: 8px;
+  grid-template-rows: 24px minmax(0, 1fr) auto;
+  gap: 4px;
   height: 100%;
   min-height: 0;
   min-width: 0;
   overflow: hidden;
   border: 1px solid var(--term-border-soft);
-  border-radius: 8px;
-  padding: 10px;
+  border-radius: var(--radius-sm);
+  padding: 5px;
   background: var(--term-bg);
 }
 
@@ -315,7 +319,7 @@
 .terminal-toolbar .terminal-focus-hint:focus-visible {
   outline: none;
   border-color: var(--term-accent);
-  box-shadow: 0 0 0 2px rgba(143, 213, 178, 0.25);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--term-accent) 30%, transparent);
 }
 
 .terminal-toolbar .terminal-focus-hint kbd {
@@ -364,14 +368,19 @@
 .terminal-toolbar button {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  height: 28px;
-  border: 1px solid var(--term-border);
-  border-radius: 8px;
-  padding: 0 10px;
-  color: var(--term-text);
-  background: var(--term-raised);
+  gap: 6px;
+  height: 24px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-xs);
+  padding: 0 8px;
+  color: var(--term-text-muted);
+  background: transparent;
   font-size: 12px;
+}
+
+.terminal-toolbar button:hover {
+  color: var(--term-text);
+  background: var(--term-surface-hover);
 }
 
 .terminal-toolbar .terminal-touch-mode {
@@ -480,9 +489,10 @@
   opacity: 0.45;
 }
 
-@media (max-width: 900px) {
+@media (min-width: 721px) and (max-width: 1050px) {
   .terminal-workspace {
     grid-template-columns: 1fr;
+    grid-template-rows: minmax(260px, 2fr) minmax(180px, 1fr);
   }
 }
 
@@ -515,14 +525,14 @@
 
 @media (max-width: 720px) {
   .mobile-terminal-active .terminal-shell {
-    grid-template-rows: 28px minmax(0, 1fr) auto;
-    gap: 6px;
+    grid-template-rows: 26px minmax(0, 1fr) auto;
+    gap: 5px;
     width: 100vw;
     height: 100%;
     max-width: none;
     border: 0;
     border-radius: 0;
-    padding: 8px;
+    padding: 6px 8px;
     background: var(--term-bg-deep);
   }
 
@@ -627,7 +637,7 @@
   .mobile-terminal-active .terminal-quick-keys button {
     flex: 0 0 auto;
     width: 54px;
-    height: 34px;
+    height: 32px;
     border-color: var(--term-border-soft);
     background: var(--term-surface);
   }

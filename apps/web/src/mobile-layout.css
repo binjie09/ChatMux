@@ -23,14 +23,14 @@
 
   .sidebar.mobile-open {
     display: flex;
-    gap: 18px;
-    padding: calc(18px + env(safe-area-inset-top)) 16px 18px;
+    gap: 12px;
+    padding: calc(12px + env(safe-area-inset-top)) 12px 12px;
   }
 
   .session-list.mobile-open {
     display: block;
     border-right: 0;
-    padding: 0 14px 18px;
+    padding: 0 10px 12px;
   }
 
   .conversation {
@@ -64,13 +64,13 @@
   }
 
   .sidebar.mobile-open .host-list {
-    gap: 10px;
+    gap: 4px;
   }
 
   .sidebar.mobile-open .host-row {
     grid-template-columns: 22px minmax(0, 1fr) 16px 10px;
     justify-items: stretch;
-    min-height: 58px;
+    min-height: 50px;
   }
 
   .sidebar.mobile-open .host-credential-icon {
@@ -80,9 +80,9 @@
   .sidebar.mobile-open .platforms {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
-    gap: 10px;
+    gap: 7px;
     align-content: start;
-    margin-top: 12px;
+    margin-top: 6px;
   }
 
   .sidebar.mobile-open .platforms div {

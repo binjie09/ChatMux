@@ -2,27 +2,26 @@
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: stretch;
-  gap: 10px;
+  gap: 7px;
   min-width: 0;
-  border-top: 1px solid var(--border-soft);
-  padding-top: 16px;
+  padding-top: 8px;
 }
 
 .composer-modes {
   display: inline-grid;
-  grid-template-columns: repeat(3, minmax(58px, auto));
+  grid-template-columns: repeat(3, minmax(52px, auto));
   min-width: 0;
   overflow: hidden;
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-xs);
   background: var(--surface-raised);
 }
 
 .composer-mode {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 26px;
+  grid-template-columns: minmax(0, 1fr) 24px;
   min-width: 0;
-  border-right: 1px solid var(--border);
+  border-right: 1px solid var(--border-soft);
 }
 
 .composer-mode:last-child {
@@ -40,17 +39,17 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  height: 44px;
-  padding: 0 3px 0 9px;
-  font-size: 13px;
+  gap: 4px;
+  height: 34px;
+  padding: 0 2px 0 7px;
+  font-size: 12px;
 }
 
 .composer-mode-help {
   display: grid;
   place-items: center;
-  width: 26px;
-  height: 44px;
+  width: 22px;
+  height: 34px;
   padding: 0;
   color: var(--text-subtle);
 }
@@ -71,16 +70,20 @@
 .composer textarea {
   width: 100%;
   min-width: 0;
-  min-height: 44px;
-  max-height: 168px;
+  min-height: 34px;
+  max-height: 150px;
   resize: vertical;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 10px 44px 9px 13px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-xs);
+  padding: 7px 38px 7px 10px;
   color: var(--text);
   background: var(--surface-raised);
   font: inherit;
   line-height: 1.35;
+}
+
+.composer textarea:hover {
+  background: var(--surface-hover);
 }
 
 .composer-input-shell.has-image-upload textarea {
@@ -98,23 +101,29 @@
 .composer-expand-button,
 .composer-image-button {
   position: absolute;
-  top: 6px;
+  top: 4px;
   display: grid;
   place-items: center;
-  width: 32px;
-  height: 32px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  width: 28px;
+  height: 28px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-xs);
   color: var(--text-muted);
-  background: var(--surface);
+  background: transparent;
+}
+
+.composer-expand-button:hover,
+.composer-image-button:hover {
+  color: var(--text);
+  background: var(--surface-hover);
 }
 
 .composer-expand-button {
-  right: 6px;
+  right: 4px;
 }
 
 .composer-image-button {
-  right: 42px;
+  right: 36px;
 }
 
 .composer-image-button:disabled {
@@ -122,7 +131,7 @@
 }
 
 .composer-send-button {
-  min-height: 44px;
+  min-height: 34px;
 }
 
 .composer-send-button,
@@ -130,13 +139,13 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 6px;
   border: 0;
-  border-radius: 8px;
-  padding: 11px 14px;
+  border-radius: var(--radius-xs);
+  padding: 8px 12px;
   color: var(--text-on-accent);
   background: var(--accent);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 @media (max-width: 760px) {
@@ -160,11 +169,11 @@
 
   .mobile-terminal-active .composer {
     grid-template-columns: minmax(0, 1fr) 48px;
-    gap: 8px;
+    gap: 6px;
     width: 100vw;
     max-width: none;
     border-top: 1px solid var(--term-border-soft);
-    padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
+    padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
     background: var(--term-surface);
   }
 
@@ -183,7 +192,7 @@
   }
 
   .mobile-terminal-active .composer-modes button {
-    height: 36px;
+    height: 34px;
     color: var(--term-text);
     font-size: 12px;
   }
@@ -211,7 +220,7 @@
   }
 
   .mobile-terminal-active .composer textarea {
-    min-height: 44px;
+    min-height: 42px;
     max-height: 126px;
     border-color: var(--term-border-soft);
     padding: 7px 42px 7px 11px;
@@ -236,7 +245,7 @@
 
   .mobile-terminal-active .composer-send-button {
     width: 48px;
-    min-height: 44px;
+    min-height: 42px;
     padding: 0;
     font-size: 0;
   }

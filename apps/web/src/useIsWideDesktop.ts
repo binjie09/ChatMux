@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
  * three-column shell with resizable columns. Below it the layout falls back to
  * the tablet/mobile rules in styles.css.
  */
-const wideDesktopQuery = "(min-width: 981px)";
+const wideDesktopQuery = "(min-width: 1200px)";
 
 export function useIsWideDesktop() {
   const [isWideDesktop, setIsWideDesktop] = useState(() => matchesWideDesktop());

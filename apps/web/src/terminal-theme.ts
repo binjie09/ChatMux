@@ -1,35 +1,38 @@
 import { type ITheme } from "@xterm/xterm";
 import { type Theme } from "./useTheme";
 
+/* Dark terminal: deep neutral charcoal shell, emerald cursor. */
 const darkTerminalTheme = {
-  background: "#101713",
-  cursor: "#8fd5b2",
-  foreground: "#e6ece8",
-  selectionBackground: "#355244",
+  background: "#0b0f0d",
+  cursor: "#34d399",
+  foreground: "#d5e0da",
+  selectionBackground: "#1f3d32",
 } satisfies ITheme;
 
+/* Light terminal: clean off-white shell, dark ink text, emerald cursor.
+   ANSI accents are tuned for legibility on a light background. */
 const lightTerminalTheme = {
-  background: "#fffdf8",
-  cursor: "#2c8f5a",
-  cursorAccent: "#fffdf8",
-  foreground: "#25332b",
-  selectionBackground: "#c9e8d7",
-  black: "#25332b",
-  red: "#a63d38",
-  green: "#286f4a",
-  yellow: "#7a5b12",
-  blue: "#2c6192",
-  magenta: "#6d4b82",
-  cyan: "#18706f",
-  white: "#647269",
-  brightBlack: "#526158",
-  brightRed: "#c84b45",
-  brightGreen: "#2f8053",
-  brightYellow: "#947019",
-  brightBlue: "#3977ad",
-  brightMagenta: "#865fa0",
-  brightCyan: "#207f7e",
-  brightWhite: "#344139",
+  background: "#f7f8f6",
+  cursor: "#059669",
+  cursorAccent: "#f7f8f6",
+  foreground: "#1c2420",
+  selectionBackground: "#cdebdd",
+  black: "#1c2420",
+  red: "#b91c1c",
+  green: "#047857",
+  yellow: "#a16207",
+  blue: "#1d4ed8",
+  magenta: "#7c3aed",
+  cyan: "#0e7490",
+  white: "#5f6a66",
+  brightBlack: "#4b5563",
+  brightRed: "#dc2626",
+  brightGreen: "#059669",
+  brightYellow: "#ca8a04",
+  brightBlue: "#2563eb",
+  brightMagenta: "#8b5cf6",
+  brightCyan: "#0891b2",
+  brightWhite: "#111827",
 } satisfies ITheme;
 
 const terminalThemes: Record<Theme, ITheme> = {

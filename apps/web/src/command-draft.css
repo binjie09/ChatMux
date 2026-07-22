@@ -1,26 +1,25 @@
 .command-draft-panel {
   display: grid;
-  gap: 8px;
-  border-top: 1px solid var(--border-soft);
-  padding-top: 12px;
+  gap: 7px;
+  padding-top: 8px;
 }
 
 .command-draft-panel + .composer {
   border-top: 0;
-  padding-top: 4px;
+  padding-top: 3px;
 }
 
 .command-draft-panel form {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 10px;
+  gap: 7px;
 }
 
 .command-draft-panel input {
   min-width: 0;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 10px 12px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-xs);
+  padding: 8px 11px;
   color: var(--text);
   background: var(--surface-raised);
 }
@@ -33,10 +32,10 @@
   justify-content: center;
   gap: 7px;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--radius-xs);
   color: var(--text-on-accent);
   background: var(--accent);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .command-draft-panel form button {

@@ -1,18 +1,18 @@
 .host-form {
   display: grid;
-  gap: 8px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 10px;
+  gap: 7px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-xs);
+  padding: 8px;
   background: var(--surface-raised);
 }
 
 .host-form input,
 .host-form textarea {
   min-width: 0;
-  border: 1px solid var(--border-strong);
-  border-radius: 6px;
-  padding: 8px 9px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  padding: 7px 9px;
   color: var(--text);
   background: var(--surface);
 }
@@ -37,9 +37,9 @@
 }
 
 .host-auth-method button {
-  height: 32px;
-  border: 1px solid var(--border-strong);
-  border-radius: 6px;
+  height: 30px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
   color: var(--text-muted);
   background: var(--surface);
 }
@@ -75,9 +75,9 @@
 .host-form-actions button {
   display: grid;
   place-items: center;
-  height: 34px;
+  height: 32px;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
   color: var(--text-on-accent);
   background: var(--accent);
 }

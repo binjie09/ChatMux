@@ -120,17 +120,17 @@ export function AppShell(props: AppShellProps) {
   const isWideDesktop = useIsWideDesktop();
   const hostsColumn = useColumnResize({
     storageKey: "chatmux-hosts-column-width",
-    defaultWidth: 228,
-    collapseThreshold: 168,
-    maxWidth: 380,
-    collapsedWidth: 52,
+    defaultWidth: 216,
+    collapseThreshold: 156,
+    maxWidth: 320,
+    collapsedWidth: 48,
   });
   const sessionsColumn = useColumnResize({
     storageKey: "chatmux-sessions-column-width",
-    defaultWidth: 256,
-    collapseThreshold: 196,
-    maxWidth: 460,
-    collapsedWidth: 52,
+    defaultWidth: 244,
+    collapseThreshold: 184,
+    maxWidth: 380,
+    collapsedWidth: 48,
   });
 
   if (!props.gatewayToken.ready) {

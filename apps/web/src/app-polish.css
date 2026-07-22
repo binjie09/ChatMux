@@ -1,128 +1,100 @@
-/* Visual polish layer: gradients, glows and micro-interactions on top of the
-   base layout. Overrides only — no layout rules live here. */
+/* Visual polish layer — modern flat edition.
+   Restraint over decoration: no glows, no gradient sheens, no skeuomorphic
+   shine. Depth comes from border contrast and spacing, not drop shadows.
+   Only micro-interactions and crisp focus states live here. */
 
 /* app shell ------------------------------------------------- */
 .app-shell {
-  animation: appFadeIn 0.45s var(--ease) both;
+  animation: appFadeIn 0.3s var(--ease-out) both;
 }
 @keyframes appFadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
 }
 
-.sidebar {
-  background:
-    radial-gradient(120% 30% at 50% 0%, var(--accent-tint), transparent 70%),
-    var(--surface);
-}
-
-.brand > svg {
-  filter: drop-shadow(0 0 10px color-mix(in srgb, var(--accent) 45%, transparent));
-}
-
 .brand strong {
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
+  font-weight: 650;
 }
 
 /* primary action -------------------------------------------- */
+/* Flat solid accent; feedback via background shift + press scale, not shine. */
 .primary-action {
-  position: relative;
-  overflow: hidden;
-  background: linear-gradient(160deg, var(--accent), var(--accent-strong));
-  box-shadow:
-    0 2px 12px -4px color-mix(in srgb, var(--accent) 60%, transparent),
-    inset 0 1px 0 rgba(255, 255, 255, 0.25);
-}
-.primary-action::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    115deg,
-    transparent 30%,
-    rgba(255, 255, 255, 0.35) 50%,
-    transparent 70%
-  );
-  transform: translateX(-130%);
-  transition: transform 0.6s var(--ease);
-  pointer-events: none;
+  background: var(--accent);
+  box-shadow: none;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  transition:
+    background-color 140ms var(--ease),
+    transform 120ms var(--ease);
 }
 .primary-action:hover {
-  background: linear-gradient(160deg, var(--accent-hover), var(--accent-strong));
-  box-shadow:
-    0 6px 20px -6px color-mix(in srgb, var(--accent) 75%, transparent),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  background: var(--accent-hover);
+  box-shadow: none;
 }
-.primary-action:hover::after {
-  transform: translateX(130%);
+.primary-action:active {
+  transform: scale(0.97);
 }
 
 /* host & session rows --------------------------------------- */
+/* Flat: selected = tinted fill + 2px accent rail. Hover = subtle fill only. */
 .host-row,
 .session-row,
 .session-window-row {
   transition:
-    border-color 160ms var(--ease),
-    background-color 160ms var(--ease),
-    box-shadow 200ms var(--ease),
-    transform 200ms var(--ease);
+    border-color 140ms var(--ease),
+    background-color 140ms var(--ease);
 }
 .host-row:hover,
 .session-row:not(.selected):hover {
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-sm);
-}
-.host-row:active,
-.session-row:active {
-  transform: translateY(0);
+  transform: none;
+  box-shadow: none;
 }
 .host-row.selected {
-  box-shadow:
-    inset 3px 0 0 var(--accent),
-    0 0 22px -10px color-mix(in srgb, var(--accent) 55%, transparent);
+  background: var(--accent-tint);
+  border-color: transparent;
+  box-shadow: inset 2px 0 0 var(--accent);
 }
 .session-row.selected {
-  box-shadow:
-    inset 3px 0 0 var(--accent-strong),
-    0 0 22px -10px color-mix(in srgb, var(--accent) 50%, transparent);
+  background: var(--accent-tint);
+  border-color: transparent;
+  box-shadow: inset 2px 0 0 var(--accent-strong);
 }
 
-/* status dots: live connections breathe --------------------- */
+/* status dots: live connections breathe (kept subtle) -------- */
 .status-dot {
   position: relative;
   transition: background-color 200ms var(--ease);
 }
 .status-dot.online {
-  box-shadow: 0 0 8px color-mix(in srgb, var(--status-online) 80%, transparent);
-  animation: dotBreathe 2.4s ease-in-out infinite;
+  animation: dotBreathe 2.6s ease-in-out infinite;
 }
 .status-dot.connecting {
-  box-shadow: 0 0 8px color-mix(in srgb, var(--status-connecting) 80%, transparent);
-  animation: dotBreathe 1.1s ease-in-out infinite;
+  animation: dotBreathe 1.2s ease-in-out infinite;
 }
 @keyframes dotBreathe {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(0.82); opacity: 0.72; }
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
 }
 
 /* buttons ---------------------------------------------------- */
+/* Flat icon buttons: fill on hover, crisp press, no glow. */
 .icon-button,
 .desktop-collapse-button,
 .sidebar-theme-toggle,
 .host-action-button,
 .session-window-action {
   transition:
-    border-color 160ms var(--ease),
-    color 160ms var(--ease),
-    background-color 160ms var(--ease),
-    transform 160ms var(--ease),
-    box-shadow 160ms var(--ease);
+    border-color 140ms var(--ease),
+    color 140ms var(--ease),
+    background-color 140ms var(--ease),
+    transform 120ms var(--ease);
 }
 .icon-button:hover,
 .sidebar-theme-toggle:hover,
 .host-action-button:hover {
-  background: var(--accent-tint);
-  box-shadow: 0 0 14px -6px color-mix(in srgb, var(--accent) 60%, transparent);
+  background: var(--surface-hover);
+  box-shadow: none;
 }
 .icon-button:active,
 .sidebar-theme-toggle:active,
@@ -132,66 +104,77 @@
 }
 
 /* panel headers --------------------------------------------- */
+/* Solid text, tight tracking — no gradient text. */
 .session-list h1,
 .conversation-header h2 {
-  background: linear-gradient(120deg, var(--text), color-mix(in srgb, var(--text) 70%, var(--accent)));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  background: none;
+  -webkit-background-clip: initial;
+  background-clip: initial;
+  color: var(--text);
+  letter-spacing: -0.02em;
 }
 
+/* Section labels: quiet uppercase with a hairline rule. */
 .nav-section h2,
 .platforms h2 {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  font-weight: 600;
 }
 .nav-section h2::after,
 .platforms h2::after {
   content: "";
   flex: 1;
   height: 1px;
-  background: linear-gradient(90deg, var(--border), transparent);
+  background: var(--border-soft);
 }
 
-/* badges: give "running" a live pulse ------------------------ */
+/* badges: live pulse kept, but soft (opacity not glow) ------- */
 .session-row em.running,
 .session-window-row em.running {
-  animation: badgePulse 2.2s ease-in-out infinite;
+  animation: badgePulse 2.4s ease-in-out infinite;
 }
 @keyframes badgePulse {
-  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--badge-running-text) 30%, transparent); }
-  50% { box-shadow: 0 0 10px -2px color-mix(in srgb, var(--badge-running-text) 55%, transparent); }
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
 }
 
 /* unread: finished-but-unseen output demands attention -------- */
 .session-row em.unread,
 .session-window-row em.unread {
   font-weight: 600;
-  animation: badgeAttention 1.6s ease-in-out infinite;
+  animation: badgeAttention 1.8s ease-in-out infinite;
 }
 @keyframes badgeAttention {
-  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--badge-waiting-text) 35%, transparent); }
-  50% { box-shadow: 0 0 10px -1px color-mix(in srgb, var(--badge-waiting-text) 65%, transparent); }
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.72; }
 }
 .unread-dot {
-  animation: unreadDotPulse 1.6s ease-in-out infinite;
+  animation: unreadDotPulse 1.8s ease-in-out infinite;
 }
 @keyframes unreadDotPulse {
   0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(0.78); opacity: 0.7; }
+  50% { transform: scale(0.8); opacity: 0.7; }
 }
 
 /* inputs ------------------------------------------------------ */
+/* Crisp 2px accent ring on focus — the one "modern" signature. */
 .session-create input,
 .inline-name-edit input {
-  transition: border-color 160ms var(--ease), box-shadow 160ms var(--ease);
+  transition: border-color 140ms var(--ease), box-shadow 140ms var(--ease);
 }
 .session-create input:focus,
 .inline-name-edit input:focus {
   outline: none;
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-tint);
+}
+
+/* shared focus ring for interactive controls ------------------ */
+:where(button, [role="button"], input, select, textarea, a):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -204,9 +187,5 @@
   .session-window-row em.unread,
   .unread-dot {
     animation: none;
-  }
-  .host-row:hover,
-  .session-row:not(.selected):hover {
-    transform: none;
   }
 }

@@ -56,11 +56,12 @@
       "back title files draft"
       ". picker picker picker";
     grid-template-columns: 44px minmax(0, 1fr) 40px 40px;
+    grid-template-rows: 40px 34px;
     align-items: center;
     gap: 5px 4px;
-    min-height: 88px;
+    min-height: 78px;
     border-bottom: 1px solid var(--term-border-soft);
-    padding: 6px 8px 8px;
+    padding: 4px 8px 6px;
     color: var(--term-text);
     background: var(--term-surface);
   }
@@ -70,8 +71,9 @@
       "back title install"
       ". picker picker";
     grid-template-columns: 44px minmax(0, 1fr) auto;
-    min-height: 88px;
-    padding: 6px 8px 8px;
+    grid-template-rows: 40px 34px;
+    min-height: 78px;
+    padding: 4px 8px 6px;
   }
 
   .mobile-terminal-bar.loading {
@@ -138,7 +140,7 @@
 
   .mobile-terminal-window-picker select {
     min-width: 0;
-    height: 38px;
+    height: 34px;
     border: 1px solid var(--term-border);
     border-radius: 8px;
     padding: 0 9px;
@@ -209,7 +211,7 @@
     left: 0;
     display: grid;
     grid-template-rows: auto minmax(0, 1fr);
-    height: min(72dvh, 620px);
+    height: min(68dvh, 580px);
     border: 1px solid var(--border);
     border-bottom: 0;
     border-radius: 12px 12px 0 0;
@@ -247,10 +249,10 @@
 
   .mobile-terminal-sheet-body {
     display: grid;
-    gap: 12px;
+    gap: 8px;
     min-height: 0;
     overflow: auto;
-    padding: 12px;
+    padding: 8px;
   }
 
   .mobile-terminal-sheet-body .command-draft-panel {

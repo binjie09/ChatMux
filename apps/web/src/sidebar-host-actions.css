@@ -11,8 +11,8 @@
 }
 
 .host-row.selected {
-  border-color: var(--accent);
-  background: var(--surface-selected);
+  border-color: transparent;
+  background: var(--accent-tint);
 }
 
 .host-row span {
@@ -34,27 +34,29 @@
 .host-action-button {
   display: grid;
   place-items: center;
-  width: 34px;
-  height: 34px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  width: 30px;
+  height: 30px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-xs);
   color: var(--text-muted);
-  background: var(--surface-raised);
+  background: transparent;
 }
 
 .host-action-button:hover,
 .host-action-button:focus-visible {
-  border-color: var(--accent);
+  border-color: transparent;
   color: var(--accent);
+  background: var(--surface-hover);
 }
 
 .host-action-button.danger:hover,
 .host-action-button.danger:focus-visible {
-  border-color: var(--feedback-negative);
+  border-color: transparent;
   color: var(--feedback-negative);
+  background: var(--danger-bg);
 }
 
-@media (max-width: 980px) and (min-width: 721px) {
+@media (max-width: 1199px) and (min-width: 721px) {
   .host-entry-main {
     grid-template-columns: 1fr;
   }
