@@ -148,7 +148,7 @@
 
 .session-row-main {
   display: grid;
-  grid-template-columns: 20px minmax(0, 1fr) auto 16px;
+  grid-template-columns: 20px minmax(0, 1fr) 16px;
   align-items: center;
   gap: 10px;
   width: 100%;
@@ -159,6 +159,32 @@
   background: transparent;
   text-align: left;
   cursor: pointer;
+}
+
+.session-row-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.session-row-heading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.session-row-heading strong,
+.session-row-copy small,
+.session-row-copy i {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.session-row-heading strong {
+  flex: 1;
 }
 
 .session-group {
@@ -236,7 +262,7 @@
 
 .session-row i {
   display: block;
-  margin-top: 5px;
+  margin-top: 1px;
   color: var(--text-muted);
   font-size: 12px;
   font-style: normal;
@@ -244,14 +270,17 @@
 }
 
 .session-row em {
-  max-width: 92px;
+  flex: none;
+  max-width: 82px;
   border-radius: 999px;
   padding: 4px 8px;
   color: var(--text-muted);
   background: var(--surface-sunken);
   font-size: 12px;
   font-style: normal;
-  overflow-wrap: anywhere;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   text-align: center;
 }
 
@@ -470,7 +499,7 @@
 
 /* The unread dot adds a grid column to the fixed row layouts. */
 .session-row-main:has(> .unread-dot) {
-  grid-template-columns: 20px minmax(0, 1fr) auto auto 16px;
+  grid-template-columns: 20px minmax(0, 1fr) auto 16px;
 }
 
 .session-window-row > button:first-child:has(> .unread-dot) {

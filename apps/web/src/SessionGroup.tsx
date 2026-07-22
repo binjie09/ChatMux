@@ -112,8 +112,11 @@ function SessionRow({
         }}
       >
         <Activity size={18} aria-hidden="true" />
-        <span>
-          <strong>{session.title || session.name}</strong>
+        <span className="session-row-copy">
+          <span className="session-row-heading">
+            <strong>{session.title || session.name}</strong>
+            <em className={`${session.displayStatus}${session.unreadWindows > 0 ? " unread" : ""}`}>{session.statusLabel}</em>
+          </span>
           <small>
             {session.name}
             {session.processName ? ` · ${session.processName}` : ""}
@@ -125,7 +128,6 @@ function SessionRow({
         {session.unreadWindows > 0 ? (
           <span className="unread-dot" role="status" aria-label={`${session.unreadWindows} unread window${session.unreadWindows === 1 ? "" : "s"}`} />
         ) : null}
-        <em className={`${session.displayStatus}${session.unreadWindows > 0 ? " unread" : ""}`}>{session.statusLabel}</em>
         <ChevronRight className={isExpanded ? "expanded" : ""} size={17} aria-hidden="true" />
       </button>
       {onDeleteSession ? (

@@ -92,6 +92,9 @@ function GatewayTokenForm(props: GatewayTokenFormProps) {
 }
 
 function BiometricUnlockRow({ busy, tokenState }: { busy: boolean; tokenState: GatewayTokenState }) {
+  if (!tokenState.biometricAvailable && !tokenState.biometricEnabled && tokenState.status !== "locked") {
+    return null;
+  }
   return (
     <div className="gateway-token-biometric">
       <label>

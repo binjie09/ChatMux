@@ -120,7 +120,7 @@
 }
 
 @media (min-width: 721px) and (max-width: 1199px) {
-  .gateway-token-control {
+  .sidebar .gateway-token-control {
     display: none;
   }
 }
