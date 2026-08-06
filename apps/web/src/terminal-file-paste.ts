@@ -32,7 +32,7 @@ export function bindTerminalPaste(options: TerminalPasteOptions) {
     void pasteTerminalClipboard({ file, text }, options);
   };
   options.terminal.attachCustomKeyEventHandler((event) => {
-    const result = handleTerminalKeyEvent(event, () => {
+    const result = handleTerminalKeyEvent(event, options.terminal.hasSelection(), () => {
       keyboardPasteFallbackTimer = clearKeyboardPasteFallback(keyboardPasteFallbackTimer);
       keyboardPasteFallbackTimer = window.setTimeout(() => {
         keyboardPasteFallbackTimer = 0;
@@ -61,7 +61,10 @@ function firstPastedFile(data: DataTransfer | null) {
   return null;
 }
 
-function handleTerminalKeyEvent(event: KeyboardEvent, scheduleFallback: () => void) {
+function handleTerminalKeyEvent(event: KeyboardEvent, hasSelection: boolean, scheduleFallback: () => void) {
+  if (isKeyboardCopy(event) && hasSelection) {
+    return false;
+  }
   if (!isKeyboardPaste(event)) {
     return true;
   }
@@ -73,6 +76,10 @@ function handleTerminalKeyEvent(event: KeyboardEvent, scheduleFallback: () => vo
 
 function isKeyboardPaste(event: KeyboardEvent) {
   return event.key.toLowerCase() === "v" && (event.ctrlKey || event.metaKey);
+}
+
+function isKeyboardCopy(event: KeyboardEvent) {
+  return event.key.toLowerCase() === "c" && (event.ctrlKey || event.metaKey);
 }
 
 async function pasteFromBrowserClipboard(target: PasteTarget) {

@@ -1,12 +1,12 @@
 import { type MutableRefObject, useEffect, useRef, useState } from "react";
 import { FitAddon } from "@xterm/addon-fit";
 import { Terminal } from "@xterm/xterm";
-import { MousePointer2, RefreshCw, TextCursorInput } from "lucide-react";
+import { Copy, MousePointer2, RefreshCw, TextCursorInput } from "lucide-react";
 import { TerminalQuickKeys } from "./TerminalQuickKeys";
 import { TerminalScrollbackOverlay } from "./TerminalScrollbackOverlay";
-import { bindTerminalClipboard } from "./terminal-clipboard";
+import { bindTerminalClipboard, writeTerminalClipboardText } from "./terminal-clipboard";
 import { bindTerminalPaste, type TerminalPasteHandlers } from "./terminal-file-paste";
-import { sendTerminalInput, sendTerminalResize, terminalSize } from "./terminal-protocol";
+import { errorMessage, sendTerminalInput, sendTerminalResize, terminalSize } from "./terminal-protocol";
 import { terminalTheme } from "./terminal-theme";
 import { useExternalReconnect } from "./useExternalReconnect";
 import { type Theme, useTheme } from "./useTheme";
@@ -60,6 +60,7 @@ export function NativeTerminal(props: NativeTerminalProps) {
   const [mobileInteractionMode, setMobileInteractionMode] = useState<MobileTerminalInteractionMode>("input");
   const [reconnectAttempt, setReconnectAttempt] = useState(0);
   const [terminalFocused, setTerminalFocused] = useState(false);
+  const clipboard = usePendingTerminalClipboard(props.sessionKey, props.onConnectionError);
   const reconnecting = status === "connecting" || status === "recovering";
   const canReconnect = Boolean(props.sessionKey && props.createWebSocketURL && !reconnecting);
   const terminalStatus = props.loading ? "loading" : status;
@@ -79,6 +80,7 @@ export function NativeTerminal(props: NativeTerminalProps) {
   useTerminalMount({
     handlersRef,
     mode: mobileInteractionMode,
+    onCopyRequest: clipboard.request,
     setTerminalReady,
     socketRef,
     terminalInstanceRef,
@@ -130,6 +132,17 @@ export function NativeTerminal(props: NativeTerminalProps) {
         {props.loading ? null : (
           <div className="terminal-toolbar-actions">
             <MobileInteractionToggle mode={mobileInteractionMode} onModeChange={setMobileInteractionMode} />
+            {clipboard.pending ? (
+              <button
+                type="button"
+                className="terminal-pending-copy"
+                title="Copy terminal selection"
+                onClick={clipboard.copy}
+              >
+                <Copy size={14} aria-hidden="true" />
+                Copy
+              </button>
+            ) : null}
             <button type="button" disabled={!canReconnect} onClick={reconnect}>
               <RefreshCw size={14} aria-hidden="true" />
               Reconnect
@@ -146,6 +159,23 @@ export function NativeTerminal(props: NativeTerminalProps) {
       <TerminalQuickKeys disabled={props.loading || status !== "connected"} onSend={sendQuickKey} />
     </div>
   );
+}
+
+function usePendingTerminalClipboard(sessionKey: string, onError: (message: string) => void) {
+  const [pendingText, setPendingText] = useState<string | null>(null);
+  useEffect(() => setPendingText(null), [sessionKey]);
+
+  function copy() {
+    if (pendingText === null) {
+      return;
+    }
+    const copiedText = pendingText;
+    void writeTerminalClipboardText(copiedText)
+      .then(() => setPendingText((current) => (current === copiedText ? null : current)))
+      .catch((error) => onError(errorMessage(error)));
+  }
+
+  return { copy, pending: pendingText !== null, request: setPendingText };
 }
 
 function TerminalLoadingState(props: { active: boolean }) {
@@ -276,6 +306,7 @@ type TerminalMountOptions = {
   socketRef: MutableRefObject<WebSocket | null>;
   handlersRef: MutableRefObject<NativeTerminalHandlers>;
   mode: MobileTerminalInteractionMode;
+  onCopyRequest: (data: string) => void;
   setTerminalReady: (ready: boolean) => void;
   themeRef: MutableRefObject<Theme>;
 };
@@ -298,6 +329,7 @@ function useTerminalMount(options: TerminalMountOptions) {
     const resizeObserver = observeTerminalResize(terminal, fit, options.terminalRef.current, options.socketRef);
     const clipboardDisposable = bindTerminalClipboard(terminal, {
       onError: (message) => options.handlersRef.current.onConnectionError(message),
+      onCopyRequest: options.onCopyRequest,
     });
     const inputDisposable = bindTerminalInput(terminal, options.socketRef, modeRef);
     const pasteDisposable = bindTerminalPaste({
@@ -320,6 +352,7 @@ function useTerminalMount(options: TerminalMountOptions) {
     };
   }, [
     options.handlersRef,
+    options.onCopyRequest,
     options.setTerminalReady,
     options.socketRef,
     options.terminalInstanceRef,

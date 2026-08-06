@@ -393,6 +393,12 @@
   background: var(--term-accent);
 }
 
+.terminal-toolbar .terminal-pending-copy,
+.terminal-toolbar .terminal-pending-copy:hover {
+  color: var(--text-on-accent);
+  background: var(--term-accent);
+}
+
 .terminal-toolbar button:disabled {
   cursor: not-allowed;
   opacity: 0.45;
